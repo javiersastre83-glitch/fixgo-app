@@ -344,7 +344,7 @@ export default function App() {
   // ════════════════════════════════════════
   // INFO APP (ícono Fixgo)
   // ════════════════════════════════════════
-  if (vistaInfoApp) {
+  if (vistaInfoApp && tabActiva === 'obras') {
     return (
       <div style={{...s.root, background:"#F2F2F7"}}>
         <div style={s.header}>
@@ -433,7 +433,7 @@ export default function App() {
   // ════════════════════════════════════════
   // PERFIL / CONFIGURACIÓN
   // ════════════════════════════════════════
-  if (tabActiva === 'perfil' && vistaRaiz === 'inicio') {
+  if (tabActiva === 'perfil') {
     const rolInfo2 = ROLES_SISTEMA.find(r=>r.id===usuarioActivo.rolSistema);
     return (
       <div style={{...s.root, background: modoOscuro?"#1C1C1E":"#F2F2F7"}}>
@@ -578,7 +578,7 @@ export default function App() {
   // ════════════════════════════════════════
   // TAB ALERTAS
   // ════════════════════════════════════════
-  if (tabActiva === 'alertas' && vistaRaiz === 'inicio') {
+  if (tabActiva === 'alertas') {
     const alertas = [
       { id:1, texto:"Fisura en revoque lleva 3 días vencida", tipo:"urgente", tiempo:"Hace 2 horas" },
       { id:2, texto:"Miguel Albañil comentó en una novedad", tipo:"comentario", tiempo:"Hace 5 horas" },
