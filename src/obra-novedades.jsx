@@ -344,7 +344,7 @@ export default function App() {
   // ════════════════════════════════════════
   // INFO APP (ícono Fixgo)
   // ════════════════════════════════════════
-  if (vistaInfoApp && tabActiva === 'obras') {
+  if (vistaInfoApp) {
     return (
       <div style={{...s.root, background:"#F2F2F7"}}>
         <div style={s.header}>
@@ -424,7 +424,7 @@ export default function App() {
             ))}
           </div>
 
-          <p style={{ textAlign:"center", fontSize:12, color:"#C7C7CC", marginBottom:8 }}>Fixgo · Versión 1.0.0 · Hecho con ❤️ en Córdoba</p>
+          <p style={{ textAlign:"center", fontSize:12, color:"#C7C7CC", marginBottom:8 }}>Fixgo · Versión 1.0.0</p>
         </div>
       </div>
     );
@@ -433,14 +433,14 @@ export default function App() {
   // ════════════════════════════════════════
   // PERFIL / CONFIGURACIÓN
   // ════════════════════════════════════════
-  if (tabActiva === 'perfil') {
+  if (vistaPerfil) {
     const rolInfo2 = ROLES_SISTEMA.find(r=>r.id===usuarioActivo.rolSistema);
     return (
       <div style={{...s.root, background: modoOscuro?"#1C1C1E":"#F2F2F7"}}>
         <div style={{...s.header, background: modoOscuro?"#2C2C2E":"#fff", borderBottomColor: modoOscuro?"#3A3A3C":"#E5E5EA"}}>
           <div style={{ width:60 }} />
           <span style={{...s.headerTitle, color: modoOscuro?"#fff":"#1C1C1E"}}>Mi perfil</span>
-          <div style={{ width:60 }} />
+          <button style={s.backBtn} onClick={()=>{ setVistaPerfil(false); setTabActiva('obras'); }}>← Volver</button>
         </div>
 
         <div style={{ flex:1, overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:14 }}>
@@ -632,14 +632,14 @@ export default function App() {
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
             <div>
               <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:6 }}>
-                <div style={{ width:44, height:44, borderRadius:13, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <button onClick={()=>setVistaInfoApp(true)} style={{ width:44, height:44, borderRadius:13, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, border:"none", cursor:"pointer" }}>
                   <svg width="26" height="26" viewBox="0 0 72 72" fill="none">
                     <g transform="rotate(-12, 36, 38)">
                       <path d="M14 40 C14 23 23 13 36 13 C49 13 58 23 58 40 Z" fill="white"/>
                       <rect x="10" y="40" width="52" height="7" rx="3.5" fill="white"/>
                     </g>
                   </svg>
-                </div>
+                </button>
                 <p style={{ margin:0, fontSize:30, fontWeight:900, color:"#fff", letterSpacing:-0.5 }}>Fixgo</p>
               </div>
               <p style={{ margin:0, fontSize:14, color:"rgba(255,255,255,0.6)" }}>
@@ -1104,6 +1104,26 @@ export default function App() {
             </button>
           </div>
 
+          {/* Botón exportar PDF */}
+          <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginTop:4 }}>
+            <p style={{ margin:"0 0 4px", fontSize:15, fontWeight:700, color:"#1C1C1E" }}>📄 Exportar informe</p>
+            <p style={{ margin:"0 0 14px", fontSize:13, color:"#8E8E93", lineHeight:1.5 }}>Generá un PDF profesional para compartir con tu cliente o para uso interno.</p>
+            <div style={{ display:"flex", gap:10 }}>
+              <button style={{ flex:1, padding:"12px 8px", borderRadius:12, border:"1.5px solid #E5E5EA", background:"#F2F2F7", color:"#8E8E93", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}
+                onClick={()=>setModalPro(true)}>
+                <span style={{ fontSize:22 }}>👤</span>
+                <span>Para el cliente</span>
+                <span style={{ fontSize:10, background:"#FFB800", color:"#1C1C1E", padding:"1px 6px", borderRadius:99 }}>PRO</span>
+              </button>
+              <button style={{ flex:1, padding:"12px 8px", borderRadius:12, border:"1.5px solid #E5E5EA", background:"#F2F2F7", color:"#8E8E93", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}
+                onClick={()=>setModalPro(true)}>
+                <span style={{ fontSize:22 }}>📊</span>
+                <span>Uso interno</span>
+                <span style={{ fontSize:10, background:"#FFB800", color:"#1C1C1E", padding:"1px 6px", borderRadius:99 }}>PRO</span>
+              </button>
+            </div>
+          </div>
+
         </div>
         {modalPro && (
           <div style={s.modalOverlay} onClick={()=>setModalPro(false)}>
@@ -1421,29 +1441,26 @@ export default function App() {
 
   return (
     <div style={s.root}>
-      <div style={s.header}>
-        <div>
+      <div style={{ background:"#fff", borderBottom:"1px solid #E5E5EA", position:"sticky", top:0, zIndex:10 }}>
+        {/* Fila 1: navegación */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 16px 6px" }}>
           <button style={{...s.backBtn, fontSize:13, color:"#8E8E93"}} onClick={()=>setVistaRaiz("inicio")}>← Obras</button>
-          <p style={{ margin:"2px 0 0", fontSize:17, fontWeight:700, color:"#1C1C1E", maxWidth:180, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{obraActual?.nombre}</p>
-        </div>
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          {/* Avatar usuario con rol */}
-          <button style={{ background:"#F2F2F7", border:"none", borderRadius:20, padding:"4px 10px 4px 6px", cursor:"pointer", display:"flex", alignItems:"center", gap:6, height:36 }}
+          <button style={{ background:"#F2F2F7", border:"none", borderRadius:20, padding:"4px 10px 4px 6px", cursor:"pointer", display:"flex", alignItems:"center", gap:6, height:32 }}
             onClick={()=>setMostrarCambioUsuario(true)}>
-            <span style={{ fontSize:18 }}>{usuarioActivo.avatar}</span>
-            <span style={{ fontSize:11, fontWeight:700, color: usuarioActivo.color }}>{miRolInfo?.label}</span>
+            <span style={{ fontSize:16 }}>{usuarioActivo.avatar}</span>
+            <span style={{ fontSize:11, fontWeight:700, color:usuarioActivo.color }}>{miRolInfo?.label}</span>
           </button>
-          <button style={{ background:"#F2F2F7", border:"none", borderRadius:20, padding:"8px 12px", fontSize:14, fontWeight:600, cursor:"pointer", color:"#1C1C1E" }}
-            onClick={()=>setVistaEquipo(true)}>👥</button>
-          <button style={{ background:"#F2F2F7", border:"none", borderRadius:20, padding:"8px 12px", fontSize:14, fontWeight:600, cursor:"pointer", color:"#1C1C1E" }}
-            onClick={()=>setVistaStats(true)}>📊</button>
-          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+        </div>
+        {/* Fila 2: nombre obra + acciones */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0 16px 10px" }}>
+          <p style={{ margin:0, fontSize:17, fontWeight:700, color:"#1C1C1E", flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", paddingRight:8 }}>{obraActual?.nombre}</p>
+          <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }}>
             {miRolEnObra !== "operario" && (
-              <button style={{ background:"#F2F2F7", border:"none", borderRadius:20, padding:"8px 12px", fontSize:14, fontWeight:600, cursor:"pointer", color:"#1C1C1E" }}
+              <button style={{ background:"#F2F2F7", border:"none", borderRadius:20, padding:"8px 10px", fontSize:14, cursor:"pointer", color:"#1C1C1E" }}
                 onClick={()=>setVistaEquipo(true)}>👥</button>
             )}
             {miRolEnObra === "profesional" && (
-              <button style={{ background:"#F2F2F7", border:"none", borderRadius:20, padding:"8px 12px", fontSize:14, fontWeight:600, cursor:"pointer", color:"#1C1C1E" }}
+              <button style={{ background:"#F2F2F7", border:"none", borderRadius:20, padding:"8px 10px", fontSize:14, cursor:"pointer", color:"#1C1C1E" }}
                 onClick={()=>setVistaStats(true)}>📊</button>
             )}
             {miRolEnObra !== "operario" && (
