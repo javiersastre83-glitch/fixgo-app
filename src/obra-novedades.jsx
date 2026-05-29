@@ -214,8 +214,8 @@ export default function App({ session }) {
 
   // Rol del usuario activo en la obra actual
   const miRolEnObra = obraActual
-    ? (obraActual.equipo || []).find(m=>m.uid===usuarioActivo.id)?.rolEnObra || "operario"
-    : usuarioActivo.rolSistema;
+    ? (obraActual.equipo || []).find(m=>m.uid===usuarioActivoReal.id)?.rolEnObra || "operario"
+    : usuarioActivoReal.rolSistema;
 
   const miRolInfo = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
 
@@ -266,7 +266,7 @@ export default function App({ session }) {
         responsable:responsableFinal, sector:sectorFinal, prioridad:form.prioridad,
         fechaLimite:form.fechaLimite, resuelta:false,
         fecha:new Date().toISOString().slice(0,10),
-        comentarios:form.comentario.trim() ? [{ texto:form.comentario.trim(), autorId:usuarioActivo.id, ts:Date.now() }] : [],
+        comentarios:form.comentario.trim() ? [{ texto:form.comentario.trim(), autorId:usuarioActivoReal.id, ts:Date.now() }] : [],
       }, ...n]);
     }
     setForm(FORM_INICIAL);
@@ -279,7 +279,7 @@ export default function App({ session }) {
   const agregarComentario = (id) => {
     if (!nuevoComentario.trim()) return;
     setNovedades(n => n.map(x => x.id===id
-      ? {...x, comentarios:[...x.comentarios, { texto:nuevoComentario.trim(), autorId:usuarioActivo.id, ts:Date.now() }]}
+      ? {...x, comentarios:[...x.comentarios, { texto:nuevoComentario.trim(), autorId:usuarioActivoReal.id, ts:Date.now() }]}
       : x
     ));
     setNuevoComentario("");
@@ -352,7 +352,7 @@ export default function App({ session }) {
   const novedadesFiltradas = novedades.filter(n => {
     // Operarios solo ven sus propias novedades (según rol en esta obra)
     const matchRol = miRolEnObra==="operario"
-      ? n.responsable===usuarioActivo.especialidad
+      ? n.responsable===usuarioActivoReal.especialidad
       : true;
     const matchFiltro =
       filtro==="pendientes" ? !n.resuelta :
@@ -380,7 +380,7 @@ export default function App({ session }) {
   const detalle = novedades.find(n=>n.id===detalleId);
 
   // ── SELECTOR DE USUARIO (demo) ──
-  const rolInfo = ROLES_SISTEMA.find(r=>r.id===usuarioActivo.rolSistema);
+  const rolInfo = ROLES_SISTEMA.find(r=>r.id===usuarioActivoReal.rolSistema);
 
   const SelectorUsuario = () => (
     <div style={s.modalOverlay} onClick={()=>setMostrarCambioUsuario(false)}>
@@ -392,8 +392,8 @@ export default function App({ session }) {
           return (
             <button key={u.id} style={{
               width:"100%", display:"flex", alignItems:"center", gap:12, padding:"12px 14px",
-              borderRadius:14, border:`2px solid ${usuarioActivo.id===u.id ? u.color : "#E5E5EA"}`,
-              background: usuarioActivo.id===u.id ? u.color+"15" : "#fff",
+              borderRadius:14, border:`2px solid ${usuarioActivoReal.id===u.id ? u.color : "#E5E5EA"}`,
+              background: usuarioActivoReal.id===u.id ? u.color+"15" : "#fff",
               cursor:"pointer", marginBottom:8, textAlign:"left"
             }} onClick={()=>{ setUsuarioActivo(u); setMostrarCambioUsuario(false); }}>
               <span style={{ fontSize:28 }}>{u.avatar}</span>
@@ -404,7 +404,7 @@ export default function App({ session }) {
                   <span style={{ fontSize:12, color:"#8E8E93" }}>{u.especialidad}</span>
                 </div>
               </div>
-              {usuarioActivo.id===u.id && <span style={{ color:u.color, fontSize:18 }}>✓</span>}
+              {usuarioActivoReal.id===u.id && <span style={{ color:u.color, fontSize:18 }}>✓</span>}
             </button>
           );
         })}
@@ -505,7 +505,7 @@ export default function App({ session }) {
   // PERFIL / CONFIGURACIÓN
   // ════════════════════════════════════════
   if (vistaPerfil) {
-    const rolInfo2 = ROLES_SISTEMA.find(r=>r.id===usuarioActivo.rolSistema);
+    const rolInfo2 = ROLES_SISTEMA.find(r=>r.id===usuarioActivoReal.rolSistema);
     return (
       <div style={{...s.root, background: modoOscuro?"#1C1C1E":"#F2F2F7"}}>
         <div style={{...s.header, background: modoOscuro?"#2C2C2E":"#fff", borderBottomColor: modoOscuro?"#3A3A3C":"#E5E5EA"}}>
@@ -519,14 +519,14 @@ export default function App({ session }) {
           {/* Identidad editable */}
           <div style={{ background: modoOscuro?"#2C2C2E":"#fff", borderRadius:18, padding:"20px 16px" }}>
             <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:16 }}>
-              <div style={{ width:64, height:64, borderRadius:99, background:usuarioActivo.color+"20", border:`3px solid ${usuarioActivo.color}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, flexShrink:0, cursor:"pointer" }}>
-                {usuarioActivo.avatar}
+              <div style={{ width:64, height:64, borderRadius:99, background:usuarioActivoReal.color+"20", border:`3px solid ${usuarioActivoReal.color}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, flexShrink:0, cursor:"pointer" }}>
+                {usuarioActivoReal.avatar}
               </div>
               <div style={{ flex:1 }}>
                 <p style={{ margin:0, fontSize:20, fontWeight:800, color: modoOscuro?"#fff":"#1C1C1E" }}>{usuarioActivoReal.nombre}</p>
                 <div style={{ display:"flex", gap:6, alignItems:"center", marginTop:4 }}>
-                  {rolInfo2 && <span style={{ fontSize:11, fontWeight:700, color:usuarioActivo.color, background:usuarioActivo.color+"15", padding:"2px 8px", borderRadius:99 }}>{rolInfo2.emoji} {rolInfo2.label}</span>}
-                  <span style={{ fontSize:13, color:"#8E8E93" }}>{usuarioActivo.especialidad}</span>
+                  {rolInfo2 && <span style={{ fontSize:11, fontWeight:700, color:usuarioActivo.color, background:usuarioActivoReal.color+"15", padding:"2px 8px", borderRadius:99 }}>{rolInfo2.emoji} {rolInfo2.label}</span>}
+                  <span style={{ fontSize:13, color:"#8E8E93" }}>{usuarioActivoReal.especialidad}</span>
                 </div>
                 <p style={{ margin:"4px 0 0", fontSize:13, color:"#8E8E93" }}>javier@email.com</p>
               </div>
@@ -534,7 +534,7 @@ export default function App({ session }) {
             <p style={{ margin:"0 0 8px", fontSize:13, fontWeight:600, color:"#8E8E93" }}>Nombre</p>
             <input style={{...s.inputText, marginBottom:10, background: modoOscuro?"#3A3A3C":"#F2F2F7", color: modoOscuro?"#fff":"#1C1C1E", border:"none"}} defaultValue={usuarioActivoReal.nombre} placeholder="Tu nombre" />
             <p style={{ margin:"0 0 8px", fontSize:13, fontWeight:600, color:"#8E8E93" }}>Especialidad</p>
-            <input style={{...s.inputText, marginBottom:10, background: modoOscuro?"#3A3A3C":"#F2F2F7", color: modoOscuro?"#fff":"#1C1C1E", border:"none"}} defaultValue={usuarioActivo.especialidad} placeholder="Tu especialidad" />
+            <input style={{...s.inputText, marginBottom:10, background: modoOscuro?"#3A3A3C":"#F2F2F7", color: modoOscuro?"#fff":"#1C1C1E", border:"none"}} defaultValue={usuarioActivoReal.especialidad} placeholder="Tu especialidad" />
             <p style={{ margin:"0 0 8px", fontSize:13, fontWeight:600, color:"#8E8E93" }}>Email</p>
             <input style={{...s.inputText, background: modoOscuro?"#3A3A3C":"#F2F2F7", color: modoOscuro?"#fff":"#1C1C1E", border:"none"}} defaultValue="javier@email.com" placeholder="Tu email" />
             <button style={{...s.btnPrincipal, background:"#1C1C1E", marginTop:14}}>Guardar cambios</button>
@@ -721,7 +721,7 @@ export default function App({ session }) {
             {/* Avatar usuario activo */}
             <button style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:12, padding:"8px 12px", cursor:"pointer", display:"flex", alignItems:"center", gap:8 }}
               onClick={()=>setMostrarCambioUsuario(true)}>
-              <span style={{ fontSize:22 }}>{usuarioActivo.avatar}</span>
+              <span style={{ fontSize:22 }}>{usuarioActivoReal.avatar}</span>
               <div style={{ textAlign:"left" }}>
                 <p style={{ margin:0, fontSize:13, fontWeight:700, color:"#fff" }}>{usuarioActivoReal.nombre}</p>
                 <p style={{ margin:0, fontSize:11, color:usuarioActivo.color }}>{usuarioActivo.rol}</p>
@@ -1359,7 +1359,7 @@ export default function App({ session }) {
 
           {/* Input comentario */}
           <div style={{ display:"flex", gap:8, marginTop:8, alignItems:"center" }}>
-            <span style={{ fontSize:20 }}>{usuarioActivo.avatar}</span>
+            <span style={{ fontSize:20 }}>{usuarioActivoReal.avatar}</span>
             <input style={{...s.inputText, flex:1}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`}
               value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)}
               onKeyDown={e=>e.key==="Enter" && agregarComentario(detalle.id)} />
@@ -1518,7 +1518,7 @@ export default function App({ session }) {
           <button style={{...s.backBtn, fontSize:13, color:"#8E8E93"}} onClick={()=>setVistaRaiz("inicio")}>← Obras</button>
           <button style={{ background:"#F2F2F7", border:"none", borderRadius:20, padding:"4px 10px 4px 6px", cursor:"pointer", display:"flex", alignItems:"center", gap:6, height:32 }}
             onClick={()=>setMostrarCambioUsuario(true)}>
-            <span style={{ fontSize:16 }}>{usuarioActivo.avatar}</span>
+            <span style={{ fontSize:16 }}>{usuarioActivoReal.avatar}</span>
             <span style={{ fontSize:11, fontWeight:700, color:usuarioActivo.color }}>{miRolInfo?.label}</span>
           </button>
         </div>
