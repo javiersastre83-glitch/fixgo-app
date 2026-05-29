@@ -7,6 +7,7 @@
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    "allowJs": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
@@ -14,7 +15,9 @@
     "strict": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "checkJs": false
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/obra-novedades.jsx"]
 }
