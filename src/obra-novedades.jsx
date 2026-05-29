@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { supabase } from './supabase';
 
 const PRIORIDADES = [
   { label: "URGENTE",  color: "#FF3B30", bg: "#FF3B3015", emoji: "🔴" },
@@ -119,7 +120,8 @@ const FORM_INICIAL = {
   sector:SECTORES[0], sectorCustom:"", prioridad:1, fechaLimite:"", comentario:"",
 };
 
-export default function App() {
+export default function App({ session }) {
+  const usuarioReal = session?.user || null;
   // Usuario activo (simulado)
   const [usuarioActivo, setUsuarioActivo] = useState(USUARIOS_DEMO[0]);
   const [mostrarCambioUsuario, setMostrarCambioUsuario] = useState(false);
@@ -168,6 +170,48 @@ export default function App() {
       }).filter(Boolean)
     : [];
 
+  // Cargar obras reales desde Supabase
+  useEffect(() => {
+    if (!usuarioReal) return;
+    const cargarObras = async () => {
+      const { data, error } = await supabase
+        .from('obras')
+        .select('*')
+        .eq('propietario_id', usuarioReal.id);
+      if (data && data.length > 0) {
+        setObras(data);
+        const novsPorObra = {};
+        for (const obra of data) {
+          const { data: novs } = await supabase
+            .from('novedades')
+            .select('*, comentarios(*)')
+            .eq('obra_id', obra.id);
+          novsPorObra[obra.id] = (novs || []).map(n => ({
+            ...n,
+            fotos: n.fotos || [],
+            comentarios: (n.comentarios || []).map(c => ({
+              texto: c.texto,
+              autorId: c.autor_id,
+              ts: new Date(c.created_at).getTime()
+            }))
+          }));
+        }
+        setNovedadesPorObra(novsPorObra);
+      }
+    };
+    cargarObras();
+  }, [usuarioReal]);
+
+  // Usuario activo basado en sesión real
+  const usuarioActivoReal = usuarioReal ? {
+    id: usuarioReal.id,
+    nombre: usuarioReal.user_metadata?.full_name || usuarioReal.email?.split('@')[0] || 'Usuario',
+    rolSistema: 'profesional',
+    especialidad: 'Profesional',
+    avatar: '👷‍♂️',
+    color: '#0057FF'
+  } : usuarioActivo;
+
   // Rol del usuario activo en la obra actual
   const miRolEnObra = obraActual
     ? (obraActual.equipo || []).find(m=>m.uid===usuarioActivo.id)?.rolEnObra || "operario"
@@ -187,17 +231,44 @@ export default function App() {
 
   const quitarFoto = (idx) => setForm(f => ({ ...f, fotos:f.fotos.filter((_,i) => i!==idx) }));
 
-  const guardar = () => {
+  const guardar = async () => {
     if (!form.descripcion.trim()) return;
     const responsableFinal = form.responsable==="Otro" && form.responsableCustom.trim() ? form.responsableCustom.trim() : form.responsable;
     const sectorFinal = form.sector==="Otro" && form.sectorCustom.trim() ? form.sectorCustom.trim() : form.sector;
-    setNovedades(n => [{
-      id:Date.now(), fotos:form.fotos, descripcion:form.descripcion,
-      responsable:responsableFinal, sector:sectorFinal, prioridad:form.prioridad,
-      fechaLimite:form.fechaLimite, resuelta:false,
-      fecha:new Date().toISOString().slice(0,10),
-      comentarios:form.comentario.trim() ? [{ texto:form.comentario.trim(), autorId:usuarioActivo.id, ts:Date.now() }] : [],
-    }, ...n]);
+    
+    if (usuarioReal && obraActual?.id && typeof obraActual.id === 'string') {
+      const { data, error } = await supabase
+        .from('novedades')
+        .insert({
+          obra_id: obraActual.id,
+          descripcion: form.descripcion,
+          responsable: responsableFinal,
+          sector: sectorFinal,
+          prioridad: form.prioridad,
+          fecha_limite: form.fechaLimite || null,
+          resuelta: false,
+          fotos: form.fotos,
+          autor_id: usuarioReal.id
+        })
+        .select()
+        .single();
+      if (data) {
+        const nuevaNov = { ...data, fecha: data.created_at?.slice(0,10), comentarios: [] };
+        if (form.comentario.trim()) {
+          await supabase.from('comentarios').insert({ novedad_id: data.id, autor_id: usuarioReal.id, texto: form.comentario.trim() });
+          nuevaNov.comentarios = [{ texto: form.comentario.trim(), autorId: usuarioReal.id, ts: Date.now() }];
+        }
+        setNovedades(n => [nuevaNov, ...n]);
+      }
+    } else {
+      setNovedades(n => [{
+        id:Date.now(), fotos:form.fotos, descripcion:form.descripcion,
+        responsable:responsableFinal, sector:sectorFinal, prioridad:form.prioridad,
+        fechaLimite:form.fechaLimite, resuelta:false,
+        fecha:new Date().toISOString().slice(0,10),
+        comentarios:form.comentario.trim() ? [{ texto:form.comentario.trim(), autorId:usuarioActivo.id, ts:Date.now() }] : [],
+      }, ...n]);
+    }
     setForm(FORM_INICIAL);
     setVista("lista");
   };
@@ -452,7 +523,7 @@ export default function App() {
                 {usuarioActivo.avatar}
               </div>
               <div style={{ flex:1 }}>
-                <p style={{ margin:0, fontSize:20, fontWeight:800, color: modoOscuro?"#fff":"#1C1C1E" }}>{usuarioActivo.nombre}</p>
+                <p style={{ margin:0, fontSize:20, fontWeight:800, color: modoOscuro?"#fff":"#1C1C1E" }}>{usuarioActivoReal.nombre}</p>
                 <div style={{ display:"flex", gap:6, alignItems:"center", marginTop:4 }}>
                   {rolInfo2 && <span style={{ fontSize:11, fontWeight:700, color:usuarioActivo.color, background:usuarioActivo.color+"15", padding:"2px 8px", borderRadius:99 }}>{rolInfo2.emoji} {rolInfo2.label}</span>}
                   <span style={{ fontSize:13, color:"#8E8E93" }}>{usuarioActivo.especialidad}</span>
@@ -461,7 +532,7 @@ export default function App() {
               </div>
             </div>
             <p style={{ margin:"0 0 8px", fontSize:13, fontWeight:600, color:"#8E8E93" }}>Nombre</p>
-            <input style={{...s.inputText, marginBottom:10, background: modoOscuro?"#3A3A3C":"#F2F2F7", color: modoOscuro?"#fff":"#1C1C1E", border:"none"}} defaultValue={usuarioActivo.nombre} placeholder="Tu nombre" />
+            <input style={{...s.inputText, marginBottom:10, background: modoOscuro?"#3A3A3C":"#F2F2F7", color: modoOscuro?"#fff":"#1C1C1E", border:"none"}} defaultValue={usuarioActivoReal.nombre} placeholder="Tu nombre" />
             <p style={{ margin:"0 0 8px", fontSize:13, fontWeight:600, color:"#8E8E93" }}>Especialidad</p>
             <input style={{...s.inputText, marginBottom:10, background: modoOscuro?"#3A3A3C":"#F2F2F7", color: modoOscuro?"#fff":"#1C1C1E", border:"none"}} defaultValue={usuarioActivo.especialidad} placeholder="Tu especialidad" />
             <p style={{ margin:"0 0 8px", fontSize:13, fontWeight:600, color:"#8E8E93" }}>Email</p>
@@ -652,7 +723,7 @@ export default function App() {
               onClick={()=>setMostrarCambioUsuario(true)}>
               <span style={{ fontSize:22 }}>{usuarioActivo.avatar}</span>
               <div style={{ textAlign:"left" }}>
-                <p style={{ margin:0, fontSize:13, fontWeight:700, color:"#fff" }}>{usuarioActivo.nombre}</p>
+                <p style={{ margin:0, fontSize:13, fontWeight:700, color:"#fff" }}>{usuarioActivoReal.nombre}</p>
                 <p style={{ margin:0, fontSize:11, color:usuarioActivo.color }}>{usuarioActivo.rol}</p>
               </div>
             </button>
@@ -1289,7 +1360,7 @@ export default function App() {
           {/* Input comentario */}
           <div style={{ display:"flex", gap:8, marginTop:8, alignItems:"center" }}>
             <span style={{ fontSize:20 }}>{usuarioActivo.avatar}</span>
-            <input style={{...s.inputText, flex:1}} placeholder={`Comentar como ${usuarioActivo.nombre}...`}
+            <input style={{...s.inputText, flex:1}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`}
               value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)}
               onKeyDown={e=>e.key==="Enter" && agregarComentario(detalle.id)} />
             <button style={{ background:"#1C1C1E", color:"#fff", border:"none", borderRadius:12, padding:"0 16px", fontSize:15, cursor:"pointer", fontWeight:700, height:48 }}
