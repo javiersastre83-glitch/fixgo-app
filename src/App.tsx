@@ -250,8 +250,8 @@ export default function App({ session }) {
       <Header migas={[{label:"Inicio",onClick:irInicio},{label:"Fixgo"}]} />
       <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
         <div style={{background:"linear-gradient(135deg,#1C1C1E,#3A3A3C)",borderRadius:20,padding:"28px 20px",display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-          <div style={{width:72,height:72,borderRadius:20,background:"rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="44" height="44" viewBox="0 0 72 72" fill="none"><g transform="rotate(-12,36,38)"><path d="M14 40 C14 23 23 13 36 13 C49 13 58 23 58 40 Z" fill="white"/><rect x="10" y="40" width="52" height="7" rx="3.5" fill="white"/></g></svg>
+          <div style={{width:88,height:88,borderRadius:22,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+            <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:88,height:88,objectFit:"cover"}}/>
           </div>
           <p style={{margin:0,fontSize:28,fontWeight:900,color:"#fff",letterSpacing:-1}}>Fixgo</p>
           <p style={{margin:0,fontSize:13,color:"rgba(255,255,255,0.5)"}}>Versión 1.0.0</p>
@@ -437,8 +437,8 @@ export default function App({ session }) {
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
-                <button onClick={()=>setVistaInfoApp(true)} style={{width:44,height:44,borderRadius:13,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}>
-                  <svg width="26" height="26" viewBox="0 0 72 72" fill="none"><g transform="rotate(-12,36,38)"><path d="M14 40 C14 23 23 13 36 13 C49 13 58 23 58 40 Z" fill="white"/><rect x="10" y="40" width="52" height="7" rx="3.5" fill="white"/></g></svg>
+                <button onClick={()=>setVistaInfoApp(true)} style={{width:44,height:44,borderRadius:13,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0,padding:0,overflow:"hidden"}}>
+                  <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:44,height:44,objectFit:"cover",borderRadius:13}}/>
                 </button>
                 <p style={{margin:0,fontSize:30,fontWeight:900,color:"#fff",letterSpacing:-0.5}}>Fixgo</p>
               </div>
