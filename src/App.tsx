@@ -400,8 +400,7 @@ export default function App({ session }) {
             <div style={{textAlign:"center",padding:"60px 20px",color:"#8E8E93"}}>
               <p style={{fontSize:44,margin:0}}>✅</p>
               <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Sin urgencias</p>
-              <p style={{fontSize:14,margin:0,lineHeight:1.5}}>No hay tareas urgentes vencidas{"
-"}ni que venzan hoy</p>
+              <p style={{fontSize:14,margin:0,lineHeight:1.5}}>No hay tareas urgentes vencidas ni que venzan hoy</p>
             </div>
           )}
           {urgencias.map(u=>(
