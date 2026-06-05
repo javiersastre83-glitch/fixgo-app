@@ -59,7 +59,7 @@ const generarResumen = (nov,obraNombre) => {
 // ══════════════════════════════════════════════════════
 const NavBar = ({ tabActiva, onTab, onPerfil }) => (
   <div style={{ background:"#fff", borderTop:"1px solid #E5E5EA", display:"flex", paddingBottom:"env(safe-area-inset-bottom)", flexShrink:0 }}>
-    {[{key:"obras",icon:"🏗️",label:"Obras"},{key:"alertas",icon:"🔔",label:"Alertas"},{key:"perfil",icon:"👤",label:"Perfil"}].map(t=>(
+    {[{key:"obras",icon:"🏗️",label:"Obras"},{key:"alertas",icon:"🚨",label:"Urgencias"},{key:"perfil",icon:"👤",label:"Perfil"}].map(t=>(
       <button key={t.key} onClick={()=>t.key==="perfil"?onPerfil():onTab(t.key)}
         style={{flex:1,background:"none",border:"none",padding:"10px 4px 8px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
         <span style={{fontSize:22}}>{t.icon}</span>
@@ -353,80 +353,68 @@ export default function App({ session }) {
   // ALERTAS
   // ─────────────────────────────
   if(tabActiva==="alertas"&&vistaRaiz==="inicio"){
-    // Generar alertas dinámicas desde todas las obras
-    const alertasDinamicas = [];
+    // Solo novedades URGENTES que vencen en menos de 24hs (o ya vencidas)
+    const urgencias = [];
     obras.forEach(obra => {
       const novs = novedadesPorObra[obra.id] || [];
       novs.forEach(nov => {
         if (nov.resuelta) return;
+        if (nov.prioridad !== 0) return; // solo URGENTE
         const d = diasRestantes(nov.fechaLimite);
-        // Vencidas
-        if (d !== null && d < 0) {
-          alertasDinamicas.push({ key:`venc-${nov.id}`, tipo:"urgente",
-            texto:`Vencida hace ${Math.abs(d)}d — ${nov.descripcion}`,
-            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:0 });
-        }
-        // Vence hoy o en 3 días
-        else if (d !== null && d <= 3) {
-          alertasDinamicas.push({ key:`prox-${nov.id}`, tipo:"aviso",
-            texto: d===0 ? `Vence hoy — ${nov.descripcion}` : `Vence en ${d}d — ${nov.descripcion}`,
-            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:1 });
-        }
-        // Urgentes sin fecha
-        else if (nov.prioridad === 0) {
-          alertasDinamicas.push({ key:`urg-${nov.id}`, tipo:"urgente",
-            texto:`Urgente — ${nov.descripcion}`,
-            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:2 });
-        }
-        // Comentarios recientes (menos de 24hs)
-        const ult = nov.comentarios[nov.comentarios.length - 1];
-        if (ult && Date.now() - ult.ts < 86400000) {
-          const autor = USUARIOS_DEMO.find(u=>u.id===ult.autorId);
-          alertasDinamicas.push({ key:`com-${nov.id}`, tipo:"comentario",
-            texto:`${autor?.nombre || "Alguien"} comentó — ${nov.descripcion}`,
-            sub:`${obra.nombre} · Hace ${Math.round((Date.now()-ult.ts)/3600000)}hs`,
-            obraId:obra.id, novId:nov.id, orden:3 });
+        // Vencidas o vencen hoy (menos de 24hs)
+        if (d !== null && d <= 0) {
+          urgencias.push({
+            key: `urg-${nov.id}`,
+            texto: d < 0 ? `Vencida hace ${Math.abs(d)} dia${Math.abs(d)!==1?"s":""}` : "Vence hoy",
+            descripcion: nov.descripcion,
+            sub: `${obra.nombre} · ${nov.responsable}`,
+            obraId: obra.id,
+            novId: nov.id,
+            dias: d,
+          });
         }
       });
     });
-    alertasDinamicas.sort((a,b)=>a.orden-b.orden);
+    urgencias.sort((a,b) => a.dias - b.dias);
 
-    const irAAlerta = (alerta) => {
-      const obra = obras.find(o=>o.id===alerta.obraId);
+    const irAUrgencia = (u) => {
+      const obra = obras.find(o=>o.id===u.obraId);
       if (!obra) return;
       setObraActual(obra);
       setVistaRaiz("obra");
-      setDetalleId(alerta.novId);
+      setDetalleId(u.novId);
       setVista("detalle");
       setTabActiva("obras");
     };
 
     return(
       <div style={s.root}>
-        <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"22px 16px 16px",flexShrink:0}}>
-          <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff"}}>🔔 Alertas</p>
-          <p style={{margin:"4px 0 0",fontSize:13,color:"rgba(255,255,255,0.5)"}}>
-            {alertasDinamicas.length > 0 ? `${alertasDinamicas.length} notificaciones` : "Todo en orden"}
+        <div style={{background:"linear-gradient(135deg,#FF3B30,#C0392B)",padding:"22px 16px 16px",flexShrink:0}}>
+          <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff"}}>🚨 Urgencias</p>
+          <p style={{margin:"6px 0 0",fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.4}}>
+            Aquí solo se muestran las tareas urgentes que vencen en menos de 24hs
           </p>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
-          {alertasDinamicas.length===0&&(
+          {urgencias.length===0&&(
             <div style={{textAlign:"center",padding:"60px 20px",color:"#8E8E93"}}>
               <p style={{fontSize:44,margin:0}}>✅</p>
-              <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Todo al dia</p>
-              <p style={{fontSize:14,margin:0}}>No hay novedades urgentes ni vencidas</p>
+              <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Sin urgencias</p>
+              <p style={{fontSize:14,margin:0,lineHeight:1.5}}>No hay tareas urgentes vencidas{"
+"}ni que venzan hoy</p>
             </div>
           )}
-          {alertasDinamicas.map(a=>(
-            <button key={a.key} onClick={()=>irAAlerta(a)}
-              style={{background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",gap:12,
-                alignItems:"flex-start",borderLeft:`4px solid ${a.tipo==="urgente"?"#FF3B30":a.tipo==="comentario"?"#007AFF":"#FFB800"}`,
-                border:"none",width:"100%",textAlign:"left",cursor:"pointer",
-                outline:"none",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-              <span style={{fontSize:22,flexShrink:0}}>{a.tipo==="urgente"?"⚠️":a.tipo==="comentario"?"💬":"📅"}</span>
+          {urgencias.map(u=>(
+            <button key={u.key} onClick={()=>irAUrgencia(u)}
+              style={{background:"#fff",borderRadius:16,padding:"16px",display:"flex",gap:12,
+                alignItems:"flex-start",width:"100%",textAlign:"left",cursor:"pointer",border:"none",
+                outline:"none",boxShadow:"0 2px 12px rgba(255,59,48,0.15)",
+                borderLeft:"4px solid #FF3B30"}}>
+              <span style={{fontSize:26,flexShrink:0}}>🔴</span>
               <div style={{flex:1,minWidth:0}}>
-                <p style={{margin:0,fontSize:14,fontWeight:600,color:"#1C1C1E",lineHeight:1.4}}>{a.texto}</p>
-                <p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{a.sub}</p>
+                <span style={{display:"inline-block",background:"#FF3B3015",color:"#FF3B30",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99,marginBottom:6}}>{u.texto}</span>
+                <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.4}}>{u.descripcion}</p>
+                <p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{u.sub}</p>
               </div>
               <span style={{color:"#C7C7CC",fontSize:18,flexShrink:0,alignSelf:"center"}}>›</span>
             </button>
