@@ -353,19 +353,83 @@ export default function App({ session }) {
   // ALERTAS
   // ─────────────────────────────
   if(tabActiva==="alertas"&&vistaRaiz==="inicio"){
-    const alertas=[{id:1,texto:"Fisura en revoque lleva 3 días vencida",tipo:"urgente",tiempo:"Hace 2 horas"},{id:2,texto:"Miguel Albañil comentó en una novedad",tipo:"comentario",tiempo:"Hace 5 horas"},{id:3,texto:"Toma de corriente vence en 4 días",tipo:"aviso",tiempo:"Hace 1 día"}];
+    // Generar alertas dinámicas desde todas las obras
+    const alertasDinamicas = [];
+    obras.forEach(obra => {
+      const novs = novedadesPorObra[obra.id] || [];
+      novs.forEach(nov => {
+        if (nov.resuelta) return;
+        const d = diasRestantes(nov.fechaLimite);
+        // Vencidas
+        if (d !== null && d < 0) {
+          alertasDinamicas.push({ key:`venc-${nov.id}`, tipo:"urgente",
+            texto:`Vencida hace ${Math.abs(d)}d — ${nov.descripcion}`,
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:0 });
+        }
+        // Vence hoy o en 3 días
+        else if (d !== null && d <= 3) {
+          alertasDinamicas.push({ key:`prox-${nov.id}`, tipo:"aviso",
+            texto: d===0 ? `Vence hoy — ${nov.descripcion}` : `Vence en ${d}d — ${nov.descripcion}`,
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:1 });
+        }
+        // Urgentes sin fecha
+        else if (nov.prioridad === 0) {
+          alertasDinamicas.push({ key:`urg-${nov.id}`, tipo:"urgente",
+            texto:`Urgente — ${nov.descripcion}`,
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:2 });
+        }
+        // Comentarios recientes (menos de 24hs)
+        const ult = nov.comentarios[nov.comentarios.length - 1];
+        if (ult && Date.now() - ult.ts < 86400000) {
+          const autor = USUARIOS_DEMO.find(u=>u.id===ult.autorId);
+          alertasDinamicas.push({ key:`com-${nov.id}`, tipo:"comentario",
+            texto:`${autor?.nombre || "Alguien"} comentó — ${nov.descripcion}`,
+            sub:`${obra.nombre} · Hace ${Math.round((Date.now()-ult.ts)/3600000)}hs`,
+            obraId:obra.id, novId:nov.id, orden:3 });
+        }
+      });
+    });
+    alertasDinamicas.sort((a,b)=>a.orden-b.orden);
+
+    const irAAlerta = (alerta) => {
+      const obra = obras.find(o=>o.id===alerta.obraId);
+      if (!obra) return;
+      setObraActual(obra);
+      setVistaRaiz("obra");
+      setDetalleId(alerta.novId);
+      setVista("detalle");
+      setTabActiva("obras");
+    };
+
     return(
       <div style={s.root}>
         <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"22px 16px 16px",flexShrink:0}}>
           <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff"}}>🔔 Alertas</p>
-          <p style={{margin:"4px 0 0",fontSize:13,color:"rgba(255,255,255,0.5)"}}>{alertas.length} notificaciones</p>
+          <p style={{margin:"4px 0 0",fontSize:13,color:"rgba(255,255,255,0.5)"}}>
+            {alertasDinamicas.length > 0 ? `${alertasDinamicas.length} notificaciones` : "Todo en orden"}
+          </p>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
-          {alertas.map(a=>(
-            <div key={a.id} style={{background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",borderLeft:`4px solid ${a.tipo==="urgente"?"#FF3B30":a.tipo==="comentario"?"#007AFF":"#FFB800"}`}}>
-              <span style={{fontSize:22}}>{a.tipo==="urgente"?"⚠️":a.tipo==="comentario"?"💬":"📅"}</span>
-              <div style={{flex:1}}><p style={{margin:0,fontSize:14,fontWeight:600,color:"#1C1C1E",lineHeight:1.4}}>{a.texto}</p><p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{a.tiempo}</p></div>
+          {alertasDinamicas.length===0&&(
+            <div style={{textAlign:"center",padding:"60px 20px",color:"#8E8E93"}}>
+              <p style={{fontSize:44,margin:0}}>✅</p>
+              <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Todo al dia</p>
+              <p style={{fontSize:14,margin:0}}>No hay novedades urgentes ni vencidas</p>
             </div>
+          )}
+          {alertasDinamicas.map(a=>(
+            <button key={a.key} onClick={()=>irAAlerta(a)}
+              style={{background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",gap:12,
+                alignItems:"flex-start",borderLeft:`4px solid ${a.tipo==="urgente"?"#FF3B30":a.tipo==="comentario"?"#007AFF":"#FFB800"}`,
+                border:"none",width:"100%",textAlign:"left",cursor:"pointer",
+                outline:"none",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+              <span style={{fontSize:22,flexShrink:0}}>{a.tipo==="urgente"?"⚠️":a.tipo==="comentario"?"💬":"📅"}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <p style={{margin:0,fontSize:14,fontWeight:600,color:"#1C1C1E",lineHeight:1.4}}>{a.texto}</p>
+                <p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{a.sub}</p>
+              </div>
+              <span style={{color:"#C7C7CC",fontSize:18,flexShrink:0,alignSelf:"center"}}>›</span>
+            </button>
           ))}
         </div>
         <NavBar tabActiva="alertas" onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
@@ -747,7 +811,7 @@ export default function App({ session }) {
 }
 
 const s = {
-  root: { display:"flex", flexDirection:"column", height:"100dvh", width:"100%", background:"#F2F2F7", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflow:"hidden" },
+  root:        { display:"flex", flexDirection:"column", height:"100dvh", background:"#F2F2F7", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", maxWidth:430, margin:"0 auto", overflow:"hidden" },
   chip:        { display:"inline-flex", alignItems:"center", padding:"4px 10px", borderRadius:99, fontSize:12, fontWeight:600, whiteSpace:"nowrap" },
   label:       { fontSize:14, fontWeight:700, color:"#1C1C1E", margin:"0 0 10px" },
   input:       { width:"100%", padding:"13px 14px", borderRadius:14, border:"1.5px solid #E5E5EA", fontSize:16, outline:"none", boxSizing:"border-box", fontFamily:"inherit" },
