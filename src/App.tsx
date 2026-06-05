@@ -811,7 +811,7 @@ export default function App({ session }) {
 }
 
 const s = {
-  root:        { display:"flex", flexDirection:"column", height:"100dvh", background:"#F2F2F7", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", maxWidth:430, margin:"0 auto", overflow:"hidden" },
+  root:        { display:"flex", flexDirection:"column", height:"100dvh", width:"100%", background:"#F2F2F7", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflow:"hidden" },
   chip:        { display:"inline-flex", alignItems:"center", padding:"4px 10px", borderRadius:99, fontSize:12, fontWeight:600, whiteSpace:"nowrap" },
   label:       { fontSize:14, fontWeight:700, color:"#1C1C1E", margin:"0 0 10px" },
   input:       { width:"100%", padding:"13px 14px", borderRadius:14, border:"1.5px solid #E5E5EA", fontSize:16, outline:"none", boxSizing:"border-box", fontFamily:"inherit" },
