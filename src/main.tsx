@@ -20,7 +20,6 @@ function Root() {
   }, [])
 
   if (loading) return null
-
   return <App session={session} />
 }
 
