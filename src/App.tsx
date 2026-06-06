@@ -413,8 +413,7 @@ export default function App({ session }) {
           {alertasDinamicas.length===0&&(
             <div style={{textAlign:"center",padding:"60px 20px",color:"#8E8E93"}}>
               <p style={{fontSize:44,margin:0}}>✅</p> 
-              <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Todo al dia</p>
-              <p style={{fontSize:14,margin:0}}>No hay novedades urgentes ni vencidas</p>
+              <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Todo al dia</p>              <p style={{fontSize:14,margin:0}}>No hay novedades urgentes ni vencidas</p>
             </div>
           )}
           {alertasDinamicas.map(a=>(
