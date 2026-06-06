@@ -59,7 +59,7 @@ const generarResumen = (nov,obraNombre) => {
 // ══════════════════════════════════════════════════════
 const NavBar = ({ tabActiva, onTab, onPerfil }) => (
   <div style={{ background:"#fff", borderTop:"1px solid #E5E5EA", display:"flex", paddingBottom:"env(safe-area-inset-bottom)", flexShrink:0 }}>
-    {[{key:"obras",icon:"🏗️",label:"Obras"},{key:"alertas",icon:"🚨",label:"Urgencias"},{key:"perfil",icon:"👤",label:"Perfil"}].map(t=>(
+    {[{key:"obras",icon:"🏗️",label:"Obras"},{key:"alertas",icon:"🔔",label:"Alertas"},{key:"perfil",icon:"👤",label:"Perfil"}].map(t=>(
       <button key={t.key} onClick={()=>t.key==="perfil"?onPerfil():onTab(t.key)}
         style={{flex:1,background:"none",border:"none",padding:"10px 4px 8px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
         <span style={{fontSize:22}}>{t.icon}</span>
@@ -250,8 +250,8 @@ export default function App({ session }) {
       <Header migas={[{label:"Inicio",onClick:irInicio},{label:"Fixgo"}]} />
       <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
         <div style={{background:"linear-gradient(135deg,#1C1C1E,#3A3A3C)",borderRadius:20,padding:"28px 20px",display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-          <div style={{width:88,height:88,borderRadius:22,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
-            <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:88,height:88,objectFit:"cover"}}/>
+          <div style={{width:72,height:72,borderRadius:20,background:"rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="44" height="44" viewBox="0 0 72 72" fill="none"><g transform="rotate(-12,36,38)"><path d="M14 40 C14 23 23 13 36 13 C49 13 58 23 58 40 Z" fill="white"/><rect x="10" y="40" width="52" height="7" rx="3.5" fill="white"/></g></svg>
           </div>
           <p style={{margin:0,fontSize:28,fontWeight:900,color:"#fff",letterSpacing:-1}}>Fixgo</p>
           <p style={{margin:0,fontSize:13,color:"rgba(255,255,255,0.5)"}}>Versión 1.0.0</p>
@@ -353,67 +353,80 @@ export default function App({ session }) {
   // ALERTAS
   // ─────────────────────────────
   if(tabActiva==="alertas"&&vistaRaiz==="inicio"){
-    // Solo novedades URGENTES que vencen en menos de 24hs (o ya vencidas)
-    const urgencias = [];
+    // Generar alertas dinámicas desde todas las obras
+    const alertasDinamicas = [];
     obras.forEach(obra => {
       const novs = novedadesPorObra[obra.id] || [];
       novs.forEach(nov => {
         if (nov.resuelta) return;
-        if (nov.prioridad !== 0) return; // solo URGENTE
         const d = diasRestantes(nov.fechaLimite);
-        // Vencidas o vencen hoy (menos de 24hs)
-        if (d !== null && d <= 0) {
-          urgencias.push({
-            key: `urg-${nov.id}`,
-            texto: d < 0 ? `Vencida hace ${Math.abs(d)} dia${Math.abs(d)!==1?"s":""}` : "Vence hoy",
-            descripcion: nov.descripcion,
-            sub: `${obra.nombre} · ${nov.responsable}`,
-            obraId: obra.id,
-            novId: nov.id,
-            dias: d,
-          });
+        // Vencidas
+        if (d !== null && d < 0) {
+          alertasDinamicas.push({ key:`venc-${nov.id}`, tipo:"urgente",
+            texto:`Vencida hace ${Math.abs(d)}d — ${nov.descripcion}`,
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:0 });
+        }
+        // Vence hoy o en 3 días
+        else if (d !== null && d <= 3) {
+          alertasDinamicas.push({ key:`prox-${nov.id}`, tipo:"aviso",
+            texto: d===0 ? `Vence hoy — ${nov.descripcion}` : `Vence en ${d}d — ${nov.descripcion}`,
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:1 });
+        }
+        // Urgentes sin fecha
+        else if (nov.prioridad === 0) {
+          alertasDinamicas.push({ key:`urg-${nov.id}`, tipo:"urgente",
+            texto:`Urgente — ${nov.descripcion}`,
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:2 });
+        }
+        // Comentarios recientes (menos de 24hs)
+        const ult = nov.comentarios[nov.comentarios.length - 1];
+        if (ult && Date.now() - ult.ts < 86400000) {
+          const autor = USUARIOS_DEMO.find(u=>u.id===ult.autorId);
+          alertasDinamicas.push({ key:`com-${nov.id}`, tipo:"comentario",
+            texto:`${autor?.nombre || "Alguien"} comentó — ${nov.descripcion}`,
+            sub:`${obra.nombre} · Hace ${Math.round((Date.now()-ult.ts)/3600000)}hs`,
+            obraId:obra.id, novId:nov.id, orden:3 });
         }
       });
     });
-    urgencias.sort((a,b) => a.dias - b.dias);
+    alertasDinamicas.sort((a,b)=>a.orden-b.orden);
 
-    const irAUrgencia = (u) => {
-      const obra = obras.find(o=>o.id===u.obraId);
+    const irAAlerta = (alerta) => {
+      const obra = obras.find(o=>o.id===alerta.obraId);
       if (!obra) return;
       setObraActual(obra);
       setVistaRaiz("obra");
-      setDetalleId(u.novId);
+      setDetalleId(alerta.novId);
       setVista("detalle");
       setTabActiva("obras");
     };
 
     return(
       <div style={s.root}>
-        <div style={{background:"linear-gradient(135deg,#FF3B30,#C0392B)",padding:"22px 16px 16px",flexShrink:0}}>
-          <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff"}}>🚨 Urgencias</p>
-          <p style={{margin:"6px 0 0",fontSize:13,color:"rgba(255,255,255,0.75)",lineHeight:1.4}}>
-            Aquí solo se muestran las tareas urgentes que vencen en menos de 24hs
+        <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"22px 16px 16px",flexShrink:0}}>
+          <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff"}}>🔔 Alertas</p>
+          <p style={{margin:"4px 0 0",fontSize:13,color:"rgba(255,255,255,0.5)"}}>
+            {alertasDinamicas.length > 0 ? `${alertasDinamicas.length} notificaciones` : "Todo en orden"}
           </p>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
-          {urgencias.length===0&&(
+          {alertasDinamicas.length===0&&(
             <div style={{textAlign:"center",padding:"60px 20px",color:"#8E8E93"}}>
               <p style={{fontSize:44,margin:0}}>✅</p>
-              <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Sin urgencias</p>
-              <p style={{fontSize:14,margin:0,lineHeight:1.5}}>No hay tareas urgentes vencidas ni que venzan hoy</p>
+              <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Todo al dia</p>
+              <p style={{fontSize:14,margin:0}}>No hay novedades urgentes ni vencidas</p>
             </div>
           )}
-          {urgencias.map(u=>(
-            <button key={u.key} onClick={()=>irAUrgencia(u)}
-              style={{background:"#fff",borderRadius:16,padding:"16px",display:"flex",gap:12,
-                alignItems:"flex-start",width:"100%",textAlign:"left",cursor:"pointer",border:"none",
-                outline:"none",boxShadow:"0 2px 12px rgba(255,59,48,0.15)",
-                borderLeft:"4px solid #FF3B30"}}>
-              <span style={{fontSize:26,flexShrink:0}}>🔴</span>
+          {alertasDinamicas.map(a=>(
+            <button key={a.key} onClick={()=>irAAlerta(a)}
+              style={{background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",gap:12,
+                alignItems:"flex-start",borderLeft:`4px solid ${a.tipo==="urgente"?"#FF3B30":a.tipo==="comentario"?"#007AFF":"#FFB800"}`,
+                border:"none",width:"100%",textAlign:"left",cursor:"pointer",
+                outline:"none",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+              <span style={{fontSize:22,flexShrink:0}}>{a.tipo==="urgente"?"⚠️":a.tipo==="comentario"?"💬":"📅"}</span>
               <div style={{flex:1,minWidth:0}}>
-                <span style={{display:"inline-block",background:"#FF3B3015",color:"#FF3B30",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99,marginBottom:6}}>{u.texto}</span>
-                <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.4}}>{u.descripcion}</p>
-                <p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{u.sub}</p>
+                <p style={{margin:0,fontSize:14,fontWeight:600,color:"#1C1C1E",lineHeight:1.4}}>{a.texto}</p>
+                <p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{a.sub}</p>
               </div>
               <span style={{color:"#C7C7CC",fontSize:18,flexShrink:0,alignSelf:"center"}}>›</span>
             </button>
@@ -436,8 +449,8 @@ export default function App({ session }) {
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
-                <button onClick={()=>setVistaInfoApp(true)} style={{width:44,height:44,borderRadius:13,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0,padding:0,overflow:"hidden"}}>
-                  <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:44,height:44,objectFit:"cover",borderRadius:13}}/>
+                <button onClick={()=>setVistaInfoApp(true)} style={{width:44,height:44,borderRadius:13,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}>
+                  <svg width="26" height="26" viewBox="0 0 72 72" fill="none"><g transform="rotate(-12,36,38)"><path d="M14 40 C14 23 23 13 36 13 C49 13 58 23 58 40 Z" fill="white"/><rect x="10" y="40" width="52" height="7" rx="3.5" fill="white"/></g></svg>
                 </button>
                 <p style={{margin:0,fontSize:30,fontWeight:900,color:"#fff",letterSpacing:-0.5}}>Fixgo</p>
               </div>
@@ -773,11 +786,11 @@ export default function App({ session }) {
               onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuContextual({novId:nov.id}),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
               <div style={{display:"flex"}}>
                 <div style={{width:5,background:nov.resuelta?"#C7C7CC":pri.color,flexShrink:0}}/>
-                {nov.fotos.length>0?<img src={nov.fotos[0]} alt="" style={{width:72,height:72,objectFit:"cover",flexShrink:0}}/>:<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,color:"#C7C7CC"}}>📷</div>}
-                <div style={{padding:"10px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center",gap:4}}>
-                  <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nov.descripcion}</p>
-                  <p style={{margin:0,fontSize:12,color:"#636366"}}>👷 {nov.responsable} · 📍 {nov.sector}</p>
-                  <div style={{display:"flex",gap:5,flexWrap:"nowrap",overflow:"hidden"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11,flexShrink:0}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11,flexShrink:0}}>{badge.label}</span>}{nov.comentarios.length>0&&<span style={{...s.chip,background:"#007AFF15",color:"#007AFF",fontSize:11,flexShrink:0}}>💬 {nov.comentarios.length}</span>}</div>
+                {nov.fotos.length>0?<img src={nov.fotos[0]} alt="" style={{width:80,height:80,objectFit:"cover",flexShrink:0}}/>:<div style={{width:80,height:80,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,color:"#C7C7CC"}}>📷</div>}
+                <div style={{padding:"10px 12px",flex:1,minWidth:0}}>
+                  <p style={{margin:"0 0 4px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{nov.descripcion}</p>
+                  <p style={{margin:"0 0 6px",fontSize:12,color:"#636366"}}>👷 {nov.responsable} · 📍 {nov.sector}</p>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11}}>{badge.label}</span>}{nov.comentarios.length>0&&<span style={{...s.chip,background:"#007AFF15",color:"#007AFF",fontSize:11}}>💬 {nov.comentarios.length}</span>}</div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",paddingRight:10,color:"#C7C7CC",fontSize:18}}>›</div>
               </div>
@@ -798,7 +811,7 @@ export default function App({ session }) {
 }
 
 const s = {
-  root:        { display:"flex", flexDirection:"column", height:"100dvh", width:"100%", background:"#F2F2F7", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflow:"hidden" },
+  root:        { display:"flex", flexDirection:"column", height:"100dvh", background:"#F2F2F7", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", maxWidth:430, margin:"0 auto", overflow:"hidden" },
   chip:        { display:"inline-flex", alignItems:"center", padding:"4px 10px", borderRadius:99, fontSize:12, fontWeight:600, whiteSpace:"nowrap" },
   label:       { fontSize:14, fontWeight:700, color:"#1C1C1E", margin:"0 0 10px" },
   input:       { width:"100%", padding:"13px 14px", borderRadius:14, border:"1.5px solid #E5E5EA", fontSize:16, outline:"none", boxSizing:"border-box", fontFamily:"inherit" },
@@ -814,4 +827,5 @@ const s = {
   quitarFoto:  { position:"absolute", top:4, right:4, background:"#000000AA", color:"#fff", border:"none", borderRadius:20, width:24, height:24, fontSize:12, cursor:"pointer" },
   cardObra:    { background:"#fff", borderRadius:18, padding:"16px", border:"1.5px solid #E5E5EA", cursor:"pointer", textAlign:"left", boxShadow:"0 2px 8px #0000000A", width:"100%" },
   overlay:     { position:"fixed", inset:0, background:"#00000060", display:"flex", alignItems:"flex-end", zIndex:100 },
-  modal:       { background:"#fff", borderRadius:"20px 20px 0 
+  modal:       { background:"#fff", borderRadius:"20px 20px 0 0", padding:"24px 20px 32px", width:"100%", boxSizing:"border-box" },
+};
