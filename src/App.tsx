@@ -786,7 +786,7 @@ export default function App({ session }) {
               onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuContextual({novId:nov.id}),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
               <div style={{display:"flex"}}>
                 <div style={{width:5,background:nov.resuelta?"#C7C7CC":pri.color,flexShrink:0}}/>
-                {nov.fotos.length>0?<img src={nov.fotos[0]} alt="" style={{width:72,height:72,objectFit:"cover",flexShrink:0}}/>:<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,color:"#C7C7CC"}}>📷</div>}
+                {nov.fotos.length>0?<img src={nov.fotos[0]} alt="" style={{width:80,height:80,objectFit:"cover",flexShrink:0}}/>:<div style={{width:80,height:80,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,color:"#C7C7CC"}}>📷</div>}
                 <div style={{padding:"10px 12px",flex:1,minWidth:0}}>
 <div style={{padding:"10px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center",gap:4}}>
                   <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nov.descripcion}</p>
