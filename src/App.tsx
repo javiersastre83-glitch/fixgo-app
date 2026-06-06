@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react"; // v2
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
