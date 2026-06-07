@@ -450,7 +450,7 @@ export default function App({ session }) {
             <div>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
                 <button onClick={()=>setVistaInfoApp(true)} style={{width:44,height:44,borderRadius:13,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}>
-                  <svg width="26" height="26" viewBox="0 0 72 72" fill="none"><g transform="rotate(-12,36,38)"><path d="M14 40 C14 23 23 13 36 13 C49 13 58 23 58 40 Z" fill="white"/><rect x="10" y="40" width="52" height="7" rx="3.5" fill="white"/></g></svg>
+                   <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:44,height:44,objectFit:"cover",borderRadius:13}}/>
                 </button>
                 <p style={{margin:0,fontSize:30,fontWeight:900,color:"#fff",letterSpacing:-0.5}}>Fixgo</p>
               </div>
