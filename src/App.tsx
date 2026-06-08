@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
+import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
-  { label:"URGENTE",  color:"#FF3B30", bg:"#FF3B3015", emoji:"🔴" },
-  { label:"ATENCIÓN", color:"#FF6B00", bg:"#FF6B0015", emoji:"🟠" },
-  { label:"MENOR",    color:"#FFB800", bg:"#FFB80015", emoji:"🟡" },
+  { label:"URGENTE",  color:"#FF3B30", bg:"#FF3B3015", emoji:"🔴", Icon: AlertTriangle },
+  { label:"ATENCIÓN", color:"#FF6B00", bg:"#FF6B0015", emoji:"🟠", Icon: Clock },
+  { label:"MENOR",    color:"#FFB800", bg:"#FFB80015", emoji:"🟡", Icon: CheckCircle },
 ];
 const RESPONSABLES = ["Albañil","Electricista","Plomero","Carpintero","Pintor","Jardinero","Aire acondicionado","Aberturas","Ceramista","Otro"];
 const SECTORES     = ["General","Planta baja","Planta alta","Terraza","Jardín","Cocina","Baño PB","Baño PA","Dormitorio","Comedor","Garage","Otro"];
@@ -59,12 +60,16 @@ const generarResumen = (nov,obraNombre) => {
 // ══════════════════════════════════════════════════════
 const NavBar = ({ tabActiva, onTab, onPerfil }) => (
   <div style={{ background:"#fff", borderTop:"1px solid #E5E5EA", display:"flex", paddingBottom:"env(safe-area-inset-bottom)", flexShrink:0 }}>
-    {[{key:"obras",icon:"🏗️",label:"Obras"},{key:"alertas",icon:"🚨",label:"Urgencias"},{key:"perfil",icon:"👤",label:"Perfil"}].map(t=>(
-      <button key={t.key} onClick={()=>t.key==="perfil"?onPerfil():onTab(t.key)}
+    {[
+      {key:"obras",   Icon:Home,      label:"Obras"},
+      {key:"alertas", Icon:Zap,       label:"Urgencias"},
+      {key:"perfil",  Icon:User,      label:"Perfil"},
+    ].map(({key,Icon,label})=>(
+      <button key={key} onClick={()=>key==="perfil"?onPerfil():onTab(key)}
         style={{flex:1,background:"none",border:"none",padding:"10px 4px 8px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-        <span style={{fontSize:22}}>{t.icon}</span>
-        <span style={{fontSize:10,fontWeight:tabActiva===t.key?700:400,color:tabActiva===t.key?"#1C1C1E":"#8E8E93"}}>{t.label}</span>
-        {tabActiva===t.key&&<div style={{width:4,height:4,borderRadius:99,background:"#1C1C1E"}}/>}
+        <Icon size={22} color={tabActiva===key?"#1C1C1E":"#8E8E93"} strokeWidth={tabActiva===key?2.5:1.8}/>
+        <span style={{fontSize:10,fontWeight:tabActiva===key?700:400,color:tabActiva===key?"#1C1C1E":"#8E8E93"}}>{label}</span>
+        {tabActiva===key&&<div style={{width:4,height:4,borderRadius:99,background:"#1C1C1E"}}/>}
       </button>
     ))}
   </div>
@@ -99,7 +104,7 @@ const Header = ({ migas=[], accionDerecha=null, dark=false }) => {
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         {padre.length>0
           ? <button onClick={padre[padre.length-1].onClick}
-              style={{background:"none",border:"none",padding:0,fontSize:15,color:dark?"rgba(255,255,255,0.7)":"#007AFF",cursor:"pointer",fontWeight:500,display:"flex",alignItems:"center",gap:4}}>
+              style={{background:"none",border:"none",padding:0,fontSize:15,color:dark?"rgba(255,255,255,0.7)":"#007AFF",cursor:"pointer",fontWeight:500,display:"flex",alignItems:"center",gap:4}}><ChevronLeft size={16}/>
               ← {padre[padre.length-1].label}
             </button>
           : <div style={{width:8}}/>
@@ -450,7 +455,7 @@ export default function App({ session }) {
             <div>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
                 <button onClick={()=>setVistaInfoApp(true)} style={{width:44,height:44,borderRadius:13,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}>
-                   <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:44,height:44,objectFit:"cover",borderRadius:13}}/>
+                  <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:44,height:44,objectFit:"cover",borderRadius:13}}/>
                 </button>
                 <p style={{margin:0,fontSize:30,fontWeight:900,color:"#fff",letterSpacing:-0.5}}>Fixgo</p>
               </div>
@@ -483,7 +488,7 @@ export default function App({ session }) {
                     <p style={{margin:0,fontSize:17,fontWeight:700,color:"#1C1C1E"}}>{obra.nombre}</p>
                     <p style={{margin:"3px 0 0",fontSize:13,color:"#8E8E93"}}>📍 {obra.direccion||"Sin dirección"}</p>
                   </div>
-                  <span style={{fontSize:22,color:"#C7C7CC",marginLeft:8}}>›</span>
+                  <ChevronRight size={20} color="#C7C7CC" style={{marginLeft:8,flexShrink:0}}/>
                 </div>
                 <div style={{display:"flex",gap:4,marginBottom:10}}>
                   {equipo.map(u=><div key={u.id} title={`${u.nombre} · ${u.especialidad}`} style={{width:30,height:30,borderRadius:99,background:u.color+"20",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{u.avatar}</div>)}
@@ -499,12 +504,12 @@ export default function App({ session }) {
           })}
           <button style={{width:"100%",border:"2px dashed #C7C7CC",background:"transparent",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"20px",cursor:"pointer"}}
             onClick={()=>{if(!esVersionPro&&obras.length>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
-            <span style={{fontSize:26,color:"#C7C7CC"}}>+</span><span style={{fontSize:16,fontWeight:600,color:"#8E8E93"}}>Nueva obra</span>
+            <Plus size={24} color="#C7C7CC"/><span style={{fontSize:16,fontWeight:600,color:"#8E8E93"}}>Nueva obra</span>
           </button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
-        {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><div style={{display:"flex",gap:8,marginTop:10,alignItems:"center"}}><input style={{...s.input,flex:1}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><button style={{flexShrink:0,padding:"13px 14px",borderRadius:14,background:"#F2F2F7",border:"none",cursor:"pointer",fontSize:18}} title="Usar mi ubicación" onClick={()=>{if(!navigator.geolocation)return;navigator.geolocation.getCurrentPosition(pos=>{fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then(r=>r.json()).then(d=>{const dir=d.address;const calle=dir.road||"";const numero=dir.house_number||"";const ciudad=dir.city||dir.town||dir.village||"";setNuevaObraForm(f=>({...f,direccion:`${calle} ${numero}${ciudad?", "+ciudad:""}`.trim()}));}).catch(()=>{});},()=>{});}}>📍</button></div><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:nuevaObraForm.nombre.trim()?1:0.4}} onClick={crearObra}>Crear</button></div></div></div>}
+        {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:nuevaObraForm.nombre.trim()?1:0.4}} onClick={crearObra}>Crear</button></div></div></div>}
         {modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Crear más de 1 obra es parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
         {menuObra&&<div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p><button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminarObra(menuObra);setMenuObra(null);}}>🗑️ Eliminar obra</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuObra(null)}>Cancelar</button></div></div>}
         {confirmarEliminarObra&&<div style={s.overlay} onClick={()=>setConfirmarEliminarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta obra?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Se borrarán todas sus novedades. No se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarObra(confirmarEliminarObra)}>Sí, eliminar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarObra(null)}>Cancelar</button></div></div>}
@@ -549,7 +554,7 @@ export default function App({ session }) {
                       <p style={{margin:"0 0 5px",fontSize:12,color:"#636366"}}>📍 {nov.sector}</p>
                       <div style={{display:"flex",gap:5,flexWrap:"wrap"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11}}>{badge.label}</span>}</div>
                     </div>
-                    <div style={{display:"flex",alignItems:"center",paddingRight:10,color:"#C7C7CC",fontSize:18}}>›</div>
+                    <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
                   </div>
                 </button>
               );})}
@@ -654,7 +659,7 @@ export default function App({ session }) {
       <div style={s.root}>
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setEditando(false);setFormEdit(null);setVista("lista");}},{label:"Novedades",onClick:()=>{setEditando(false);setFormEdit(null);setVista("lista");}},{label:"Editar"}]}
           accionDerecha={<button style={{background:"none",border:"none",fontSize:15,color:"#34C759",fontWeight:700,cursor:"pointer"}} onClick={()=>guardarEdicion(detalle.id)}>Guardar</button>} />
-        <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20}}>
+        <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
           <div><p style={s.label}>📝 Descripción</p><textarea style={s.textarea} rows={3} value={formEdit.descripcion} onChange={e=>setFormEdit(f=>({...f,descripcion:e.target.value}))}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.sector===sec?"#007AFF":"#E5E5EA"}`,background:formEdit.sector===sec?"#007AFF15":"#fff",color:formEdit.sector===sec?"#007AFF":"#3A3A3C",fontWeight:formEdit.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{formEdit.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={formEdit.sectorCustom} onChange={e=>setFormEdit(f=>({...f,sectorCustom:e.target.value}))}/>}</div>
@@ -700,7 +705,7 @@ export default function App({ session }) {
             <button style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:15,cursor:"pointer",fontWeight:700,height:48}} onClick={()=>agregarComentario(detalle.id)}>→</button>
           </div>
           <div style={{display:"flex",gap:10,marginTop:20}}>
-            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1}} onClick={()=>abrirEdicion(detalle)}>✏️ Editar</button>
+            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1}} onClick={()=>abrirEdicion(detalle)}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={15}/>Editar</span></button>
             <button style={{...s.btnPrincipal,background:detalle.resuelta?"#636366":"#34C759",flex:1}} onClick={()=>{resolver(detalle.id);setVista("lista");}}>{ detalle.resuelta?"↩ Reabrir":"✅ Resolver"}</button>
           </div>
           <div style={{display:"flex",gap:10,marginTop:10}}>
@@ -725,17 +730,26 @@ export default function App({ session }) {
       <div style={s.root}>
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setForm(FORM_INICIAL);setVista("lista");}},{label:"Novedades",onClick:()=>{setForm(FORM_INICIAL);setVista("lista");}},{label:"Nueva novedad"}]}
           accionDerecha={<button style={{background:"none",border:"none",fontSize:15,color:"#007AFF",fontWeight:700,cursor:"pointer"}} onClick={guardar}>Guardar</button>} />
-        <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20}}>
+        <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
           <div><p style={s.label}>📷 Fotos <span style={{color:"#8E8E93",fontWeight:400}}>(podés agregar varias)</span></p>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotos}/>
             {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/><button style={s.quitarFoto} onClick={()=>quitarFoto(i)}>✕</button></div>)}</div>}
-            <button style={s.fotoBtn} onClick={()=>fileRef.current.click()}><span style={{fontSize:30}}>📷</span><span style={{color:"#636366",fontSize:14,marginTop:4}}>{form.fotos.length>0?"Agregar más fotos":"Tocá para sacar foto"}</span></button>
+            <button style={s.fotoBtn} onClick={()=>fileRef.current.click()}><Camera size={32} color="#636366"/><span style={{color:"#636366",fontSize:14,marginTop:4}}>{form.fotos.length>0?"Agregar más fotos":"Tocá para sacar foto"}</span></button>
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.sector===sec?"#007AFF":"#E5E5EA"}`,background:form.sector===sec?"#007AFF15":"#fff",color:form.sector===sec?"#007AFF":"#3A3A3C",fontWeight:form.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{form.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={form.sectorCustom} onChange={e=>setForm(f=>({...f,sectorCustom:e.target.value}))} autoFocus/>}</div>
           <div><p style={s.label}>👷 Responsable</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{RESPONSABLES.map(r=><button key={r} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.responsable===r?"#007AFF":"#E5E5EA"}`,background:form.responsable===r?"#007AFF15":"#fff",color:form.responsable===r?"#007AFF":"#3A3A3C",fontWeight:form.responsable===r?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,responsable:r,responsableCustom:""}))}>{r}</button>)}</div>{form.responsable==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el responsable..." value={form.responsableCustom} onChange={e=>setForm(f=>({...f,responsableCustom:e.target.value}))} autoFocus/>}</div>
-          <div><p style={s.label}>📅 Fecha límite <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input type="date" style={s.inputDate} value={form.fechaLimite} onChange={e=>setForm(f=>({...f,fechaLimite:e.target.value}))}/></div>
+          <div><p style={s.label}>📅 Fecha límite <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p>
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              {[["Hoy",0],["Mañana",1],["En 1 semana",7]].map(([lbl,dias])=>{
+                const d=new Date();d.setDate(d.getDate()+dias);
+                const iso=d.toISOString().slice(0,10);
+                return <button key={lbl} style={{flex:1,padding:"8px 4px",borderRadius:12,border:`1.5px solid ${form.fechaLimite===iso?"#1C1C1E":"#E5E5EA"}`,background:form.fechaLimite===iso?"#1C1C1E":"#fff",color:form.fechaLimite===iso?"#fff":"#636366",fontSize:13,fontWeight:form.fechaLimite===iso?700:400,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,fechaLimite:iso}))}>{lbl}</button>;
+              })}
+            </div>
+            <input type="date" style={s.inputDate} value={form.fechaLimite} onChange={e=>setForm(f=>({...f,fechaLimite:e.target.value}))}/>
+          </div>
           <div><p style={s.label}>💬 Nota inicial <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input style={s.input} placeholder="Ej: Revisar antes del jueves..." value={form.comentario} onChange={e=>setForm(f=>({...f,comentario:e.target.value}))}/></div>
           <button style={{...s.btnPrincipal,opacity:form.descripcion.trim()?1:0.4}} onClick={guardar}>Guardar novedad</button>
         </div>
@@ -753,8 +767,8 @@ export default function App({ session }) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <button style={{background:"none",border:"none",color:"rgba(255,255,255,0.7)",fontSize:15,cursor:"pointer",padding:0,fontWeight:500}} onClick={irInicio}>← Obras</button>
           <div style={{display:"flex",gap:8}}>
-            <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaEquipo(true)}>👥 Equipo</button>
-            <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaStats(true)}>📊 Stats</button>
+            <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaEquipo(true)}><span style={{display:"flex",alignItems:"center",gap:5}}><Users size={14}/>Equipo</span></button>
+            <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaStats(true)}><span style={{display:"flex",alignItems:"center",gap:5}}><BarChart2 size={14}/>Stats</span></button>
           </div>
         </div>
         <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
@@ -767,7 +781,7 @@ export default function App({ session }) {
         </div>
       </div>
       <div style={{background:"#fff",borderBottom:"1px solid #F2F2F7",padding:"12px 16px 0",flexShrink:0}}>
-        <input style={{...s.input,marginBottom:10,background:"#F2F2F7",border:"none"}} placeholder="🔍 Buscar novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
+        <input style={{...s.input,marginBottom:10,background:"#F2F2F7",border:"none"}} placeholder="Buscar novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
         <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:12}}>
           {[["todas",`Todas (${contadores.todas})`],["pendientes",`⏳ Pendientes (${contadores.pendientes})`],["vencidas",`⚠️ Vencidas (${contadores.vencidas})`],["resueltas",`✅ Resueltas (${contadores.resueltas})`]].map(([key,lbl])=>(
             <button key={key} style={{flexShrink:0,padding:"7px 14px",borderRadius:20,border:`1.5px solid ${filtro===key?"#1C1C1E":"#E5E5EA"}`,background:filtro===key?"#1C1C1E":"#fff",color:filtro===key?"#fff":"#636366",fontSize:13,fontWeight:filtro===key?700:400,cursor:"pointer"}} onClick={()=>setFiltro(key)}>{lbl}</button>
@@ -786,20 +800,20 @@ export default function App({ session }) {
               onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuContextual({novId:nov.id}),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
               <div style={{display:"flex"}}>
                 <div style={{width:5,background:nov.resuelta?"#C7C7CC":pri.color,flexShrink:0}}/>
-                {nov.fotos.length>0?<img src={nov.fotos[0]} alt="" style={{width:80,height:80,objectFit:"cover",flexShrink:0}}/>:<div style={{width:80,height:80,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,color:"#C7C7CC"}}>📷</div>}
-                <div style={{padding:"10px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center",gap:4}}>
-                  <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nov.descripcion}</p>
-                  <p style={{margin:0,fontSize:12,color:"#636366"}}>👷 {nov.responsable} · 📍 {nov.sector}</p>
-                  <div style={{display:"flex",gap:5,flexWrap:"nowrap",overflow:"hidden"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11,flexShrink:0}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11,flexShrink:0}}>{badge.label}</span>}{nov.comentarios.length>0&&<span style={{...s.chip,background:"#007AFF15",color:"#007AFF",fontSize:11,flexShrink:0}}>💬 {nov.comentarios.length}</span>}</div>
+                {nov.fotos.length>0?<img src={nov.fotos[0]} alt="" style={{width:80,height:80,objectFit:"cover",flexShrink:0}}/>:<div style={{width:80,height:80,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#C7C7CC"}}><Camera size={26}/></div>}
+                <div style={{padding:"10px 12px",flex:1,minWidth:0}}>
+                  <p style={{margin:"0 0 4px",fontSize:15,fontWeight:700,color:"#1C1C1E",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nov.descripcion}</p>
+                  <p style={{margin:"0 0 6px",fontSize:12,color:"#636366"}}>👷 {nov.responsable} · 📍 {nov.sector}</p>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11}}>{badge.label}</span>}{nov.comentarios.length>0&&<span style={{...s.chip,background:"#007AFF15",color:"#007AFF",fontSize:11}}>💬 {nov.comentarios.length}</span>}</div>
                 </div>
-                <div style={{display:"flex",alignItems:"center",paddingRight:10,color:"#C7C7CC",fontSize:18}}>›</div>
+                <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
               </div>
             </button>
           );
         })}
       </div>
       <div style={{padding:"12px 16px 0",background:"#fff",borderTop:"1px solid #F2F2F7",flexShrink:0}}>
-        <button style={{...s.btnPrincipal,marginBottom:0}} onClick={()=>setVista("nueva")}>+ Nueva novedad</button>
+        <button style={{...s.btnPrincipal,marginBottom:0}} onClick={()=>setVista("nueva")}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Plus size={18}/>Nueva novedad</span></button>
       </div>
       <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
 
