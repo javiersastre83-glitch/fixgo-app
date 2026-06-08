@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft } from "lucide-react";
+import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -308,7 +308,7 @@ export default function App({ session }) {
     return(
       <div style={{...s.root,background:modoOscuro?"#1C1C1E":"#F2F2F7"}}>
         <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderBottom:`1px solid ${modoOscuro?"#3A3A3C":"#E5E5EA"}`,padding:"14px 16px 10px",flexShrink:0}}>
-          <button onClick={()=>{setVistaPerfil(false);}} style={{background:"none",border:"none",padding:0,fontSize:15,color:"#007AFF",cursor:"pointer",fontWeight:500}}>← Volver</button>
+          <button onClick={()=>{setVistaPerfil(false);}} style={{background:"none",border:"none",padding:0,fontSize:15,color:"#007AFF",cursor:"pointer",fontWeight:500}}><span style={{display:"flex",alignItems:"center",gap:4}}><ChevronLeft size={16}/>Volver</span></button>
           <p style={{margin:"4px 0 0",fontSize:22,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>Mi perfil</p>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
@@ -341,7 +341,7 @@ export default function App({ session }) {
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden"}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
-              <span style={{fontSize:22}}>🚪</span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF6B00"}}>Cerrar sesión</p>
+              <span style={{fontSize:22}}><span style={{fontSize:22}}><ChevronRight size={22} color="#FF6B00"/></span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF6B00"}}>Cerrar sesión</p>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer"}}>
               <span style={{fontSize:22}}>🗑️</span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF3B30"}}>Eliminar cuenta</p>
@@ -486,7 +486,7 @@ export default function App({ session }) {
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                   <div style={{flex:1,textAlign:"left"}}>
                     <p style={{margin:0,fontSize:17,fontWeight:700,color:"#1C1C1E"}}>{obra.nombre}</p>
-                    <p style={{margin:"3px 0 0",fontSize:13,color:"#8E8E93"}}>📍 {obra.direccion||"Sin dirección"}</p>
+                    <p style={{margin:"3px 0 0",fontSize:13,color:"#8E8E93"}}><MapPin size={13} style={{flexShrink:0}}/> {obra.direccion||"Sin dirección"}</p>
                   </div>
                   <ChevronRight size={20} color="#C7C7CC" style={{marginLeft:8,flexShrink:0}}/>
                 </div>
@@ -509,10 +509,10 @@ export default function App({ session }) {
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
-        {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:nuevaObraForm.nombre.trim()?1:0.4}} onClick={crearObra}>Crear</button></div></div></div>}
+        {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:nuevaObraForm.nombre.trim()?1:0.4}} onClick={crearObra}><span style={{display:"flex",alignItems:"center",gap:6}}><CheckCircle size={15}/>Crear</span></button></div></div></div>}
         {modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Crear más de 1 obra es parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
-        {menuObra&&<div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p><button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminarObra(menuObra);setMenuObra(null);}}>🗑️ Eliminar obra</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuObra(null)}>Cancelar</button></div></div>}
-        {confirmarEliminarObra&&<div style={s.overlay} onClick={()=>setConfirmarEliminarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta obra?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Se borrarán todas sus novedades. No se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarObra(confirmarEliminarObra)}>Sí, eliminar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarObra(null)}>Cancelar</button></div></div>}
+        {menuObra&&<div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p><button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar obra</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuObra(null)}>Cancelar</button></div></div>}
+        {confirmarEliminarObra&&<div style={s.overlay} onClick={()=>setConfirmarEliminarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta obra?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Se borrarán todas sus novedades. No se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarObra(confirmarEliminarObra)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarObra(null)}>Cancelar</button></div></div>}
         {mostrarCambioUsuario&&<SelectorUsuario/>}
       </div>
     );
@@ -551,7 +551,7 @@ export default function App({ session }) {
                     {nov.fotos.length>0?<img src={nov.fotos[0]} alt="" style={{width:70,height:70,objectFit:"cover",flexShrink:0}}/>:<div style={{width:70,height:70,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>📷</div>}
                     <div style={{padding:"10px 12px",flex:1,minWidth:0}}>
                       <p style={{margin:"0 0 3px",fontSize:14,fontWeight:700,color:"#1C1C1E",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nov.descripcion}</p>
-                      <p style={{margin:"0 0 5px",fontSize:12,color:"#636366"}}>📍 {nov.sector}</p>
+                      <p style={{margin:"0 0 5px",fontSize:12,color:"#636366"}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {nov.sector}</p>
                       <div style={{display:"flex",gap:5,flexWrap:"wrap"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11}}>{badge.label}</span>}</div>
                     </div>
                     <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
@@ -658,14 +658,14 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setEditando(false);setFormEdit(null);setVista("lista");}},{label:"Novedades",onClick:()=>{setEditando(false);setFormEdit(null);setVista("lista");}},{label:"Editar"}]}
-          accionDerecha={<button style={{background:"none",border:"none",fontSize:15,color:"#34C759",fontWeight:700,cursor:"pointer"}} onClick={()=>guardarEdicion(detalle.id)}>Guardar</button>} />
+          accionDerecha={<button style={{background:"none",border:"none",fontSize:15,color:"#34C759",fontWeight:700,cursor:"pointer"}} onClick={()=>guardarEdicion(detalle.id)}><span style={{display:"flex",alignItems:"center",gap:4}}><CheckCircle size={15}/>Guardar</span></button>} />
         <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
           <div><p style={s.label}>📝 Descripción</p><textarea style={s.textarea} rows={3} value={formEdit.descripcion} onChange={e=>setFormEdit(f=>({...f,descripcion:e.target.value}))}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.sector===sec?"#007AFF":"#E5E5EA"}`,background:formEdit.sector===sec?"#007AFF15":"#fff",color:formEdit.sector===sec?"#007AFF":"#3A3A3C",fontWeight:formEdit.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{formEdit.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={formEdit.sectorCustom} onChange={e=>setFormEdit(f=>({...f,sectorCustom:e.target.value}))}/>}</div>
           <div><p style={s.label}>👷 Responsable</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{RESPONSABLES.map(r=><button key={r} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.responsable===r?"#007AFF":"#E5E5EA"}`,background:formEdit.responsable===r?"#007AFF15":"#fff",color:formEdit.responsable===r?"#007AFF":"#3A3A3C",fontWeight:formEdit.responsable===r?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,responsable:r,responsableCustom:""}))}>{r}</button>)}</div>{formEdit.responsable==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el responsable..." value={formEdit.responsableCustom} onChange={e=>setFormEdit(f=>({...f,responsableCustom:e.target.value}))}/>}</div>
-          <div><p style={s.label}>📅 Fecha límite <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input type="date" style={s.inputDate} value={formEdit.fechaLimite} onChange={e=>setFormEdit(f=>({...f,fechaLimite:e.target.value}))}/></div>
-          <button style={{...s.btnPrincipal,background:"#34C759",opacity:formEdit.descripcion.trim()?1:0.4}} onClick={()=>guardarEdicion(detalle.id)}>✅ Guardar cambios</button>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input type="date" style={s.inputDate} value={formEdit.fechaLimite} onChange={e=>setFormEdit(f=>({...f,fechaLimite:e.target.value}))}/></div>
+          <button style={{...s.btnPrincipal,background:"#34C759",opacity:formEdit.descripcion.trim()?1:0.4}} onClick={()=>guardarEdicion(detalle.id)}><span style={{display:"flex",alignItems:"center",gap:6}}><CheckCircle size={16}/>Guardar cambios</span></button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
       </div>
@@ -691,7 +691,7 @@ export default function App({ session }) {
           {[["👷","Responsable",detalle.responsable],["📍","Sector",detalle.sector],detalle.fechaLimite?["📅","Fecha límite",formatFecha(detalle.fechaLimite)]:null,["🗓","Cargada",formatFecha(detalle.fecha)]].filter(Boolean).map(([ic,lb,vl])=>(
             <div key={lb} style={s.infoRow}><span style={s.infoIcon}>{ic}</span><span style={s.infoLabel}>{lb}</span><span style={s.infoVal}>{vl}</span></div>
           ))}
-          <p style={{...s.label,marginTop:20}}>💬 Comentarios</p>
+          <p style={{...s.label,marginTop:20}}>Comentarios</p>
           {detalle.comentarios.length===0&&<p style={{color:"#8E8E93",fontSize:14,margin:"0 0 10px"}}>Sin comentarios aún</p>}
           {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===usuarioActivo.id;return(
             <div key={i} style={{background:esMio?"#1C1C1E":"#F2F2F7",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
@@ -702,7 +702,7 @@ export default function App({ session }) {
           <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
             <span style={{fontSize:20}}>{usuarioActivo.avatar}</span>
             <input style={{...s.input,flex:1}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`} value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
-            <button style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:15,cursor:"pointer",fontWeight:700,height:48}} onClick={()=>agregarComentario(detalle.id)}>→</button>
+            <button style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:15,cursor:"pointer",fontWeight:700,height:48}} onClick={()=>agregarComentario(detalle.id)}><Send size={16}/></button>
           </div>
           <div style={{display:"flex",gap:10,marginTop:20}}>
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1}} onClick={()=>abrirEdicion(detalle)}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={15}/>Editar</span></button>
@@ -717,7 +717,7 @@ export default function App({ session }) {
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {mostrarCambioUsuario&&<SelectorUsuario/>}
-        {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}>Sí, eliminar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
+        {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
       </div>
     );
   }
@@ -733,14 +733,14 @@ export default function App({ session }) {
         <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
           <div><p style={s.label}>📷 Fotos <span style={{color:"#8E8E93",fontWeight:400}}>(podés agregar varias)</span></p>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotos}/>
-            {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/><button style={s.quitarFoto} onClick={()=>quitarFoto(i)}>✕</button></div>)}</div>}
+            {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/><button style={s.quitarFoto} onClick={()=>quitarFoto(i)}><X size={12}/></button></div>)}</div>}
             <button style={s.fotoBtn} onClick={()=>fileRef.current.click()}><Camera size={32} color="#636366"/><span style={{color:"#636366",fontSize:14,marginTop:4}}>{form.fotos.length>0?"Agregar más fotos":"Tocá para sacar foto"}</span></button>
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.sector===sec?"#007AFF":"#E5E5EA"}`,background:form.sector===sec?"#007AFF15":"#fff",color:form.sector===sec?"#007AFF":"#3A3A3C",fontWeight:form.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{form.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={form.sectorCustom} onChange={e=>setForm(f=>({...f,sectorCustom:e.target.value}))} autoFocus/>}</div>
           <div><p style={s.label}>👷 Responsable</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{RESPONSABLES.map(r=><button key={r} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.responsable===r?"#007AFF":"#E5E5EA"}`,background:form.responsable===r?"#007AFF15":"#fff",color:form.responsable===r?"#007AFF":"#3A3A3C",fontWeight:form.responsable===r?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,responsable:r,responsableCustom:""}))}>{r}</button>)}</div>{form.responsable==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el responsable..." value={form.responsableCustom} onChange={e=>setForm(f=>({...f,responsableCustom:e.target.value}))} autoFocus/>}</div>
-          <div><p style={s.label}>📅 Fecha límite <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p>
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               {[["Hoy",0],["Mañana",1],["En 1 semana",7]].map(([lbl,dias])=>{
                 const d=new Date();d.setDate(d.getDate()+dias);
@@ -751,7 +751,7 @@ export default function App({ session }) {
             <input type="date" style={s.inputDate} value={form.fechaLimite} onChange={e=>setForm(f=>({...f,fechaLimite:e.target.value}))}/>
           </div>
           <div><p style={s.label}>💬 Nota inicial <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input style={s.input} placeholder="Ej: Revisar antes del jueves..." value={form.comentario} onChange={e=>setForm(f=>({...f,comentario:e.target.value}))}/></div>
-          <button style={{...s.btnPrincipal,opacity:form.descripcion.trim()?1:0.4}} onClick={guardar}>Guardar novedad</button>
+          <button style={{...s.btnPrincipal,opacity:form.descripcion.trim()?1:0.4}} onClick={guardar}><span style={{display:"flex",alignItems:"center",gap:6}}><CheckCircle size={16}/>Guardar novedad</span></button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
       </div>
@@ -765,14 +765,14 @@ export default function App({ session }) {
     <div style={s.root}>
       <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"16px 16px 0",flexShrink:0}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <button style={{background:"none",border:"none",color:"rgba(255,255,255,0.7)",fontSize:15,cursor:"pointer",padding:0,fontWeight:500}} onClick={irInicio}>← Obras</button>
+          <button style={{background:"none",border:"none",color:"rgba(255,255,255,0.7)",fontSize:15,cursor:"pointer",padding:0,fontWeight:500}} onClick={irInicio}><span style={{display:"flex",alignItems:"center",gap:4}}><ChevronLeft size={15}/>Obras</span></button>
           <div style={{display:"flex",gap:8}}>
             <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaEquipo(true)}><span style={{display:"flex",alignItems:"center",gap:5}}><Users size={14}/>Equipo</span></button>
             <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaStats(true)}><span style={{display:"flex",alignItems:"center",gap:5}}><BarChart2 size={14}/>Stats</span></button>
           </div>
         </div>
         <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
-        <p style={{margin:"3px 0 8px",fontSize:13,color:"rgba(255,255,255,0.5)"}}>📍 {obraActual?.direccion||"Sin dirección"}</p>
+        <p style={{margin:"3px 0 8px",fontSize:13,color:"rgba(255,255,255,0.5)"}}><MapPin size={13} style={{flexShrink:0}}/> {obraActual?.direccion||"Sin dirección"}</p>
         <div style={{display:"flex",alignItems:"center",gap:8,paddingBottom:12}}>
           <span style={{fontSize:14}}>{usuarioActivo.avatar}</span>
           <span style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>{usuarioActivoReal.nombre}</span>
@@ -781,7 +781,7 @@ export default function App({ session }) {
         </div>
       </div>
       <div style={{background:"#fff",borderBottom:"1px solid #F2F2F7",padding:"12px 16px 0",flexShrink:0}}>
-        <input style={{...s.input,marginBottom:10,background:"#F2F2F7",border:"none"}} placeholder="Buscar novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
+        <div style={{position:"relative",marginBottom:10}}><Search size={16} color="#8E8E93" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/><input style={{...s.input,background:"#F2F2F7",border:"none",paddingLeft:38}} placeholder="Buscar novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></div>
         <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:12}}>
           {[["todas",`Todas (${contadores.todas})`],["pendientes",`⏳ Pendientes (${contadores.pendientes})`],["vencidas",`⚠️ Vencidas (${contadores.vencidas})`],["resueltas",`✅ Resueltas (${contadores.resueltas})`]].map(([key,lbl])=>(
             <button key={key} style={{flexShrink:0,padding:"7px 14px",borderRadius:20,border:`1.5px solid ${filtro===key?"#1C1C1E":"#E5E5EA"}`,background:filtro===key?"#1C1C1E":"#fff",color:filtro===key?"#fff":"#636366",fontSize:13,fontWeight:filtro===key?700:400,cursor:"pointer"}} onClick={()=>setFiltro(key)}>{lbl}</button>
@@ -804,7 +804,7 @@ export default function App({ session }) {
                 <div style={{padding:"10px 12px",flex:1,minWidth:0}}>
                   <p style={{margin:"0 0 4px",fontSize:15,fontWeight:700,color:"#1C1C1E",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nov.descripcion}</p>
                   <p style={{margin:"0 0 6px",fontSize:12,color:"#636366"}}>👷 {nov.responsable} · 📍 {nov.sector}</p>
-                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11}}>{badge.label}</span>}{nov.comentarios.length>0&&<span style={{...s.chip,background:"#007AFF15",color:"#007AFF",fontSize:11}}>💬 {nov.comentarios.length}</span>}</div>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11}}>{badge.label}</span>}{nov.comentarios.length>0&&<span style={{...s.chip,background:"#007AFF15",color:"#007AFF",fontSize:11}}><MessageCircle size={11}/> {nov.comentarios.length}</span>}</div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
               </div>
@@ -817,8 +817,8 @@ export default function App({ session }) {
       </div>
       <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
 
-      {menuContextual&&<div style={s.overlay} onClick={()=>setMenuContextual(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones</p><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{resolver(menuContextual.novId);setMenuContextual(null);}}>{novedades.find(n=>n.id===menuContextual.novId)?.resuelta?"↩ Reabrir":"✅ Marcar como resuelto"}</button><button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminar(menuContextual.novId);setMenuContextual(null);}}>🗑️ Eliminar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
-      {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}>Sí, eliminar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
+      {menuContextual&&<div style={s.overlay} onClick={()=>setMenuContextual(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones</p><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{resolver(menuContextual.novId);setMenuContextual(null);}}>{novedades.find(n=>n.id===menuContextual.novId)?.resuelta?"↩ Reabrir":"✅ Marcar como resuelto"}</button><button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminar(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
+      {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
       {mostrarCambioUsuario&&<SelectorUsuario/>}
     </div>
   );
