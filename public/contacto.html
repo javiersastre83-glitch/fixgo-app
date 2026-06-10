@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contacto y Soporte – Fixgo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1C1C1E; background: #F2F2F7; }
+    header { background: #1C1C1E; padding: 32px 24px 24px; display: flex; align-items: center; gap: 14px; }
+    header img { width: 48px; height: 48px; border-radius: 12px; }
+    header h1 { color: #fff; font-size: 22px; font-weight: 800; }
+    header p { color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 2px; }
+    .container { max-width: 720px; margin: 0 auto; padding: 32px 24px 64px; }
+    .card { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+    .card h2 { font-size: 17px; font-weight: 700; color: #1C1C1E; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #F2F2F7; }
+    .card p { font-size: 15px; line-height: 1.7; color: #3A3A3C; margin-bottom: 8px; }
+    .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+    .opcion { border: 1.5px solid #E5E5EA; border-radius: 14px; padding: 20px; text-align: center; text-decoration: none; display: block; transition: border-color 0.2s; }
+    .opcion:hover { border-color: #1C1C1E; }
+    .opcion .icono { font-size: 32px; margin-bottom: 8px; }
+    .opcion h3 { font-size: 15px; font-weight: 700; color: #1C1C1E; margin-bottom: 4px; }
+    .opcion p { font-size: 13px; color: #8E8E93; margin: 0; }
+    .faq-item { padding: 16px 0; border-bottom: 1px solid #F2F2F7; }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-item h3 { font-size: 15px; font-weight: 700; color: #1C1C1E; margin-bottom: 6px; }
+    .faq-item p { font-size: 14px; color: #636366; margin: 0; line-height: 1.6; }
+    .email-box { background: #1C1C1E; border-radius: 14px; padding: 24px; text-align: center; }
+    .email-box h3 { color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+    .email-box p { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 16px; }
+    .email-box a { display: inline-block; background: #FFB800; color: #1C1C1E; font-weight: 800; font-size: 16px; padding: 14px 28px; border-radius: 14px; text-decoration: none; }
+    .tiempo { display: inline-block; background: #34C75915; color: #34C759; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 99px; margin-top: 12px; }
+    footer { text-align: center; padding: 24px; font-size: 12px; color: #8E8E93; }
+    @media (max-width: 500px) { .opciones { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://fixgo.ar/Fixgo_logo.png" alt="Fixgo"/>
+    <div>
+      <h1>Fixgo</h1>
+      <p>Gestión de obras simple</p>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="card">
+      <h2>¿En qué te podemos ayudar?</h2>
+      <div class="opciones">
+        <a href="mailto:soporte@fixgo.ar?subject=Consulta general" class="opcion">
+          <div class="icono">💬</div>
+          <h3>Consulta general</h3>
+          <p>Preguntas sobre cómo usar Fixgo</p>
+        </a>
+        <a href="mailto:soporte@fixgo.ar?subject=Reporte de problema" class="opcion">
+          <div class="icono">🐛</div>
+          <h3>Reportar un problema</h3>
+          <p>Algo no funciona como debería</p>
+        </a>
+        <a href="mailto:soporte@fixgo.ar?subject=Consulta sobre Plan Pro" class="opcion">
+          <div class="icono">✨</div>
+          <h3>Plan Pro</h3>
+          <p>Preguntas sobre suscripciones y pagos</p>
+        </a>
+        <a href="mailto:soporte@fixgo.ar?subject=Eliminar cuenta" class="opcion">
+          <div class="icono">🗑️</div>
+          <h3>Eliminar mi cuenta</h3>
+          <p>Desde Perfil → Eliminar cuenta, o escribinos</p>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq-item">
+        <h3>¿Cuántas obras puedo tener en el plan gratuito?</h3>
+        <p>El plan gratuito incluye 1 obra activa con novedades ilimitadas. Si archivás una obra podés abrir otra nueva sin costo.</p>
+      </div>
+      <div class="faq-item">
+        <h3>¿Cómo cancelo mi suscripción Pro?</h3>
+        <p>Podés cancelar en cualquier momento desde Perfil → Suscripción. Al cancelar, tu cuenta vuelve al plan gratuito al vencimiento del período actual.</p>
+      </div>
+      <div class="faq-item">
+        <h3>¿Mis fotos y datos están seguros?</h3>
+        <p>Sí. Toda la información se almacena con cifrado SSL en servidores seguros (Supabase). No compartimos tus datos con terceros con fines comerciales.</p>
+      </div>
+      <div class="faq-item">
+        <h3>¿Para qué usa Fixgo mi ubicación GPS?</h3>
+        <p>Solo cuando presionás el botón "Usar mi ubicación" al crear una nueva obra. El GPS autocompleta la dirección y no se activa en ningún otro momento ni en segundo plano.</p>
+      </div>
+      <div class="faq-item">
+        <h3>¿Necesito conexión a internet para usar Fixgo?</h3>
+        <p>Fixgo requiere conexión a internet para sincronizar datos. En futuras versiones agregaremos modo sin conexión.</p>
+      </div>
+      <div class="faq-item">
+        <h3>¿Cómo agrego miembros a mi obra?</h3>
+        <p>Desde la vista de la obra, tocá el botón "Equipo" para ver y gestionar los miembros del proyecto. La función de invitación por link estará disponible próximamente.</p>
+      </div>
+      <div class="faq-item">
+        <h3>¿Puedo exportar mis novedades en PDF?</h3>
+        <p>La exportación de informes en PDF es una función del Plan Pro. Disponible en la sección Estadísticas.</p>
+      </div>
+    </div>
+
+    <div class="email-box">
+      <h3>¿No encontrás lo que buscás?</h3>
+      <p>Escribinos directamente y te respondemos a la brevedad.</p>
+      <a href="mailto:soporte@fixgo.ar">soporte@fixgo.ar</a>
+      <br/>
+      <span class="tiempo">⏱ Respondemos en menos de 48hs hábiles</span>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Documentos legales</h2>
+      <div class="faq-item">
+        <h3><a href="/politica-privacidad.html" style="color:#007AFF;text-decoration:none;">Política de Privacidad →</a></h3>
+        <p>Cómo recopilamos y protegemos tus datos personales.</p>
+      </div>
+      <div class="faq-item">
+        <h3><a href="/terminos-condiciones.html" style="color:#007AFF;text-decoration:none;">Términos y Condiciones →</a></h3>
+        <p>Condiciones de uso de la plataforma Fixgo.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    © 2026 Fixgo · Javier Esteban Sastre · Córdoba, Argentina · <a href="mailto:soporte@fixgo.ar" style="color:#8E8E93;">soporte@fixgo.ar</a>
+  </footer>
+</body>
+</html>

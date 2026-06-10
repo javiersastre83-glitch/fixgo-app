@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Términos y Condiciones – Fixgo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1C1C1E; background: #F2F2F7; }
+    header { background: #1C1C1E; padding: 32px 24px 24px; display: flex; align-items: center; gap: 14px; }
+    header img { width: 48px; height: 48px; border-radius: 12px; }
+    header h1 { color: #fff; font-size: 22px; font-weight: 800; }
+    header p { color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 2px; }
+    .container { max-width: 720px; margin: 0 auto; padding: 32px 24px 64px; }
+    .card { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+    .card h2 { font-size: 17px; font-weight: 700; color: #1C1C1E; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #F2F2F7; }
+    .card p, .card li { font-size: 15px; line-height: 1.7; color: #3A3A3C; margin-bottom: 8px; }
+    .card ul { padding-left: 20px; }
+    .card li { margin-bottom: 6px; }
+    .alerta { background: #FF3B3010; border-left: 4px solid #FF3B30; border-radius: 8px; padding: 14px 16px; margin: 12px 0; }
+    .alerta p { color: #FF3B30; font-weight: 600; margin: 0; }
+    .planes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .plan { border: 1.5px solid #E5E5EA; border-radius: 12px; padding: 16px; text-align: center; }
+    .plan.pro { border-color: #FFB800; background: #FFB80008; }
+    .plan.empresa { border-color: #0057FF; background: #0057FF08; }
+    .plan h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .plan .precio { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+    .plan .sub { font-size: 11px; color: #8E8E93; }
+    .contacto-box { background: #1C1C1E; border-radius: 14px; padding: 20px; margin-top: 12px; }
+    .contacto-box a { color: #FFB800; font-weight: 700; text-decoration: none; }
+    .contacto-box p { color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 6px; }
+    .fecha { font-size: 13px; color: #8E8E93; margin-bottom: 24px; }
+    footer { text-align: center; padding: 24px; font-size: 12px; color: #8E8E93; }
+    @media (max-width: 500px) { .planes { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://fixgo.ar/Fixgo_logo.png" alt="Fixgo"/>
+    <div>
+      <h1>Fixgo</h1>
+      <p>Gestión de obras simple</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <p class="fecha">Última actualización: 10 de junio de 2026</p>
+
+    <div class="card">
+      <h2>1. Aceptación de los términos</h2>
+      <p>Al descargar, instalar o utilizar la aplicación Fixgo, aceptás íntegramente estos Términos y Condiciones. Si no estás de acuerdo con alguna parte, debés discontinuar el uso de la aplicación.</p>
+      <p>Fixgo es desarrollada y operada por <strong>Javier Esteban Sastre</strong>, Córdoba, Argentina.</p>
+    </div>
+
+    <div class="card">
+      <h2>2. Descripción del servicio</h2>
+      <p>Fixgo es una plataforma digital de gestión de obras que permite a profesionales de la construcción (arquitectos, ingenieros, capataces y operarios) registrar, hacer seguimiento y comunicar incidencias, avances y tareas dentro de un proyecto de obra.</p>
+      <p>Fixgo es una <strong>herramienta de gestión y comunicación</strong>. No es una empresa constructora, no ejecuta obras, no contrata personal ni garantiza resultados constructivos de ningún tipo.</p>
+    </div>
+
+    <div class="card">
+      <h2>3. Planes y precios</h2>
+      <div class="planes">
+        <div class="plan">
+          <h3>Gratuito</h3>
+          <div class="precio">$0</div>
+          <div class="sub">1 obra activa · Novedades ilimitadas</div>
+        </div>
+        <div class="plan pro">
+          <h3>Pro ✨</h3>
+          <div class="precio">USD 19</div>
+          <div class="sub">por mes · hasta 5 obras activas</div>
+        </div>
+        <div class="plan empresa">
+          <h3>Empresa</h3>
+          <div class="precio">USD 59</div>
+          <div class="sub">por mes · obras ilimitadas</div>
+        </div>
+      </div>
+      <p style="margin-top:14px;">Los planes Pro y Empresa pueden abonarse anualmente con un <strong>20% de descuento</strong>. Los precios pueden modificarse con un preaviso de 30 días a los usuarios activos.</p>
+    </div>
+
+    <div class="card">
+      <h2>4. Suscripciones y pagos</h2>
+      <ul>
+        <li>Las suscripciones se renuevan automáticamente al vencimiento del período contratado.</li>
+        <li>Podés cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta.</li>
+        <li>No se realizan reembolsos por períodos parciales ya facturados.</li>
+        <li>Los pagos realizados <strong>dentro de la aplicación Android</strong> se procesan a través de <strong>Google Play Billing</strong>, conforme a las políticas de Google Play.</li>
+        <li>Las suscripciones contratadas desde la <strong>versión web</strong> (fixgo.ar) se procesan a través de <strong>MercadoPago</strong> (mercado local) y <strong>Stripe</strong> (internacional).</li>
+        <li>En caso de falta de pago, la cuenta pasará automáticamente al Plan Gratuito. Todas las obras quedan visibles con su historial completo, pero solo 1 obra permanece activa. Las restantes quedan <strong>pausadas</strong> — no se pueden agregar ni editar novedades hasta renovar la suscripción. Ningún dato se elimina.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>5. Propiedad del contenido</h2>
+      <p>Todo el contenido que cargás en Fixgo (fotos, descripciones de novedades, comentarios, datos de obras) es de tu propiedad o de la empresa que representás.</p>
+      <p>Al usar Fixgo, nos otorgás una licencia limitada, no exclusiva y revocable para <strong>almacenar, procesar y mostrar</strong> ese contenido únicamente con el fin de prestar el servicio. No usamos tu contenido para otros fines.</p>
+    </div>
+
+    <div class="card">
+      <h2>6. Limitación de responsabilidad</h2>
+      <div class="alerta">
+        <p>⚠️ Fixgo es una herramienta de gestión. No nos hacemos responsables por la ejecución, calidad o resultado de ninguna obra de construcción.</p>
+      </div>
+      <p>Específicamente, Fixgo no asume responsabilidad por:</p>
+      <ul>
+        <li>Defectos constructivos, accidentes o daños materiales en obra.</li>
+        <li>Incumplimiento de plazos por parte de contratistas o profesionales.</li>
+        <li>Decisiones tomadas por los usuarios basadas en la información registrada en la app.</li>
+        <li>Pérdida de datos por causas de fuerza mayor, fallas de conectividad o errores del dispositivo del usuario.</li>
+        <li>Uso indebido de la plataforma por parte de terceros con acceso autorizado por el usuario.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>7. Uso correcto de la plataforma</h2>
+      <p>El usuario se compromete a no utilizar Fixgo para:</p>
+      <ul>
+        <li>Subir contenido ofensivo, discriminatorio, ilegal o ajeno a la gestión de obras.</li>
+        <li>Registrar datos personales de terceros sin su consentimiento.</li>
+        <li>Intentar acceder a datos de obras o usuarios de otros proyectos.</li>
+        <li>Realizar ingeniería inversa, copiar o distribuir el software.</li>
+        <li>Cualquier actividad que viole las leyes de la República Argentina.</li>
+      </ul>
+      <p>El incumplimiento de estas condiciones puede resultar en la suspensión inmediata de la cuenta.</p>
+    </div>
+
+    <div class="card">
+      <h2>8. Modificaciones del servicio</h2>
+      <p>Fixgo se reserva el derecho de:</p>
+      <ul>
+        <li>Modificar, agregar o eliminar funcionalidades de la aplicación.</li>
+        <li>Actualizar los precios de los planes con un preaviso de 30 días.</li>
+        <li>Suspender cuentas por mal uso o incumplimiento de estos términos.</li>
+        <li>Interrumpir el servicio temporalmente por mantenimiento o actualización.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>9. Jurisdicción y legislación aplicable</h2>
+      <p>Estos Términos y Condiciones se rigen por las leyes de la <strong>República Argentina</strong>. Cualquier controversia derivada del uso de Fixgo será sometida a los tribunales ordinarios de la ciudad de <strong>Córdoba, Argentina</strong>.</p>
+    </div>
+
+    <div class="card">
+      <h2>10. Contacto</h2>
+      <p>Para consultas sobre estos términos:</p>
+      <div class="contacto-box">
+        <p>Javier Esteban Sastre</p>
+        <p>Córdoba, Argentina</p>
+        <a href="mailto:soporte@fixgo.ar">soporte@fixgo.ar</a>
+        <p style="margin-top:8px;"><a href="https://fixgo.ar">fixgo.ar</a></p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © 2026 Fixgo · Javier Esteban Sastre · Córdoba, Argentina
+  </footer>
+</body>
+</html>
