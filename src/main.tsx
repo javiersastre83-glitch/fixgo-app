@@ -2,6 +2,7 @@ import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import Login from './Login.tsx'
 import { supabase } from './supabase'
 
 function Root() {
@@ -20,6 +21,7 @@ function Root() {
   }, [])
 
   if (loading) return null
+  if (!session) return <Login />
   return <App session={session} />
 }
 
