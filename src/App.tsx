@@ -162,9 +162,9 @@ export default function App({ session }) {
   useEffect(()=>{
     if(!usuarioReal)return;
     (async()=>{
-      const{data}=await supabase.from("obras").select("*").eq("propietario_id",usuarioReal.id);
-      if(data&&data.length>0){
-        setObras(data);
+      const{data,error}=await supabase.from("obras").select("*").eq("propietario_id",usuarioReal.id);
+   if(!error){
+     setObras(data||[]);
         const novsPorObra={};
         for(const obra of data){
           const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
@@ -203,7 +203,7 @@ export default function App({ session }) {
   const eliminar=(id)=>{setNovedades(n=>n.filter(x=>x.id!==id));setVista("lista");};
   const agregarComentario=(id)=>{if(!nuevoComentario.trim())return;setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto:nuevoComentario.trim(),autorId:usuarioActivo.id,ts:Date.now()}]}:x));setNuevoComentario("");};
   const eliminarObra=(id)=>{setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
-  const crearObra=()=>{if(!nuevaObraForm.nombre.trim())return;const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);};
+  const crearObra=async()=>{if(!nuevaObraForm.nombre.trim())return;if(usuarioReal){const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id}).select().single();if(error){alert("Error al crear la obra: "+error.message);return;}setObras(o=>[...o,data]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);};
   const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite});setEditando(true);};
   const guardarEdicion=(id)=>{if(!formEdit.descripcion.trim())return;const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite}:x));setEditando(false);setFormEdit(null);};
   const compartir=(nov)=>{const t=generarResumen(nov,obraActual?.nombre||"Obra");if(navigator.share)navigator.share({title:"Novedad",text:t}).catch(()=>{});else{navigator.clipboard?.writeText(t);setCompartidoId(nov.id);setTimeout(()=>setCompartidoId(null),2000);}};
