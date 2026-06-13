@@ -341,7 +341,7 @@ export default function App({ session }) {
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden"}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
-              <span style={{fontSize:22}}><span style={{fontSize:22}}><ChevronRight size={22} color="#FF6B00"/></span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF6B00"}}>Cerrar sesión</p>
+              <span style={{fontSize:22}}><ChevronRight size={22} color="#FF6B00"/></span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF6B00"}}>Cerrar sesión</p>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer"}}>
               <span style={{fontSize:22}}>🗑️</span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF3B30"}}>Eliminar cuenta</p>
