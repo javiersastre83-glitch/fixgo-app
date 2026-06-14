@@ -614,29 +614,49 @@ export default function App({ session }) {
   // EQUIPO
   // ─────────────────────────────
   if(vistaEquipo){
+    const obraPend=novedades.filter(n=>!n.resuelta).length;
+    const obraRes=novedades.filter(n=>n.resuelta).length;
     return(
       <div style={s.root}>
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVistaEquipo(false)},{label:"Equipo"}]} />
-        <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
-          {equipoObra.map(u=>{
-            const pend=novedades.filter(n=>n.responsable===u.especialidad&&!n.resuelta).length;
-            const res=novedades.filter(n=>n.responsable===u.especialidad&&n.resuelta).length;
-            return(
-              <button key={u.id} style={{background:"#fff",borderRadius:18,padding:"16px",border:`1.5px solid ${u.color}25`,textAlign:"left",cursor:"pointer",width:"100%"}} onClick={()=>setMiembroSel(u)}>
-                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-                  <div style={{width:50,height:50,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{u.avatar}</div>
-                  <div style={{flex:1}}><p style={{margin:0,fontWeight:700,fontSize:17,color:"#1C1C1E"}}>{u.nombre}</p>
-                    <div style={{display:"flex",gap:6,marginTop:2}}>{(()=>{const r=ROLES_SISTEMA.find(r=>r.id===u.rolEnObra);return r?<span style={{fontSize:11,fontWeight:700,color:u.color,background:u.color+"15",padding:"2px 8px",borderRadius:99}}>{r.emoji} {r.label}</span>:null;})()}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
+        <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
+          <div>
+            <p style={{margin:"0 0 8px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resumen de la obra</p>
+            <div style={{display:"flex",gap:8}}>
+              {[["#FF6B00",obraPend,"Pendientes"],["#34C759",obraRes,"Resueltas"],["#1C1C1E",novedades.length,"Total"]].map(([col,val,lbl])=>(
+                <div key={lbl} style={{flex:1,background:"#fff",borderRadius:14,padding:"14px 8px",textAlign:"center"}}><p style={{margin:0,fontSize:26,fontWeight:800,color:col}}>{val}</p><p style={{margin:0,fontSize:11,color:"#8E8E93"}}>{lbl}</p></div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p style={{margin:"0 0 8px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Integrantes ({equipoObra.length})</p>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {equipoObra.map(u=>{
+                const esProf=u.rolEnObra==="profesional";
+                const pend=esProf?obraPend:novedades.filter(n=>n.responsable===u.especialidad&&!n.resuelta).length;
+                const res=esProf?obraRes:novedades.filter(n=>n.responsable===u.especialidad&&n.resuelta).length;
+                const r=ROLES_SISTEMA.find(r=>r.id===u.rolEnObra);
+                return(
+                  <div key={u.id} style={{background:"#fff",borderRadius:18,padding:"16px",border:`1.5px solid ${u.color}25`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+                      <div style={{width:50,height:50,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{u.avatar}</div>
+                      <div style={{flex:1}}><p style={{margin:0,fontWeight:700,fontSize:17,color:"#1C1C1E"}}>{u.nombre}</p>
+                        <div style={{display:"flex",gap:6,marginTop:2,alignItems:"center"}}>{r&&<span style={{fontSize:11,fontWeight:700,color:u.color,background:u.color+"15",padding:"2px 8px",borderRadius:99}}>{r.emoji} {r.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
+                      </div>
+                      {u.uid===miId&&<span style={{...s.chip,background:"#1C1C1E",color:"#fff",fontSize:11}}>Vos</span>}
+                    </div>
+                    <div style={{display:"flex",gap:8}}>
+                      <button style={{flex:1,background:"#F2F2F7",borderRadius:12,padding:"14px 10px",textAlign:"center",border:"none",cursor:"pointer"}} onClick={()=>setMiembroSel(u)}><p style={{margin:0,fontSize:22,fontWeight:800,color:"#FF6B00"}}>{pend}</p><p style={{margin:0,fontSize:12,color:"#8E8E93"}}>Pendientes</p></button>
+                      <button style={{flex:1,background:"#F2F2F7",borderRadius:12,padding:"14px 10px",textAlign:"center",border:"none",cursor:"pointer"}} onClick={()=>setMiembroSel(u)}><p style={{margin:0,fontSize:22,fontWeight:800,color:"#34C759"}}>{res}</p><p style={{margin:0,fontSize:12,color:"#8E8E93"}}>Resueltas</p></button>
+                    </div>
                   </div>
-                  {u.id===usuarioActivo.id?<span style={{...s.chip,background:"#1C1C1E",color:"#fff",fontSize:11}}>Vos</span>:<span style={{color:"#C7C7CC",fontSize:18}}>›</span>}
-                </div>
-                <div style={{display:"flex",gap:8}}>
-                  <div style={{flex:1,background:"#F2F2F7",borderRadius:12,padding:"10px",textAlign:"center"}}><p style={{margin:0,fontSize:20,fontWeight:800,color:"#FF6B00"}}>{pend}</p><p style={{margin:0,fontSize:11,color:"#8E8E93"}}>Pendientes</p></div>
-                  <div style={{flex:1,background:"#F2F2F7",borderRadius:12,padding:"10px",textAlign:"center"}}><p style={{margin:0,fontSize:20,fontWeight:800,color:"#34C759"}}>{res}</p><p style={{margin:0,fontSize:11,color:"#8E8E93"}}>Resueltas</p></div>
-                </div>
-              </button>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
+          <button style={{width:"100%",border:"2px dashed #C7C7CC",background:"transparent",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}} onClick={()=>{}}>
+            <Plus size={22} color="#8E8E93"/><span style={{fontSize:16,fontWeight:600,color:"#8E8E93"}}>Invitar integrante</span>
+          </button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
       </div>
