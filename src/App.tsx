@@ -564,7 +564,8 @@ export default function App({ session }) {
   // ─────────────────────────────
   if(vistaEquipo&&miembroSel){
     const u=miembroSel;
-    const tareasU=novedades.filter(n=>n.responsable===u.especialidad);
+    const esProfesional=u.rolEnObra==="profesional";
+    const tareasU=esProfesional?novedades:novedades.filter(n=>n.responsable===u.especialidad);
     const pend=tareasU.filter(n=>!n.resuelta);
     const res=tareasU.filter(n=>n.resuelta);
     const rolU=ROLES_SISTEMA.find(r=>r.id===u.rolEnObra);
@@ -576,6 +577,7 @@ export default function App({ session }) {
             <div style={{width:56,height:56,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>{u.avatar}</div>
             <div style={{flex:1}}><p style={{margin:0,fontWeight:800,fontSize:18,color:"#1C1C1E"}}>{u.nombre}</p>
               <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:u.color,background:u.color+"15",padding:"2px 8px",borderRadius:99}}>{rolU.emoji} {rolU.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
+              <p style={{margin:"6px 0 0",fontSize:12,color:"#8E8E93"}}>{esProfesional?"Resumen general de la obra":"Tareas asignadas a "+u.especialidad}</p>
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
@@ -601,7 +603,7 @@ export default function App({ session }) {
               );})}
             </div>
           ))}
-          {tareasU.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:"#8E8E93"}}><p style={{fontSize:40,margin:0}}>🎉</p><p style={{fontSize:16,fontWeight:600,margin:"10px 0 4px"}}>Sin tareas asignadas</p></div>}
+          {tareasU.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:"#8E8E93"}}><p style={{fontSize:40,margin:0}}>🎉</p><p style={{fontSize:16,fontWeight:600,margin:"10px 0 4px"}}>{esProfesional?"La obra no tiene novedades":"Sin tareas asignadas"}</p></div>}
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
       </div>
