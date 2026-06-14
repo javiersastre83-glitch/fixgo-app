@@ -12,26 +12,22 @@ export default function Login() {
 
   return (
     <div style={{
-      minHeight:'100vh', background:'linear-gradient(135deg,#1C1C1E,#2C2C2E)',
+      minHeight:'100vh', background:'#fff',
       display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
       fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'20px'
     }}>
-      <div style={{ width:72, height:72, borderRadius:20, background:'rgba(255,255,255,0.12)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16 }}>
-        <svg width="44" height="44" viewBox="0 0 72 72" fill="none">
-          <g transform="rotate(-12, 36, 38)">
-            <path d="M14 40 C14 23 23 13 36 13 C49 13 58 23 58 40 Z" fill="white"/>
-            <rect x="10" y="40" width="52" height="7" rx="3.5" fill="white"/>
-          </g>
-        </svg>
-      </div>
-      <p style={{ margin:'0 0 8px', fontSize:32, fontWeight:900, color:'#fff', letterSpacing:-1 }}>Fixgo</p>
-      <p style={{ margin:'0 0 48px', fontSize:15, color:'rgba(255,255,255,0.5)', textAlign:'center' }}>
+      <img src="/Fixgo_logo.png" alt="Fixgo" style={{
+        width:96, height:96, borderRadius:22, marginBottom:16,
+        boxShadow:'0 8px 24px rgba(0,0,0,0.18)'
+      }}/>
+      <p style={{ margin:'0 0 8px', fontSize:32, fontWeight:900, color:'#1C1C1E', letterSpacing:-1 }}>Fixgo</p>
+      <p style={{ margin:'0 0 48px', fontSize:15, color:'#8E8E93', textAlign:'center' }}>
         Resolvé los pendientes de obra{'\n'}con tu equipo, en tiempo real
       </p>
       <div style={{ width:'100%', maxWidth:320, display:'flex', flexDirection:'column', gap:12 }}>
         <button onClick={handleGoogle} style={{
           width:'100%', padding:'14px', borderRadius:14, border:'none',
-          background:'#fff', color:'#1C1C1E', fontSize:15, fontWeight:700,
+          background:'#1C1C1E', color:'#fff', fontSize:15, fontWeight:700,
           cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:10
         }}>
           <svg width="20" height="20" viewBox="0 0 24 24">
@@ -43,13 +39,13 @@ export default function Login() {
           Continuar con Google
         </button>
         <button style={{
-          width:'100%', padding:'14px', borderRadius:14, border:'none',
-          background:'rgba(255,255,255,0.1)', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer'
+          width:'100%', padding:'14px', borderRadius:14, border:'1.5px solid #E5E5EA',
+          background:'#F2F2F7', color:'#1C1C1E', fontSize:15, fontWeight:700, cursor:'pointer'
         }}>
           ✉️ Continuar con email
         </button>
       </div>
-      <p style={{ margin:'32px 0 0', fontSize:12, color:'rgba(255,255,255,0.3)', textAlign:'center' }}>
+      <p style={{ margin:'32px 0 0', fontSize:12, color:'#C7C7CC', textAlign:'center' }}>
         Al continuar aceptás los Términos de uso{'\n'}y la Política de privacidad
       </p>
     </div>
