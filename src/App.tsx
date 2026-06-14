@@ -129,6 +129,7 @@ export default function App({ session }) {
   const [form,             setForm]             = useState(FORM_INICIAL);
   const [detalleId,        setDetalleId]        = useState(null);
   const [filtro,           setFiltro]           = useState("todas");
+  const [filtroResp,       setFiltroResp]       = useState("todos");
   const [busqueda,         setBusqueda]         = useState("");
   const [nuevoComentario,  setNuevoComentario]  = useState("");
   const [modalNuevaObra,   setModalNuevaObra]   = useState(false);
@@ -241,17 +242,20 @@ export default function App({ session }) {
 
   const novedadesFiltradas=novedades.filter(n=>{
     const matchRol=true;
+    const matchResp=filtroResp==="todos"||n.responsable===filtroResp;
     const matchFiltro=filtro==="pendientes"?!n.resuelta:filtro==="resueltas"?n.resuelta:filtro==="vencidas"?!n.resuelta&&diasRestantes(n.fechaLimite)<0:true;
     const matchBusqueda=busqueda.trim()===""||n.descripcion.toLowerCase().includes(busqueda.toLowerCase())||n.responsable.toLowerCase().includes(busqueda.toLowerCase())||n.sector.toLowerCase().includes(busqueda.toLowerCase());
-    return matchRol&&matchFiltro&&matchBusqueda;
+    return matchRol&&matchResp&&matchFiltro&&matchBusqueda;
   }).sort((a,b)=>{if(a.resuelta!==b.resuelta)return a.resuelta?1:-1;const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);if(da!==null&&db!==null)return da-db;return a.prioridad-b.prioridad;});
+
+  const respConTareas=[...new Set(novedades.map(n=>n.responsable))].map(r=>({nombre:r,cant:novedades.filter(n=>n.responsable===r).length})).sort((a,b)=>b.cant-a.cant);
 
   const contadores={todas:novedades.length,pendientes:novedades.filter(n=>!n.resuelta).length,resueltas:novedades.filter(n=>n.resuelta).length,vencidas:novedades.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length};
   const detalle=novedades.find(n=>n.id===detalleId);
 
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);};
-  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);};
+  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);};
 
   const SelectorUsuario=()=>(
     <div style={s.overlay} onClick={()=>setMostrarCambioUsuario(false)}>
@@ -816,6 +820,12 @@ export default function App({ session }) {
             <button key={key} style={{flexShrink:0,padding:"7px 14px",borderRadius:20,border:`1.5px solid ${filtro===key?"#1C1C1E":"#E5E5EA"}`,background:filtro===key?"#1C1C1E":"#fff",color:filtro===key?"#fff":"#636366",fontSize:13,fontWeight:filtro===key?700:400,cursor:"pointer"}} onClick={()=>setFiltro(key)}>{lbl}</button>
           ))}
         </div>
+        {respConTareas.length>1&&<div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:12,borderTop:"1px solid #F2F2F7",paddingTop:10}}>
+          <button style={{flexShrink:0,padding:"7px 14px",borderRadius:20,border:`1.5px solid ${filtroResp==="todos"?"#0057FF":"#E5E5EA"}`,background:filtroResp==="todos"?"#0057FF":"#fff",color:filtroResp==="todos"?"#fff":"#636366",fontSize:13,fontWeight:filtroResp==="todos"?700:400,cursor:"pointer"}} onClick={()=>setFiltroResp("todos")}>👥 Todos</button>
+          {respConTareas.map(r=>(
+            <button key={r.nombre} style={{flexShrink:0,padding:"7px 14px",borderRadius:20,border:`1.5px solid ${filtroResp===r.nombre?"#0057FF":"#E5E5EA"}`,background:filtroResp===r.nombre?"#0057FF":"#fff",color:filtroResp===r.nombre?"#fff":"#636366",fontSize:13,fontWeight:filtroResp===r.nombre?700:400,cursor:"pointer"}} onClick={()=>setFiltroResp(r.nombre)}>{r.nombre} ({r.cant})</button>
+          ))}
+        </div>}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
         {novedadesFiltradas.length===0&&<div style={{textAlign:"center",padding:"60px 20px",color:"#8E8E93"}}><p style={{fontSize:44,margin:0}}>{filtro==="resueltas"?"🎉":"📋"}</p><p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>{filtro==="resueltas"?"No hay resueltas aún":filtro==="vencidas"?"No hay vencidas 🙌":busqueda?"Sin resultados":"Sin novedades"}</p>{filtro==="todas"&&!busqueda&&<p style={{fontSize:14,margin:0}}>Tocá + para cargar la primera novedad</p>}</div>}
