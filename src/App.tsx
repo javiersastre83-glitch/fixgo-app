@@ -133,6 +133,11 @@ export default function App({ session }) {
   const [busqueda,         setBusqueda]         = useState("");
   const [nuevoComentario,  setNuevoComentario]  = useState("");
   const [modalNuevaObra,   setModalNuevaObra]   = useState(false);
+  const [modalInvitar,     setModalInvitar]     = useState(false);
+  const [invitarRol,       setInvitarRol]       = useState("operario");
+  const [invitarEsp,       setInvitarEsp]       = useState(RESPONSABLES[0]);
+  const [linkGenerado,     setLinkGenerado]     = useState("");
+  const [generandoLink,    setGenerandoLink]    = useState(false);
   const [nuevaObraForm,    setNuevaObraForm]    = useState({nombre:"",direccion:""});
   const [vistaStats,       setVistaStats]       = useState(false);
   const [vistaEquipo,      setVistaEquipo]      = useState(false);
@@ -242,6 +247,20 @@ export default function App({ session }) {
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").delete().eq("obra_id",id);await supabase.from("obras").delete().eq("id",id);}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
   const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
   const crearObra=async()=>{if(!nuevaObraForm.nombre.trim()||guardando)return;setGuardando(true);if(usuarioReal){const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id}).select().single();if(error){alert("Error al crear la obra: "+error.message);setGuardando(false);return;}await supabase.from("equipo_obra").insert({obra_id:data.id,usuario_id:usuarioReal.id,rol_en_obra:"profesional"});const obraConEquipo={...data,equipo:[{uid:usuarioReal.id,rolEnObra:"profesional",nombre:usuarioActivoReal.nombre,especialidad:"Profesional",avatar:"👷‍♂️"}]};setObras(o=>[...o,obraConEquipo]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);setGuardando(false);mostrarToast("Obra creada con éxito");};
+
+  const abrirModalInvitar=()=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setLinkGenerado("");setModalInvitar(true);};
+  const generarInvitacion=async()=>{
+    if(!usuarioReal||!obraActual?.id||generandoLink)return;
+    setGenerandoLink(true);
+    const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
+    const esp=invitarRol==="operario"?invitarEsp:null;
+    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id});
+    if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
+    setLinkGenerado(`https://fixgo.ar/?invitacion=${codigo}`);
+    setGenerandoLink(false);
+  };
+  const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":`Operario (${invitarEsp})`;const msg=`Te invito a sumarte a la obra "${obraActual?.nombre}" en Fixgo como ${rolTxt}.\n\nAbrí este link para unirte:\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
+  const copiarLink=()=>{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};
   const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite});setEditando(true);};
   const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite}:x));setEditando(false);setFormEdit(null);};
   const compartir=(nov)=>{const t=generarResumen(nov,obraActual?.nombre||"Obra");if(navigator.share)navigator.share({title:"Novedad",text:t}).catch(()=>{});else{navigator.clipboard?.writeText(t);setCompartidoId(nov.id);setTimeout(()=>setCompartidoId(null),2000);}};
@@ -654,11 +673,38 @@ export default function App({ session }) {
               })}
             </div>
           </div>
-          <button style={{width:"100%",border:"2px dashed #C7C7CC",background:"transparent",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}} onClick={()=>{}}>
+          <button style={{width:"100%",border:"2px dashed #C7C7CC",background:"transparent",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}} onClick={abrirModalInvitar}>
             <Plus size={22} color="#8E8E93"/><span style={{fontSize:16,fontWeight:600,color:"#8E8E93"}}>Invitar integrante</span>
           </button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
+        {modalInvitar&&<div style={s.overlay} onClick={()=>setModalInvitar(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+          <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
+          <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Generá un link para sumar a alguien a "{obraActual?.nombre}"</p>
+          {!linkGenerado?<>
+            <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Rol</p>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              {[["operario","🔨 Operario"],["capataz","🦺 Capataz"]].map(([val,lbl])=>(
+                <button key={val} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol===val?"#0057FF":"#E5E5EA"}`,background:invitarRol===val?"#0057FF15":"#fff",color:invitarRol===val?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol===val?700:400,cursor:"pointer"}} onClick={()=>setInvitarRol(val)}>{lbl}</button>
+              ))}
+            </div>
+            {invitarRol==="operario"&&<><p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Especialidad (gremio)</p>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:16}}>
+              {RESPONSABLES.filter(r=>r!=="Otro").map(r=>(
+                <button key={r} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${invitarEsp===r?"#0057FF":"#E5E5EA"}`,background:invitarEsp===r?"#0057FF15":"#fff",color:invitarEsp===r?"#0057FF":"#3A3A3C",fontWeight:invitarEsp===r?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setInvitarEsp(r)}>{r}</button>
+              ))}
+            </div></>}
+            <button style={{...s.btnPrincipal,background:"#1C1C1E",opacity:generandoLink?0.5:1}} disabled={generandoLink} onClick={generarInvitacion}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{generandoLink?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Generando...</>:"Generar link de invitación"}</span></button>
+          </>:<>
+            <div style={{background:"#34C75915",borderRadius:14,padding:"14px",marginBottom:16,textAlign:"center"}}>
+              <p style={{margin:"0 0 6px",fontSize:14,fontWeight:700,color:"#34C759"}}>✅ Link generado</p>
+              <p style={{margin:0,fontSize:12,color:"#636366",wordBreak:"break-all"}}>{linkGenerado}</p>
+            </div>
+            <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={compartirLinkWhatsapp}>Compartir por WhatsApp</button>
+            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={copiarLink}>Copiar link</button>
+            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalInvitar(false)}>Cerrar</button>
+          </>}
+        </div></div>}
       </div>
     );
   }
