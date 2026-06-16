@@ -216,6 +216,37 @@ export default function App({ session }) {
     })();
   },[usuarioReal]);
 
+  // ── ETAPA 4: detectar el link de invitación al abrir la app ──
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const codigo=params.get("invitacion");
+    if(codigo){
+      sessionStorage.setItem("fixgo_invitacion",codigo);
+    }
+  },[]);
+
+  // ── ETAPA 4: usar el link una vez que la persona inició sesión ──
+  useEffect(()=>{
+    if(!usuarioReal)return;
+    const codigo=sessionStorage.getItem("fixgo_invitacion");
+    if(!codigo)return;
+    (async()=>{
+      const{data,error}=await supabase.rpc("usar_invitacion",{codigo_input:codigo});
+      sessionStorage.removeItem("fixgo_invitacion");
+      if(error){console.error("Error al usar invitación:",error);return;}
+      if(data?.ok){
+        setToast("¡Te uniste a la obra!");
+        setTimeout(()=>window.location.replace("https://fixgo.ar/"),1500);
+      }else if(data?.motivo==="ya_usada"){
+        setToast("Este link de invitación ya fue usado");
+        setTimeout(()=>setToast(""),2500);
+      }else if(data?.motivo==="no_existe"){
+        setToast("El link de invitación no es válido");
+        setTimeout(()=>setToast(""),2500);
+      }
+    })();
+  },[usuarioReal]);
+
   useEffect(()=>{
     setPerfilForm({nombre:usuarioActivoReal.nombre,especialidad:usuarioActivo.especialidad,email:usuarioReal?.email||"demo@fixgo.app"});
   },[usuarioActivo.id,usuarioReal?.id]);
