@@ -315,9 +315,7 @@ export default function App({ session }) {
       <Header migas={[{label:"Inicio",onClick:irInicio},{label:"Fixgo"}]} />
       <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
         <div style={{background:"linear-gradient(135deg,#1C1C1E,#3A3A3C)",borderRadius:20,padding:"28px 20px",display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-          <div style={{width:72,height:72,borderRadius:20,background:"rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="44" height="44" viewBox="0 0 72 72" fill="none"><g transform="rotate(-12,36,38)"><path d="M14 40 C14 23 23 13 36 13 C49 13 58 23 58 40 Z" fill="white"/><rect x="10" y="40" width="52" height="7" rx="3.5" fill="white"/></g></svg>
-          </div>
+          <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:72,height:72,borderRadius:18,boxShadow:"0 6px 18px rgba(0,0,0,0.3)"}}/>
           <p style={{margin:0,fontSize:28,fontWeight:900,color:"#fff",letterSpacing:-1}}>Fixgo</p>
           <p style={{margin:0,fontSize:13,color:"rgba(255,255,255,0.5)"}}>Versión 1.0.0</p>
         </div>
