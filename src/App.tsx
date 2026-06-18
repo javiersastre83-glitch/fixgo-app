@@ -221,18 +221,18 @@ export default function App({ session }) {
     const params=new URLSearchParams(window.location.search);
     const codigo=params.get("invitacion");
     if(codigo){
-      sessionStorage.setItem("fixgo_invitacion",codigo);
+      localStorage.setItem("fixgo_invitacion",codigo);
     }
   },[]);
 
   // ── ETAPA 4: usar el link una vez que la persona inició sesión ──
   useEffect(()=>{
     if(!usuarioReal)return;
-    const codigo=sessionStorage.getItem("fixgo_invitacion");
+    const codigo=localStorage.getItem("fixgo_invitacion");
     if(!codigo)return;
     (async()=>{
       const{data,error}=await supabase.rpc("usar_invitacion",{codigo_input:codigo});
-      sessionStorage.removeItem("fixgo_invitacion");
+      localStorage.removeItem("fixgo_invitacion");
       if(error){console.error("Error al usar invitación:",error);return;}
       if(data?.ok){
         setToast("¡Te uniste a la obra!");
