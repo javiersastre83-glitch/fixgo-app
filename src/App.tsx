@@ -197,7 +197,22 @@ export default function App({ session }) {
   useEffect(()=>{
     if(!usuarioReal)return;
     (async()=>{
-      const{data,error}=await supabase.from("obras").select("*").eq("propietario_id",usuarioReal.id);
+      // Obras propias (donde es dueño)
+      const{data:obrasPropias}=await supabase.from("obras").select("*").eq("propietario_id",usuarioReal.id);
+      // Obras donde fue invitado (figura en equipo_obra)
+      const{data:miembrosDe}=await supabase.from("equipo_obra").select("obra_id").eq("usuario_id",usuarioReal.id);
+      const idsMiembro=(miembrosDe||[]).map(m=>m.obra_id);
+      let obrasInvitado=[];
+      if(idsMiembro.length>0){
+        const{data:oi}=await supabase.from("obras").select("*").in("id",idsMiembro);
+        obrasInvitado=oi||[];
+      }
+      // Juntar las dos listas SIN duplicar (por si es dueño Y miembro de la misma)
+      const mapaObras={};
+      for(const o of (obrasPropias||[])) mapaObras[o.id]=o;
+      for(const o of obrasInvitado) mapaObras[o.id]=o;
+      const data=Object.values(mapaObras);
+      const error=null;
    if(!error){
      const obrasConEquipo=[];
      for(const obra of (data||[])){
