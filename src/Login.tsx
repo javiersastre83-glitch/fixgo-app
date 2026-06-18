@@ -2,6 +2,16 @@ import { supabase } from './supabase'
 
 export default function Login() {
   const handleGoogle = async () => {
+    // ── ETAPA 4: guardar el código de invitación ANTES de ir a Google ──
+    // En este momento la URL todavía tiene el ?invitacion=CODIGO.
+    // Lo guardamos en localStorage para que sobreviva el viaje al login de Google,
+    // que devuelve a fixgo.ar con la URL cambiada a ?code=... (sin el invitacion).
+    const params = new URLSearchParams(window.location.search)
+    const codigo = params.get('invitacion')
+    if (codigo) {
+      localStorage.setItem('fixgo_invitacion', codigo)
+    }
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
