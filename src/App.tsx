@@ -236,7 +236,7 @@ export default function App({ session }) {
       if(error){console.error("Error al usar invitación:",error);return;}
       if(data?.ok){
         setToast("¡Te uniste a la obra!");
-        setTimeout(()=>window.location.replace("https://fixgo.ar/"),1500);
+        setTimeout(()=>window.location.replace("https://www.fixgo.ar/"),1500);
       }else if(data?.motivo==="ya_usada"){
         setToast("Este link de invitación ya fue usado");
         setTimeout(()=>setToast(""),2500);
@@ -287,7 +287,7 @@ export default function App({ session }) {
     const esp=invitarRol==="operario"?invitarEsp:null;
     const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
-    setLinkGenerado(`https://fixgo.ar/?invitacion=${codigo}`);
+    setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
     setGenerandoLink(false);
   };
   const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":`Operario (${invitarEsp})`;const msg=`Te invito a sumarte a la obra "${obraActual?.nombre}" en Fixgo como ${rolTxt}.\n\nAbrí este link para unirte:\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
