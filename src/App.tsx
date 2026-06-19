@@ -99,6 +99,14 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
   );
 };
 
+// ══════════════════════════════════════════════════════
+// AVATAR — casco de obra (HardHat) blanco con borde
+// size = tamaño del ícono en px
+// ══════════════════════════════════════════════════════
+const Avatar = ({ size=24 }) => (
+  <HardHat size={size} color="#fff" strokeWidth={2} style={{filter:"drop-shadow(0 1px 1px rgba(0,0,0,0.25))"}} />
+);
+
 const NavBar = ({ tabActiva, onTab, onPerfil }) => (
   <div style={{ background:"#fff", borderTop:"1px solid #E5E5EA", display:"flex", paddingBottom:"env(safe-area-inset-bottom)", flexShrink:0 }}>
     {[
@@ -379,7 +387,7 @@ export default function App({ session }) {
         {USUARIOS_DEMO.map(u=>{const rol=ROLES_SISTEMA.find(r=>r.id===u.rolSistema);return(
           <button key={u.id} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,border:`2px solid ${usuarioActivo.id===u.id?u.color:"#E5E5EA"}`,background:usuarioActivo.id===u.id?u.color+"15":"#fff",cursor:"pointer",marginBottom:8,textAlign:"left"}}
             onClick={()=>{setUsuarioActivo(u);setMostrarCambioUsuario(false);}}>
-            <span style={{fontSize:28}}>{u.avatar}</span>
+            <Avatar size={26} />
             <div style={{flex:1}}>
               <p style={{margin:0,fontWeight:700,fontSize:15,color:"#1C1C1E"}}>{u.nombre}</p>
               <div style={{display:"flex",gap:6,alignItems:"center",marginTop:2}}>
@@ -459,7 +467,7 @@ export default function App({ session }) {
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"20px 16px"}}>
             <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16}}>
-              <div style={{width:64,height:64,borderRadius:99,background:usuarioActivo.color+"20",border:`3px solid ${usuarioActivo.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,flexShrink:0}}>{usuarioActivo.avatar}</div>
+              <div style={{width:64,height:64,borderRadius:99,background:usuarioActivo.color+"20",border:`3px solid ${usuarioActivo.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,flexShrink:0}}><Avatar size={32} /></div>
               <div style={{flex:1}}>
                 <p style={{margin:0,fontSize:20,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>{perfilForm.nombre}</p>
                 <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>
@@ -610,7 +618,7 @@ export default function App({ session }) {
               </p>
             </div>
             <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:12,padding:"8px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:8}} onClick={()=>setMostrarCambioUsuario(true)}>
-              <span style={{fontSize:22}}>{usuarioActivo.avatar}</span>
+              <Avatar size={22} />
               <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p><p style={{margin:0,fontSize:11,color:usuarioActivo.color}}>{usuarioActivo.especialidad}</p></div>
             </button>
           </div>
@@ -636,7 +644,7 @@ export default function App({ session }) {
                   <ChevronRight size={20} color="#C7C7CC" style={{marginLeft:8,flexShrink:0}}/>
                 </div>
                 <div style={{display:"flex",gap:4,marginBottom:10}}>
-                  {equipo.map(u=><div key={u.id} title={`${u.nombre} · ${u.especialidad}`} style={{width:30,height:30,borderRadius:99,background:u.color+"20",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{u.avatar}</div>)}
+                  {equipo.map(u=><div key={u.id} title={`${u.nombre} · ${u.especialidad}`} style={{width:30,height:30,borderRadius:99,background:u.color+"20",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}><Avatar size={16} /></div>)}
                 </div>
                 {novs.length>0&&<div style={{marginBottom:10}}><div style={{height:6,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${prog}%`,background:"#34C759",borderRadius:99}}/></div><p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{prog}% resuelto · {novs.length} novedad{novs.length!==1?"es":""}</p></div>}
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
@@ -678,7 +686,7 @@ export default function App({ session }) {
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setVistaEquipo(false);setMiembroSel(null);}},{label:"Equipo",onClick:()=>setMiembroSel(null)},{label:u.nombre}]} />
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
           <div style={{background:"#fff",borderRadius:18,padding:"16px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:56,height:56,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>{u.avatar}</div>
+            <div style={{width:56,height:56,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}><Avatar size={28} /></div>
             <div style={{flex:1}}><p style={{margin:0,fontWeight:800,fontSize:18,color:"#1C1C1E"}}>{u.nombre}</p>
               <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:u.color,background:u.color+"15",padding:"2px 8px",borderRadius:99}}>{rolU.emoji} {rolU.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
               <p style={{margin:"6px 0 0",fontSize:12,color:"#8E8E93"}}>{esProfesional?"Resumen general de la obra":"Tareas asignadas a "+u.especialidad}</p>
@@ -743,7 +751,7 @@ export default function App({ session }) {
                 return(
                   <div key={u.id} style={{background:"#fff",borderRadius:18,padding:"16px",border:`1.5px solid ${u.color}25`}}>
                     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-                      <div style={{width:50,height:50,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{u.avatar}</div>
+                      <div style={{width:50,height:50,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}><Avatar size={24} /></div>
                       <div style={{flex:1}}><p style={{margin:0,fontWeight:700,fontSize:17,color:"#1C1C1E"}}>{u.nombre}</p>
                         <div style={{display:"flex",gap:6,marginTop:2,alignItems:"center"}}>{r&&<span style={{fontSize:11,fontWeight:700,color:u.color,background:u.color+"15",padding:"2px 8px",borderRadius:99}}>{r.emoji} {r.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
                       </div>
@@ -887,12 +895,12 @@ export default function App({ session }) {
           {detalle.comentarios.length===0&&<p style={{color:"#8E8E93",fontSize:14,margin:"0 0 10px"}}>Sin comentarios aún</p>}
           {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===usuarioActivo.id;return(
             <div key={i} style={{background:esMio?"#1C1C1E":"#F2F2F7",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><span style={{fontSize:14}}>{autor?.avatar}</span><span style={{fontSize:12,fontWeight:700,color:esMio?"#fff":autor?.color||"#636366"}}>{autor?.nombre}</span><span style={{fontSize:11,color:esMio?"rgba(255,255,255,0.4)":"#C7C7CC",marginLeft:"auto"}}>{formatHora(c.ts)}</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><Avatar size={15} /><span style={{fontSize:12,fontWeight:700,color:esMio?"#fff":autor?.color||"#636366"}}>{autor?.nombre}</span><span style={{fontSize:11,color:esMio?"rgba(255,255,255,0.4)":"#C7C7CC",marginLeft:"auto"}}>{formatHora(c.ts)}</span></div>
               <p style={{margin:0,fontSize:15,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>
             </div>
           );})}
           <div style={{display:"flex",gap:8,marginTop:8,alignItems:"center"}}>
-            <span style={{fontSize:20}}>{usuarioActivo.avatar}</span>
+            <Avatar size={20} />
             <input style={{...s.input,flex:1}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`} value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
             <button style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:15,cursor:"pointer",fontWeight:700,height:48}} onClick={()=>agregarComentario(detalle.id)}><Send size={16}/></button>
           </div>
@@ -966,7 +974,7 @@ export default function App({ session }) {
         <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
         <p style={{margin:"3px 0 8px",fontSize:13,color:"rgba(255,255,255,0.5)"}}><MapPin size={13} style={{flexShrink:0}}/> {obraActual?.direccion||"Sin dirección"}</p>
         <div style={{display:"flex",alignItems:"center",gap:8,paddingBottom:12}}>
-          <span style={{fontSize:14}}>{usuarioActivo.avatar}</span>
+          <Avatar size={15} />
           <span style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>{usuarioActivoReal.nombre}</span>
           {miRolInfo&&<span style={{fontSize:11,fontWeight:700,color:miRolInfo.color,background:miRolInfo.color+"25",padding:"2px 8px",borderRadius:99}}>{miRolInfo.emoji} {miRolInfo.label}</span>}
           <button style={{marginLeft:"auto",background:"none",border:"none",color:"rgba(255,255,255,0.5)",fontSize:12,cursor:"pointer"}} onClick={()=>setMostrarCambioUsuario(true)}>cambiar</button>
