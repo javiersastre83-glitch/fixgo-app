@@ -7,7 +7,7 @@ const PRIORIDADES = [
   { label:"ATENCIÓN", color:"#FF6B00", bg:"#FF6B0015", emoji:"🟠", Icon: Clock },
   { label:"MENOR",    color:"#FFB800", bg:"#FFB80015", emoji:"🟡", Icon: CheckCircle },
 ];
-const RESPONSABLES = ["Albañil","Electricista","Plomero","Carpintero","Pintor","Jardinero","Aire acondicionado","Aberturas","Ceramista","Otro"];
+const RESPONSABLES = ["Albañil","Demoledor","Encofrador carpintero","Fierrero / Armador de hierro","Hormigonero","Pilotero","Pocero / Excavador","Techista","Calderista","Electricista de obra","Gasista","Instalador de ascensores y montacargas","Instalador de corrientes débiles","Instalador de sistemas contra incendios","Instalador de sistemas de climatización","Instalador de sistemas solares / renovables","Instalador sanitario","Plomero / Fontanero","Técnico en domótica y automatización","Carpintero de obra / terminaciones","Carpintero de obra gruesa","Cerrajero de obra","Herrero de obra","Instalador de aberturas de aluminio","Instalador de aberturas de PVC","Instalador de aberturas metálicas","Montador de estructuras metálicas","Soldador","Vidriero","Zinguería","Ceramista","Colocador de pisos de madera / Parquetista","Colocador de pisos vinílicos / Alfombrista","Colocador revestimientos plásticos texturados","Durlero / Montador de construcción en seco","Enduido","Impermeabilizador / Techista de membranas","Marmolero","Pintor de obra","Pintor industrial","Pulidor de pisos","Yesero","Armador de andamios / Andamiero","Jardinero","Operario de limpieza de obra (fin de obra)","Proveedor de servicios","Restaurador","Riego","Sereno / Personal de vigilancia de obra","Técnico en Higiene y Seguridad en el Trabajo","Topógrafo / Agrimensor","Tunelero","Otro"];
 const SECTORES     = ["General","Planta baja","Planta alta","Terraza","Jardín","Cocina","Baño PB","Baño PA","Dormitorio","Comedor","Garage","Otro"];
 const ROLES_SISTEMA = [
   { id:"profesional", label:"Profesional", emoji:"👷‍♂️", color:"#0057FF", desc:"Arquitecto, Ingeniero o Idóneo." },
@@ -58,6 +58,47 @@ const generarResumen = (nov,obraNombre) => {
 // ══════════════════════════════════════════════════════
 // NAVBAR — siempre visible en todas las pantallas
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// SELECTOR DE OFICIO — dropdown con buscador
+// value: oficio elegido | onChange: (oficio)=>void
+// customValue/onCustomChange: texto libre cuando se elige "Otro"
+// ══════════════════════════════════════════════════════
+const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#007AFF" }) => {
+  const [abierto, setAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const filtrados = RESPONSABLES.filter(r => r.toLowerCase().includes(busqueda.toLowerCase()));
+  return (
+    <div style={{position:"relative"}}>
+      <button type="button" onClick={()=>setAbierto(a=>!a)}
+        style={{width:"100%",padding:"13px 14px",borderRadius:14,border:`1.5px solid ${value?color:"#E5E5EA"}`,background:"#fff",fontSize:16,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:value?"#1C1C1E":"#8E8E93"}}>
+        <span>{value || "Seleccioná el oficio..."}</span>
+        <span style={{color:"#8E8E93",fontSize:13}}>{abierto?"▲":"▼"}</span>
+      </button>
+      {abierto && (
+        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",borderRadius:14,border:"1.5px solid #E5E5EA",boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50,maxHeight:280,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{padding:"10px",borderBottom:"1px solid #F2F2F7"}}>
+            <input autoFocus value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar oficio..."
+              style={{width:"100%",padding:"10px 12px",borderRadius:10,border:"1.5px solid #E5E5EA",fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+          </div>
+          <div style={{overflowY:"auto",flex:1}}>
+            {filtrados.length===0 && <p style={{padding:"14px",margin:0,fontSize:14,color:"#8E8E93",textAlign:"center"}}>Sin resultados</p>}
+            {filtrados.map(r => (
+              <button type="button" key={r} onClick={()=>{onChange(r);setAbierto(false);setBusqueda("");}}
+                style={{width:"100%",padding:"12px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:value===r?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:value===r?color:"#1C1C1E",fontWeight:value===r?700:400,fontFamily:"inherit"}}>
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {value==="Otro" && (
+        <input style={{width:"100%",padding:"13px 14px",borderRadius:14,border:"1.5px solid #E5E5EA",fontSize:16,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginTop:10}}
+          placeholder="Escribí el oficio..." value={customValue} onChange={e=>onCustomChange(e.target.value)} autoFocus/>
+      )}
+    </div>
+  );
+};
+
 const NavBar = ({ tabActiva, onTab, onPerfil }) => (
   <div style={{ background:"#fff", borderTop:"1px solid #E5E5EA", display:"flex", paddingBottom:"env(safe-area-inset-bottom)", flexShrink:0 }}>
     {[
@@ -892,7 +933,7 @@ export default function App({ session }) {
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.sector===sec?"#007AFF":"#E5E5EA"}`,background:form.sector===sec?"#007AFF15":"#fff",color:form.sector===sec?"#007AFF":"#3A3A3C",fontWeight:form.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{form.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={form.sectorCustom} onChange={e=>setForm(f=>({...f,sectorCustom:e.target.value}))} autoFocus/>}</div>
-          <div><p style={s.label}>👷 Responsable</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{RESPONSABLES.map(r=><button key={r} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.responsable===r?"#007AFF":"#E5E5EA"}`,background:form.responsable===r?"#007AFF15":"#fff",color:form.responsable===r?"#007AFF":"#3A3A3C",fontWeight:form.responsable===r?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,responsable:r,responsableCustom:""}))}>{r}</button>)}</div>{form.responsable==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el responsable..." value={form.responsableCustom} onChange={e=>setForm(f=>({...f,responsableCustom:e.target.value}))} autoFocus/>}</div>
+          <div><p style={s.label}>👷 Responsable</p><SelectorOficio value={form.responsable} onChange={r=>setForm(f=>({...f,responsable:r,responsableCustom:r==="Otro"?f.responsableCustom:""}))} customValue={form.responsableCustom} onCustomChange={v=>setForm(f=>({...f,responsableCustom:v}))} /></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p>
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               {[["Hoy",0],["Mañana",1],["En 1 semana",7]].map(([lbl,dias])=>{
