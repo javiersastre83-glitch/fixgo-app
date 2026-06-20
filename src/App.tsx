@@ -1000,7 +1000,7 @@ export default function App({ session }) {
         {novedadesFiltradas.map(nov=>{
           const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);
           return(
-            <button key={nov.id} style={{width:"100%",background:"#fff",borderRadius:16,border:`1.5px solid ${nov.resuelta?"#E5E5EA":pri.color+"40"}`,padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",boxShadow:nov.resuelta?"none":`0 2px 8px ${pri.color}12`,opacity:nov.resuelta?0.7:1}}
+            <button key={nov.id} style={{width:"100%",flexShrink:0,background:"#fff",borderRadius:16,border:`1.5px solid ${nov.resuelta?"#E5E5EA":pri.color+"40"}`,padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",boxShadow:nov.resuelta?"none":`0 2px 8px ${pri.color}12`,opacity:nov.resuelta?0.7:1}}
               onClick={()=>{setDetalleId(nov.id);setVista("detalle");}}
               onContextMenu={e=>{e.preventDefault();setMenuContextual({novId:nov.id});}}
               onPointerDown={e=>{const t=setTimeout(()=>setMenuContextual({novId:nov.id}),600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
