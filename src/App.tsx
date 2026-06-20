@@ -529,15 +529,6 @@ export default function App({ session }) {
             texto:`Urgente — ${nov.descripcion}`,
             sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:2 });
         }
-        // Comentarios recientes (menos de 24hs)
-        const ult = nov.comentarios[nov.comentarios.length - 1];
-        if (ult && Date.now() - ult.ts < 86400000) {
-          const autor = USUARIOS_DEMO.find(u=>u.id===ult.autorId);
-          alertasDinamicas.push({ key:`com-${nov.id}`, tipo:"comentario",
-            texto:`${autor?.nombre || "Alguien"} comentó — ${nov.descripcion}`,
-            sub:`${obra.nombre} · Hace ${Math.round((Date.now()-ult.ts)/3600000)}hs`,
-            obraId:obra.id, novId:nov.id, orden:3 });
-        }
       });
     });
     alertasDinamicas.sort((a,b)=>a.orden-b.orden);
