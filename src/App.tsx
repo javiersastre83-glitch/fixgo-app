@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw } from "lucide-react";
+import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -487,9 +487,22 @@ export default function App({ session }) {
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden"}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
-              <span style={{fontSize:22}}><ChevronRight size={22} color="#FF6B00"/></span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF6B00"}}>Cerrar sesión</p>
+              <span style={{display:"flex"}}><LogOut size={22} color="#FF6B00"/></span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF6B00"}}>Cerrar sesión</p>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer"}} onClick={async()=>{
+              if(!window.confirm("¿Eliminar tu cuenta?\n\nEsto borrará para siempre todas tus obras, novedades, comentarios y tu cuenta. Esta acción NO se puede deshacer."))return;
+              if(!window.confirm("Última confirmación.\n\n¿Seguro que querés eliminar tu cuenta y todos tus datos de forma permanente?"))return;
+              try{
+                if(usuarioReal){
+                  await supabase.from("obras").delete().eq("propietario_id",usuarioReal.id);
+                  const{data:{session:ses}}=await supabase.auth.getSession();
+                  const resp=await fetch(`https://kvemmluxgdlhandjpbfn.supabase.co/functions/v1/eliminar-cuenta`,{method:"POST",headers:{"Authorization":`Bearer ${ses?.access_token}`,"Content-Type":"application/json"}});
+                  if(!resp.ok)console.warn("La función de borrado de cuenta aún no está disponible");
+                }
+                await supabase.auth.signOut();
+                alert("Tu cuenta y tus datos fueron eliminados.");
+              }catch(e){alert("Hubo un problema al eliminar la cuenta. Escribinos a soporte@fixgo.ar");}
+            }}>
               <span style={{fontSize:22}}>🗑️</span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF3B30"}}>Eliminar cuenta</p>
             </div>
           </div>
