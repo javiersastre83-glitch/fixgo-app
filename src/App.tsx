@@ -202,7 +202,7 @@ export default function App({ session }) {
 
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
-  const equipoObra   = obraActual?(obraActual.equipo||[]).map(m=>{if(m.nombre){return{id:m.uid,nombre:m.nombre,especialidad:m.especialidad||"Profesional",avatar:m.avatar||"👷‍♂️",color:"#0057FF",rolEnObra:m.rolEnObra};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);return u?{...u,rolEnObra:m.rolEnObra}:null;}).filter(Boolean):[];
+  const equipoObra   = obraActual?(obraActual.equipo||[]).map(m=>{if(m.nombre){return{id:m.uid,nombre:m.nombre,especialidad:m.especialidad||"Profesional",avatar:m.avatar||"📐",color:"#0057FF",rolEnObra:m.rolEnObra};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);return u?{...u,rolEnObra:m.rolEnObra}:null;}).filter(Boolean):[];
   const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
   const miId         = usuarioReal?.id||usuarioActivo.id;
   const miRolEnObra  = obraActual?(obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?"profesional":"operario"):(usuarioReal?"profesional":usuarioActivo.rolSistema);
@@ -609,10 +609,10 @@ export default function App({ session }) {
                 {totalVenc>0&&<span style={{color:"#FFD60A",fontWeight:700}}> · ⚠️ {totalVenc} vencida{totalVenc!==1?"s":""}</span>}
               </p>
             </div>
-            <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:12,padding:"8px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:8}} onClick={()=>setMostrarCambioUsuario(true)}>
+            <div style={{background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:22}}>{usuarioActivo.avatar}</span>
               <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p><p style={{margin:0,fontSize:11,color:usuarioActivo.color}}>{usuarioActivo.especialidad}</p></div>
-            </button>
+            </div>
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
@@ -769,7 +769,7 @@ export default function App({ session }) {
           {!linkGenerado?<>
             <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Rol</p>
             <div style={{display:"flex",gap:8,marginBottom:16}}>
-              {[["operario","🔨 Operario"],["capataz","🦺 Capataz"]].map(([val,lbl])=>(
+              {[["operario","👷 Operario"],["capataz","🦺 Capataz"]].map(([val,lbl])=>(
                 <button key={val} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol===val?"#0057FF":"#E5E5EA"}`,background:invitarRol===val?"#0057FF15":"#fff",color:invitarRol===val?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol===val?700:400,cursor:"pointer"}} onClick={()=>setInvitarRol(val)}>{lbl}</button>
               ))}
             </div>
@@ -969,7 +969,7 @@ export default function App({ session }) {
           <span style={{fontSize:14}}>{usuarioActivo.avatar}</span>
           <span style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>{usuarioActivoReal.nombre}</span>
           {miRolInfo&&<span style={{fontSize:11,fontWeight:700,color:miRolInfo.color,background:miRolInfo.color+"25",padding:"2px 8px",borderRadius:99}}>{miRolInfo.emoji} {miRolInfo.label}</span>}
-          <button style={{marginLeft:"auto",background:"none",border:"none",color:"rgba(255,255,255,0.5)",fontSize:12,cursor:"pointer"}} onClick={()=>setMostrarCambioUsuario(true)}>cambiar</button>
+
         </div>
       </div>
       <div style={{background:"#fff",borderBottom:"1px solid #F2F2F7",padding:"12px 16px 0",flexShrink:0}}>
