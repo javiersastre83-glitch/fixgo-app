@@ -876,13 +876,14 @@ export default function App({ session }) {
           accionDerecha={<button style={{background:"none",border:"none",fontSize:15,color:"#FF3B30",cursor:"pointer",fontWeight:600}} onClick={()=>setConfirmarEliminar(detalle.id)}>Borrar</button>} />
         <div style={{padding:"16px",flex:1,overflowY:"auto"}}>
           {detalle.fotos.length>0?<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:16}}>{detalle.fotos.map((f,i)=><img key={i} src={f} alt="" style={{height:200,borderRadius:14,objectFit:"cover",flexShrink:0,maxWidth:"85%"}}/>)}</div>:<div style={s.fotoPlaceholder}>📷</div>}
-          <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
-            <span style={{...s.chip,background:pri.bg,color:pri.color,fontWeight:700}}>{pri.emoji} {pri.label}</span>
-            {badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontWeight:600}}>{badge.label}</span>}
+          <div style={{background:pri.color,borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,marginBottom:16,boxShadow:`0 2px 10px ${pri.color}40`}}>
+            <span style={{width:15,height:15,borderRadius:99,background:"#fff",flexShrink:0}}/>
+            <span style={{color:"#fff",fontSize:21,fontWeight:900,letterSpacing:0.5}}>{pri.label}</span>
+            {badge&&<span style={{marginLeft:"auto",background:"rgba(255,255,255,0.25)",color:"#fff",fontSize:12,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{badge.label}</span>}
           </div>
-          <p style={{fontSize:20,fontWeight:700,color:"#1C1C1E",marginBottom:12,lineHeight:1.3}}>{detalle.descripcion}</p>
-          {[["👷","Responsable",detalle.responsable],["📍","Sector",detalle.sector],detalle.fechaLimite?["📅","Fecha límite",formatFecha(detalle.fechaLimite)]:null,["🗓","Cargada",formatFecha(detalle.fecha)]].filter(Boolean).map(([ic,lb,vl])=>(
-            <div key={lb} style={s.infoRow}><span style={s.infoIcon}>{ic}</span><span style={s.infoLabel}>{lb}</span><span style={s.infoVal}>{vl}</span></div>
+          <p style={{fontSize:22,fontWeight:800,color:"#000",marginBottom:18,lineHeight:1.25}}>{detalle.descripcion}</p>
+          {[["👷","Responsable",detalle.responsable],["📍","Sector",detalle.sector],detalle.fechaLimite?["📅","Fecha límite",formatFecha(detalle.fechaLimite)]:null,["🗓","Cargada",detalle.fecha?formatFecha(detalle.fecha):"—"]].filter(Boolean).map(([ic,lb,vl])=>(
+            <div key={lb} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 0",borderBottom:"1.5px solid #E0E0E5"}}><span style={{fontSize:20,width:24,textAlign:"center"}}>{ic}</span><span style={{fontSize:13,color:"#6B6B70",fontWeight:600,width:90}}>{lb}</span><span style={{flex:1,fontSize:16,color:"#000",fontWeight:700,textAlign:"right"}}>{vl}</span></div>
           ))}
           <p style={{...s.label,marginTop:20}}>Comentarios</p>
           {detalle.comentarios.length===0&&<p style={{color:"#8E8E93",fontSize:14,margin:"0 0 10px"}}>Sin comentarios aún</p>}
