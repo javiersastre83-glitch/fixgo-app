@@ -458,7 +458,7 @@ export default function App({ session }) {
           <p style={{margin:"4px 0 0",fontSize:22,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>Mi perfil</p>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
-          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"20px 16px"}}>
+          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"20px 16px",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16}}>
               <div style={{width:64,height:64,borderRadius:99,background:usuarioActivo.color+"20",border:`3px solid ${usuarioActivo.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,flexShrink:0}}>{usuarioActivo.avatar}</div>
               <div style={{flex:1}}>
@@ -476,7 +476,7 @@ export default function App({ session }) {
             <button style={{...s.btnPrincipal,background:"#1C1C1E",marginTop:4}} onClick={async()=>{setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));if(usuarioReal)await supabase.auth.updateUser({data:{full_name:perfilForm.nombre}});alert("✅ Cambios guardados");}}>Guardar cambios</button>
           </div>
           <p style={{margin:"4px 0 0",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Preferencias</p>
-          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden"}}>
+          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px"}}>
               <span style={{fontSize:22}}>{modoOscuro?"🌙":"☀️"}</span>
               <div style={{flex:1}}><p style={{margin:0,fontSize:15,fontWeight:600,color:modoOscuro?"#fff":"#1C1C1E"}}>Modo oscuro</p></div>
@@ -485,7 +485,7 @@ export default function App({ session }) {
               </div>
             </div>
           </div>
-          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden"}}>
+          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
               <span style={{display:"flex"}}><LogOut size={22} color="#FF6B00"/></span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF6B00"}}>Cerrar sesión</p>
             </div>
