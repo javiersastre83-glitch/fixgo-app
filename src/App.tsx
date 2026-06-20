@@ -802,13 +802,16 @@ export default function App({ session }) {
     const pctVenc=totalNovs>0?Math.round((contadores.vencidas/totalNovs)*100):0;
     // Por prioridad (solo pendientes)
     const pendientes=novedades.filter(n=>!n.resuelta);
-    const porPrioridad=PRIORIDADES.map((p,i)=>({...p,cant:pendientes.filter(n=>n.prioridad===i).length}));
-    const maxPri=Math.max(1,...porPrioridad.map(p=>p.cant));
     // Por sector (solo pendientes)
     const sectoresMap={};
     pendientes.forEach(n=>{sectoresMap[n.sector]=(sectoresMap[n.sector]||0)+1;});
     const porSector=Object.entries(sectoresMap).map(([nombre,cant])=>({nombre,cant})).sort((a,b)=>b.cant-a.cant);
     const maxSec=Math.max(1,...porSector.map(s=>s.cant));
+    // Por gremio (solo pendientes)
+    const gremioMap={};
+    pendientes.forEach(n=>{gremioMap[n.responsable]=(gremioMap[n.responsable]||0)+1;});
+    const porGremio=Object.entries(gremioMap).map(([nombre,cant])=>({nombre,cant})).sort((a,b)=>b.cant-a.cant);
+    const maxGre=Math.max(1,...porGremio.map(g=>g.cant));
     // Foco: la novedad más urgente pendiente (prioridad 0 primero, luego vencidas)
     const urgentesPend=pendientes.filter(n=>n.prioridad===0);
     const sectorFoco=porSector.length>0?porSector[0]:null;
@@ -824,17 +827,7 @@ export default function App({ session }) {
       <div style={s.root}>
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVistaStats(false)},{label:"Estadísticas"}]} />
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
-          {/* FOCO */}
-          {(urgentesPend.length>0||contadores.vencidas>0)&&(
-            <div style={{background:"#FF3B30",borderRadius:16,padding:"16px 18px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 10px #FF3B3040"}}>
-              <AlertTriangle size={26} color="#fff" style={{flexShrink:0}}/>
-              <div style={{flex:1}}>
-                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#fff"}}>{urgentesPend.length>0?`${urgentesPend.length} urgente${urgentesPend.length!==1?"s":""} sin resolver`:`${contadores.vencidas} vencida${contadores.vencidas!==1?"s":""}`}</p>
-                {sectorFoco&&<p style={{margin:"2px 0 0",fontSize:13,color:"rgba(255,255,255,0.85)"}}>Más pendientes en: {sectorFoco.nombre} ({sectorFoco.cant})</p>}
-              </div>
-            </div>
-          )}
-          {/* ESTADO DE NOVEDADES */}
+          {/* 1. ESTADO DE NOVEDADES (control general, primero) */}
           <div style={{background:"#fff",borderRadius:16,padding:"14px 16px"}}>
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:14}}>
               <div style={{position:"relative",width:64,height:64,flexShrink:0}}>
@@ -849,30 +842,7 @@ export default function App({ session }) {
               ))}
             </div>
           </div>
-          {/* POR PRIORIDAD */}
-          {pendientes.length>0&&<div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
-            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Pendientes por prioridad</p>
-            {porPrioridad.map(p=>(
-              <div key={p.label} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                <span style={{width:72,fontSize:12,fontWeight:700,color:p.color}}>{p.label}</span>
-                <div style={{flex:1,height:22,background:"#F2F2F7",borderRadius:6,overflow:"hidden"}}><div style={{height:"100%",width:`${p.cant/maxPri*100}%`,minWidth:p.cant>0?28:0,background:p.color,borderRadius:6,display:"flex",alignItems:"center",paddingLeft:8,color:"#fff",fontSize:12,fontWeight:700}}>{p.cant>0?p.cant:""}</div></div>
-              </div>
-            ))}
-          </div>}
-          {/* POR SECTOR */}
-          {porSector.length>0&&<div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
-            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Pendientes por sector</p>
-            {porSector.map(sec=>(
-              <div key={sec.nombre} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid #F2F2F7"}}>
-                <span style={{fontSize:14,fontWeight:600,color:"#1C1C1E"}}>{sec.nombre}</span>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:80,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${sec.cant/maxSec*100}%`,background:"#FF6B00",borderRadius:99}}/></div>
-                  <span style={{fontSize:14,fontWeight:800,color:"#FF6B00",width:20,textAlign:"right"}}>{sec.cant}</span>
-                </div>
-              </div>
-            ))}
-          </div>}
-          {/* EVOLUCIÓN */}
+          {/* 2. EVOLUCIÓN (resueltas por semana) */}
           <div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
             <p style={{margin:"0 0 14px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resueltas por semana</p>
             <div style={{display:"flex",alignItems:"flex-end",gap:8,height:100}}>
@@ -885,6 +855,43 @@ export default function App({ session }) {
               ))}
             </div>
           </div>
+          {/* 3. POR GREMIO */}
+          {porGremio.length>0&&<div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
+            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Pendientes por gremio</p>
+            {porGremio.map(g=>(
+              <div key={g.nombre} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid #F2F2F7"}}>
+                <span style={{fontSize:14,fontWeight:600,color:"#1C1C1E",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",paddingRight:10}}>{g.nombre}</span>
+                <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                  <div style={{width:70,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${g.cant/maxGre*100}%`,background:"#8E44AD",borderRadius:99}}/></div>
+                  <span style={{fontSize:14,fontWeight:800,color:"#8E44AD",width:20,textAlign:"right"}}>{g.cant}</span>
+                </div>
+              </div>
+            ))}
+          </div>}
+          {/* 4. POR SECTOR */}
+          {porSector.length>0&&<div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
+            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Pendientes por sector</p>
+            {porSector.map(sec=>(
+              <div key={sec.nombre} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid #F2F2F7"}}>
+                <span style={{fontSize:14,fontWeight:600,color:"#1C1C1E"}}>{sec.nombre}</span>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:70,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${sec.cant/maxSec*100}%`,background:"#FF6B00",borderRadius:99}}/></div>
+                  <span style={{fontSize:14,fontWeight:800,color:"#FF6B00",width:20,textAlign:"right"}}>{sec.cant}</span>
+                </div>
+              </div>
+            ))}
+          </div>}
+          {/* 5. URGENTES (al final, lleva a Urgencias) */}
+          {(urgentesPend.length>0||contadores.vencidas>0)&&(
+            <button onClick={()=>{setVistaStats(false);setTabActiva("alertas");irInicio();}} style={{background:"#FF3B30",borderRadius:16,padding:"16px 18px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 10px #FF3B3040",border:"none",width:"100%",textAlign:"left",cursor:"pointer"}}>
+              <AlertTriangle size={26} color="#fff" style={{flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#fff"}}>{urgentesPend.length>0?`${urgentesPend.length} urgente${urgentesPend.length!==1?"s":""} sin resolver`:`${contadores.vencidas} vencida${contadores.vencidas!==1?"s":""}`}</p>
+                <p style={{margin:"2px 0 0",fontSize:13,color:"rgba(255,255,255,0.85)"}}>Tocá para ver en Urgencias</p>
+              </div>
+              <ChevronRight size={20} color="#fff" style={{flexShrink:0}}/>
+            </button>
+          )}
           {/* INFORMES PRO */}
           <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
             <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
