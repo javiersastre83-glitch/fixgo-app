@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send } from "lucide-react";
+import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -885,10 +885,10 @@ export default function App({ session }) {
           {[["👷","Responsable",detalle.responsable],["📍","Sector",detalle.sector],detalle.fechaLimite?["📅","Fecha límite",formatFecha(detalle.fechaLimite)]:null,["🗓","Cargada",detalle.fecha?formatFecha(detalle.fecha):"—"]].filter(Boolean).map(([ic,lb,vl])=>(
             <div key={lb} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 0",borderBottom:"1.5px solid #E0E0E5"}}><span style={{fontSize:20,width:24,textAlign:"center"}}>{ic}</span><span style={{fontSize:13,color:"#6B6B70",fontWeight:600,width:90}}>{lb}</span><span style={{flex:1,fontSize:16,color:"#000",fontWeight:700,textAlign:"right"}}>{vl}</span></div>
           ))}
-          <p style={{...s.label,marginTop:20}}>Comentarios</p>
+          <p style={{fontSize:16,fontWeight:800,color:"#000",margin:"24px 0 12px"}}>Comentarios</p>
           {detalle.comentarios.length===0&&<p style={{color:"#8E8E93",fontSize:14,margin:"0 0 10px"}}>Sin comentarios aún</p>}
           {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===usuarioActivo.id;return(
-            <div key={i} style={{background:esMio?"#1C1C1E":"#F2F2F7",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
+            <div key={i} style={{background:esMio?"#1C1C1E":"#fff",border:esMio?"none":"1.5px solid #E0E0E5",borderRadius:14,padding:"11px 14px",marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><span style={{fontSize:14}}>{autor?.avatar}</span><span style={{fontSize:12,fontWeight:700,color:esMio?"#fff":autor?.color||"#636366"}}>{autor?.nombre}</span><span style={{fontSize:11,color:esMio?"rgba(255,255,255,0.4)":"#C7C7CC",marginLeft:"auto"}}>{formatHora(c.ts)}</span></div>
               <p style={{margin:0,fontSize:15,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>
             </div>
@@ -898,14 +898,12 @@ export default function App({ session }) {
             <input style={{...s.input,flex:1}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`} value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
             <button style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:15,cursor:"pointer",fontWeight:700,height:48}} onClick={()=>agregarComentario(detalle.id)}><Send size={16}/></button>
           </div>
-          <div style={{display:"flex",gap:10,marginTop:20}}>
-            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1}} onClick={()=>abrirEdicion(detalle)}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={15}/>Editar</span></button>
-            <button style={{...s.btnPrincipal,background:detalle.resuelta?"#636366":"#34C759",flex:1}} onClick={()=>{resolver(detalle.id);setVista("lista");}}>{ detalle.resuelta?"↩ Reabrir":"✅ Resolver"}</button>
-          </div>
-          <div style={{display:"flex",gap:10,marginTop:10}}>
-            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1}} onClick={()=>compartir(detalle)}>{compartidoId===detalle.id?"✅ Copiado":"📤 Compartir"}</button>
-            <button style={{...s.btnPrincipal,background:"#25D366",flex:1}} onClick={()=>{const t=generarResumen(detalle,obraActual?.nombre||"Obra");window.open(`https://wa.me/?text=${encodeURIComponent(t)}`,"_blank");}}>
-              <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>WhatsApp</span>
+          <button style={{...s.btnPrincipal,background:detalle.resuelta?"#636366":"#34C759",marginTop:20,fontSize:17,padding:"17px",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={()=>{resolver(detalle.id);setVista("lista");}}>{detalle.resuelta?<><RotateCcw size={18}/>Reabrir</>:<><CheckCircle size={18}/>Resolver</>}</button>
+          <div style={{display:"flex",gap:8,marginTop:10}}>
+            <button style={{...s.btnPrincipal,background:"#fff",color:"#1C1C1E",border:"1.5px solid #E0E0E5",flex:1,fontSize:14,padding:"13px 4px"}} onClick={()=>abrirEdicion(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><Edit2 size={15}/>Editar</span></button>
+            <button style={{...s.btnPrincipal,background:"#fff",color:"#1C1C1E",border:"1.5px solid #E0E0E5",flex:1,fontSize:14,padding:"13px 4px"}} onClick={()=>compartir(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>{compartidoId===detalle.id?"✓ Copiado":<><Share2 size={15}/>Compartir</>}</span></button>
+            <button style={{...s.btnPrincipal,background:"#fff",border:"1.5px solid #25D366",flex:1,fontSize:14,padding:"13px 4px"}} onClick={()=>{const t=generarResumen(detalle,obraActual?.nombre||"Obra");window.open(`https://wa.me/?text=${encodeURIComponent(t)}`,"_blank");}}>
+              <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><svg width="17" height="17" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span style={{color:"#25D366",fontWeight:700}}>WhatsApp</span></span>
             </button>
           </div>
         </div>
