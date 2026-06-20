@@ -800,18 +800,48 @@ export default function App({ session }) {
     const totalNovs=novedades.length;
     const pctResuelto=totalNovs>0?Math.round((contadores.resueltas/totalNovs)*100):0;
     const pctVenc=totalNovs>0?Math.round((contadores.vencidas/totalNovs)*100):0;
-    const getMedalla=(r)=>{const total=r.pendientes+r.resueltas;if(!total)return null;const pct=Math.round((r.resueltas/total)*100);if(pct===100)return"🥇";if(pct>=75)return"🥈";if(pct>=50)return"🥉";if(r.urgentes>0)return"⚠️";return null;};
+    // Por prioridad (solo pendientes)
+    const pendientes=novedades.filter(n=>!n.resuelta);
+    const porPrioridad=PRIORIDADES.map((p,i)=>({...p,cant:pendientes.filter(n=>n.prioridad===i).length}));
+    const maxPri=Math.max(1,...porPrioridad.map(p=>p.cant));
+    // Por sector (solo pendientes)
+    const sectoresMap={};
+    pendientes.forEach(n=>{sectoresMap[n.sector]=(sectoresMap[n.sector]||0)+1;});
+    const porSector=Object.entries(sectoresMap).map(([nombre,cant])=>({nombre,cant})).sort((a,b)=>b.cant-a.cant);
+    const maxSec=Math.max(1,...porSector.map(s=>s.cant));
+    // Foco: la novedad más urgente pendiente (prioridad 0 primero, luego vencidas)
+    const urgentesPend=pendientes.filter(n=>n.prioridad===0);
+    const sectorFoco=porSector.length>0?porSector[0]:null;
+    // Evolución: resueltas por semana (últimas 4 semanas)
+    const ahora=Date.now();
+    const semanas=[3,2,1,0].map(s=>{
+      const desde=ahora-(s+1)*7*864e5, hasta=ahora-s*7*864e5;
+      const cant=novedades.filter(n=>{if(!n.resuelta||!n.fecha)return false;const t=new Date(n.fecha+"T00:00:00").getTime();return t>=desde&&t<hasta;}).length;
+      return {label:s===0?"Esta":`S-${s}`,cant};
+    });
+    const maxSem=Math.max(1,...semanas.map(s=>s.cant));
     return(
       <div style={s.root}>
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVistaStats(false)},{label:"Estadísticas"}]} />
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
+          {/* FOCO */}
+          {(urgentesPend.length>0||contadores.vencidas>0)&&(
+            <div style={{background:"#FF3B30",borderRadius:16,padding:"16px 18px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 10px #FF3B3040"}}>
+              <AlertTriangle size={26} color="#fff" style={{flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#fff"}}>{urgentesPend.length>0?`${urgentesPend.length} urgente${urgentesPend.length!==1?"s":""} sin resolver`:`${contadores.vencidas} vencida${contadores.vencidas!==1?"s":""}`}</p>
+                {sectorFoco&&<p style={{margin:"2px 0 0",fontSize:13,color:"rgba(255,255,255,0.85)"}}>Más pendientes en: {sectorFoco.nombre} ({sectorFoco.cant})</p>}
+              </div>
+            </div>
+          )}
+          {/* ESTADO DE NOVEDADES */}
           <div style={{background:"#fff",borderRadius:16,padding:"14px 16px"}}>
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:14}}>
               <div style={{position:"relative",width:64,height:64,flexShrink:0}}>
                 <svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="#F2F2F7" strokeWidth="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="#34C759" strokeWidth="7" strokeDasharray={`${pctResuelto*1.634} 163.4`} strokeLinecap="round" strokeDashoffset="40.85" transform="rotate(-90 32 32)"/></svg>
                 <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#1C1C1E"}}>{pctResuelto}%</div>
               </div>
-              <div><p style={{margin:0,fontSize:17,fontWeight:700,color:"#1C1C1E"}}>Avance general</p><p style={{margin:0,fontSize:13,color:"#8E8E93"}}>{contadores.resueltas} de {totalNovs} resueltas</p>{pctVenc>0&&<p style={{margin:"4px 0 0",fontSize:12,color:"#FF3B30",fontWeight:600}}>⚠️ {pctVenc}% vencidas</p>}</div>
+              <div><p style={{margin:0,fontSize:17,fontWeight:700,color:"#1C1C1E"}}>Estado de novedades</p><p style={{margin:0,fontSize:13,color:"#8E8E93"}}>{contadores.resueltas} de {totalNovs} resueltas</p>{pctVenc>0&&<p style={{margin:"4px 0 0",fontSize:12,color:"#FF3B30",fontWeight:600}}>{pctVenc}% vencidas</p>}</div>
             </div>
             <div style={{display:"flex",gap:8}}>
               {[["Total",totalNovs,"#1C1C1E"],["Pendientes",contadores.pendientes,"#FF6B00"],["Vencidas",contadores.vencidas,"#FF3B30"],["Resueltas",contadores.resueltas,"#34C759"]].map(([lbl,val,col])=>(
@@ -819,27 +849,52 @@ export default function App({ session }) {
               ))}
             </div>
           </div>
-          <p style={{margin:"4px 0 4px",fontSize:13,color:"#8E8E93",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Por responsable</p>
-          {statsResponsable.length===0&&<p style={{color:"#8E8E93",textAlign:"center",padding:"40px 0"}}>Sin datos aún</p>}
-          {statsResponsable.map(r=>{const total=r.pendientes+r.resueltas;const pct=total>0?Math.round((r.resueltas/total)*100):0;const med=getMedalla(r);return(
-            <div key={r.nombre} style={{background:"#fff",borderRadius:16,padding:"14px 16px",position:"relative",overflow:"hidden",cursor:"pointer"}} onClick={()=>setModalPro(true)}>
-              <div style={{position:"absolute",top:10,right:10,background:"#FFB80020",borderRadius:99,padding:"2px 8px",fontSize:10,fontWeight:700,color:"#FFB800"}}>✨ Pro</div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <span style={{fontWeight:700,fontSize:15}}>👷 {r.nombre} {med&&<span>{med}</span>}</span>
-                <div style={{display:"flex",gap:6}}><span style={{fontSize:13,fontWeight:800,color:pct>=75?"#34C759":pct>=50?"#FF6B00":"#FF3B30"}}>{pct}%</span>{r.urgentes>0&&<span style={{...s.chip,background:"#FF3B3015",color:"#FF3B30",fontSize:11}}>🔴 {r.urgentes}</span>}</div>
+          {/* POR PRIORIDAD */}
+          {pendientes.length>0&&<div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
+            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Pendientes por prioridad</p>
+            {porPrioridad.map(p=>(
+              <div key={p.label} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                <span style={{width:72,fontSize:12,fontWeight:700,color:p.color}}>{p.label}</span>
+                <div style={{flex:1,height:22,background:"#F2F2F7",borderRadius:6,overflow:"hidden"}}><div style={{height:"100%",width:`${p.cant/maxPri*100}%`,minWidth:p.cant>0?28:0,background:p.color,borderRadius:6,display:"flex",alignItems:"center",paddingLeft:8,color:"#fff",fontSize:12,fontWeight:700}}>{p.cant>0?p.cant:""}</div></div>
               </div>
-              <div style={{height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden",marginBottom:4}}><div style={{height:"100%",width:`${pct}%`,background:pct>=75?"#34C759":pct>=50?"#FF6B00":"#FF3B30",borderRadius:99}}/></div>
-              <p style={{margin:0,fontSize:12,color:"#8E8E93"}}>{r.resueltas} resueltas · {r.pendientes} pendiente{r.pendientes!==1?"s":""}</p>
+            ))}
+          </div>}
+          {/* POR SECTOR */}
+          {porSector.length>0&&<div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
+            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Pendientes por sector</p>
+            {porSector.map(sec=>(
+              <div key={sec.nombre} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid #F2F2F7"}}>
+                <span style={{fontSize:14,fontWeight:600,color:"#1C1C1E"}}>{sec.nombre}</span>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:80,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${sec.cant/maxSec*100}%`,background:"#FF6B00",borderRadius:99}}/></div>
+                  <span style={{fontSize:14,fontWeight:800,color:"#FF6B00",width:20,textAlign:"right"}}>{sec.cant}</span>
+                </div>
+              </div>
+            ))}
+          </div>}
+          {/* EVOLUCIÓN */}
+          <div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
+            <p style={{margin:"0 0 14px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resueltas por semana</p>
+            <div style={{display:"flex",alignItems:"flex-end",gap:8,height:100}}>
+              {semanas.map((sem,i)=>(
+                <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,height:"100%",justifyContent:"flex-end"}}>
+                  <span style={{fontSize:11,fontWeight:700,color:"#1C1C1E"}}>{sem.cant}</span>
+                  <div style={{width:"100%",height:`${sem.cant/maxSem*70}px`,minHeight:sem.cant>0?6:2,background:sem.cant>0?"#34C759":"#E5E5EA",borderRadius:"4px 4px 0 0"}}/>
+                  <span style={{fontSize:10,color:"#8E8E93"}}>{sem.label}</span>
+                </div>
+              ))}
             </div>
-          );})}
+          </div>
+          {/* INFORMES PRO */}
           <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
             <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
-            <p style={{margin:"0 0 16px",fontSize:17,fontWeight:800,color:"#fff"}}>Estadísticas avanzadas</p>
-            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer"}}>🚀 Activar versión Pro</button>
+            <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
+            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span>📋 Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
+            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span>📄 Informe para cliente</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
           </div>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta función es parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
+        {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
       </div>
     );
   }
