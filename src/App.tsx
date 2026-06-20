@@ -171,6 +171,7 @@ export default function App({ session }) {
   const [detalleId,        setDetalleId]        = useState(null);
   const [filtro,           setFiltro]           = useState("todas");
   const [filtroResp,       setFiltroResp]       = useState("todos");
+  const [filtroRespOpen,   setFiltroRespOpen]   = useState(false);
   const [busqueda,         setBusqueda]         = useState("");
   const [nuevoComentario,  setNuevoComentario]  = useState("");
   const [modalNuevaObra,   setModalNuevaObra]   = useState(false);
@@ -974,16 +975,25 @@ export default function App({ session }) {
       </div>
       <div style={{background:"#fff",borderBottom:"1px solid #F2F2F7",padding:"12px 16px 0",flexShrink:0}}>
         <div style={{position:"relative",marginBottom:10}}><Search size={16} color="#8E8E93" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/><input style={{...s.input,background:"#F2F2F7",border:"none",paddingLeft:38}} placeholder="Buscar novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></div>
-        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:12}}>
-          {[["todas",`Todas (${contadores.todas})`],["pendientes",`⏳ Pendientes (${contadores.pendientes})`],["vencidas",`⚠️ Vencidas (${contadores.vencidas})`],["resueltas",`✅ Resueltas (${contadores.resueltas})`]].map(([key,lbl])=>(
-            <button key={key} style={{flexShrink:0,padding:"7px 14px",borderRadius:20,border:`1.5px solid ${filtro===key?"#1C1C1E":"#E5E5EA"}`,background:filtro===key?"#1C1C1E":"#fff",color:filtro===key?"#fff":"#636366",fontSize:13,fontWeight:filtro===key?700:400,cursor:"pointer"}} onClick={()=>setFiltro(key)}>{lbl}</button>
+        <div style={{display:"flex",gap:6,paddingBottom:12}}>
+          {[["todas","Todas",contadores.todas,"#1C1C1E"],["pendientes","Pendientes",contadores.pendientes,"#FF6B00"],["vencidas","Vencidas",contadores.vencidas,"#FF3B30"],["resueltas","Resueltas",contadores.resueltas,"#34C759"]].map(([key,lbl,val,col])=>(
+            <button key={key} style={{flex:1,minWidth:0,padding:"8px 2px",borderRadius:12,border:`1.5px solid ${filtro===key?col:"#E5E5EA"}`,background:filtro===key?col:"#fff",color:filtro===key?"#fff":"#636366",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1}} onClick={()=>setFiltro(key)}>
+              <span style={{fontSize:17,fontWeight:800,lineHeight:1}}>{val}</span>
+              <span style={{fontSize:10.5,fontWeight:filtro===key?700:500,whiteSpace:"nowrap"}}>{lbl}</span>
+            </button>
           ))}
         </div>
-        {respConTareas.length>1&&<div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:12,borderTop:"1px solid #F2F2F7",paddingTop:10}}>
-          <button style={{flexShrink:0,padding:"7px 14px",borderRadius:20,border:`1.5px solid ${filtroResp==="todos"?"#0057FF":"#E5E5EA"}`,background:filtroResp==="todos"?"#0057FF":"#fff",color:filtroResp==="todos"?"#fff":"#636366",fontSize:13,fontWeight:filtroResp==="todos"?700:400,cursor:"pointer"}} onClick={()=>setFiltroResp("todos")}>👥 Todos</button>
-          {respConTareas.map(r=>(
-            <button key={r.nombre} style={{flexShrink:0,padding:"7px 14px",borderRadius:20,border:`1.5px solid ${filtroResp===r.nombre?"#0057FF":"#E5E5EA"}`,background:filtroResp===r.nombre?"#0057FF":"#fff",color:filtroResp===r.nombre?"#fff":"#636366",fontSize:13,fontWeight:filtroResp===r.nombre?700:400,cursor:"pointer"}} onClick={()=>setFiltroResp(r.nombre)}>{r.nombre} ({r.cant})</button>
-          ))}
+        {respConTareas.length>1&&<div style={{position:"relative",paddingBottom:12}}>
+          <button style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${filtroResp!=="todos"?"#0057FF":"#E5E5EA"}`,background:"#fff",fontSize:14,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:filtroResp!=="todos"?"#0057FF":"#636366",fontWeight:filtroResp!=="todos"?700:500}} onClick={()=>setFiltroRespOpen(o=>!o)}>
+            <span style={{display:"flex",alignItems:"center",gap:6}}><Users size={15}/>{filtroResp==="todos"?"Todos los oficios":filtroResp}</span>
+            <span style={{color:"#8E8E93",fontSize:12}}>{filtroRespOpen?"▲":"▼"}</span>
+          </button>
+          {filtroRespOpen&&<div style={{position:"absolute",top:"calc(100% - 4px)",left:0,right:0,background:"#fff",borderRadius:12,border:"1.5px solid #E5E5EA",boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50,maxHeight:240,overflowY:"auto"}}>
+            <button style={{width:"100%",padding:"11px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:filtroResp==="todos"?"#0057FF12":"#fff",textAlign:"left",cursor:"pointer",fontSize:14,color:filtroResp==="todos"?"#0057FF":"#1C1C1E",fontWeight:filtroResp==="todos"?700:400,fontFamily:"inherit"}} onClick={()=>{setFiltroResp("todos");setFiltroRespOpen(false);}}>Todos los oficios</button>
+            {respConTareas.map(r=>(
+              <button key={r.nombre} style={{width:"100%",padding:"11px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:filtroResp===r.nombre?"#0057FF12":"#fff",textAlign:"left",cursor:"pointer",fontSize:14,color:filtroResp===r.nombre?"#0057FF":"#1C1C1E",fontWeight:filtroResp===r.nombre?700:400,fontFamily:"inherit"}} onClick={()=>{setFiltroResp(r.nombre);setFiltroRespOpen(false);}}>{r.nombre} ({r.cant})</button>
+            ))}
+          </div>}
         </div>}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
