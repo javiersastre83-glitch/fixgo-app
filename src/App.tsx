@@ -626,7 +626,7 @@ export default function App({ session }) {
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                   <div style={{flex:1,textAlign:"left"}}>
                     <p style={{margin:0,fontSize:17,fontWeight:700,color:"#1C1C1E"}}>{obra.nombre}</p>
-                    <p style={{margin:"3px 0 0",fontSize:13,color:"#8E8E93"}}><MapPin size={13} style={{flexShrink:0}}/> {obra.direccion||"Sin dirección"}</p>
+                    <p style={{margin:"3px 0 0",fontSize:13,color:"#636366",fontWeight:500}}><MapPin size={13} style={{flexShrink:0}}/> {obra.direccion||"Sin dirección"}</p>
                   </div>
                   <ChevronRight size={20} color="#C7C7CC" style={{marginLeft:8,flexShrink:0}}/>
                 </div>
@@ -642,15 +642,21 @@ export default function App({ session }) {
               </button>
             );
           })}
-          <button style={{width:"100%",border:"2px dashed #C7C7CC",background:"transparent",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"20px",cursor:"pointer"}}
+          <button style={{width:"100%",border:"2px solid #1C1C1E",background:"#fff",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer",boxShadow:"0 2px 8px #0000000A"}}
             onClick={()=>{if(!esVersionPro&&obras.length>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
-            <Plus size={24} color="#C7C7CC"/><span style={{fontSize:16,fontWeight:600,color:"#8E8E93"}}>Nueva obra</span>
+            <Plus size={22} color="#1C1C1E"/><span style={{fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Nueva obra</span>
           </button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
         {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
-        {modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Crear más de 1 obra es parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
+        {modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
+              <div style={{textAlign:"left",marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
+                {["Obras ilimitadas","Informes y reportes en PDF","Estadísticas avanzadas de cada obra","Soporte prioritario"].map(t=>(
+                  <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><span style={{color:"#34C759",fontSize:16}}>✓</span>{t}</div>
+                ))}
+              </div>
+              <button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
         {menuObra&&<div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p><button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar obra</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuObra(null)}>Cancelar</button></div></div>}
         {confirmarEliminarObra&&<div style={s.overlay} onClick={()=>setConfirmarEliminarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta obra?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Se borrarán todas sus novedades. No se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarObra(confirmarEliminarObra)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarObra(null)}>Cancelar</button></div></div>}
         {mostrarCambioUsuario&&<SelectorUsuario/>}
@@ -1052,7 +1058,12 @@ export default function App({ session }) {
         </div>}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
-        {novedadesFiltradas.length===0&&<div style={{textAlign:"center",padding:"60px 20px",color:"#8E8E93"}}><p style={{fontSize:44,margin:0}}>{filtro==="resueltas"?"🎉":"📋"}</p><p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>{filtro==="resueltas"?"No hay resueltas aún":filtro==="vencidas"?"No hay vencidas 🙌":busqueda?"Sin resultados":"Sin novedades"}</p>{filtro==="todas"&&!busqueda&&<p style={{fontSize:14,margin:0}}>Tocá + para cargar la primera novedad</p>}</div>}
+        {novedadesFiltradas.length===0&&<div style={{textAlign:"center",padding:"50px 20px",color:"#8E8E93"}}>
+          <p style={{fontSize:44,margin:0}}>{filtro==="resueltas"?"🎉":filtro==="vencidas"?"✅":"📋"}</p>
+          <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>{filtro==="resueltas"?"Todavía no hay resueltas":filtro==="vencidas"?"¡Todo al día!":busqueda?"Sin resultados":"Sin novedades aún"}</p>
+          <p style={{fontSize:14,margin:"0 0 18px"}}>{filtro==="resueltas"?"Cuando marques una tarea como resuelta, aparece acá.":filtro==="vencidas"?"No tenés tareas vencidas. Buen trabajo.":busqueda?"Probá con otra palabra.":"Cargá la primera novedad de esta obra."}</p>
+          {!busqueda&&filtro!=="resueltas"&&<button style={{...s.btnPrincipal,width:"auto",padding:"12px 22px",display:"inline-flex",alignItems:"center",gap:8}} onClick={()=>setVista("nueva")}><Plus size={18}/>Nueva novedad</button>}
+        </div>}
         {novedadesFiltradas.map(nov=>{
           const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);
           return(
