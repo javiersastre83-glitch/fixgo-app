@@ -642,9 +642,9 @@ export default function App({ session }) {
               </button>
             );
           })}
-          <button style={{width:"100%",border:"2px solid #1C1C1E",background:"#fff",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer",boxShadow:"0 2px 8px #0000000A"}}
+          <button style={{width:"100%",border:"1.5px solid #C7C7CC",background:"#fff",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}}
             onClick={()=>{if(!esVersionPro&&obras.length>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
-            <Plus size={22} color="#1C1C1E"/><span style={{fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Nueva obra</span>
+            <Plus size={22} color="#636366"/><span style={{fontSize:16,fontWeight:600,color:"#636366"}}>Nueva obra</span>
           </button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
@@ -1113,7 +1113,7 @@ const s = {
   infoLabel:   { flex:1, fontSize:15, color:"#636366" },
   infoVal:     { fontSize:15, fontWeight:600, color:"#1C1C1E" },
   quitarFoto:  { position:"absolute", top:4, right:4, background:"#000000AA", color:"#fff", border:"none", borderRadius:20, width:24, height:24, fontSize:12, cursor:"pointer" },
-  cardObra:    { background:"#fff", borderRadius:18, padding:"16px", border:"1.5px solid #E5E5EA", cursor:"pointer", textAlign:"left", boxShadow:"0 2px 8px #0000000A", width:"100%" },
+  cardObra:    { background:"#fff", borderRadius:18, padding:"16px", border:"2px solid #1C1C1E", cursor:"pointer", textAlign:"left", boxShadow:"0 2px 8px #0000000A", width:"100%" },
   overlay:     { position:"fixed", inset:0, background:"#00000060", display:"flex", alignItems:"flex-end", zIndex:100 },
   modal:       { background:"#fff", borderRadius:"20px 20px 0 0", padding:"24px 20px 32px", width:"100%", boxSizing:"border-box" },
 };
