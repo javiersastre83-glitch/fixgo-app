@@ -35,7 +35,7 @@ const NOVEDADES_DEMO = [
     descripcion:"Pintura terminada en comedor", responsable:"Pintor", sector:"Comedor", prioridad:2, fechaLimite:"", resuelta:true, fecha:"2026-05-15",
     comentarios:[{texto:"Listo, dos manos aplicadas",autorId:"u2",ts:Date.now()-86400000*3},{texto:"Confirmado, quedó excelente 👍",autorId:"u1",ts:Date.now()-86400000*2}]},
 ];
-const FORM_INICIAL = { fotos:[], descripcion:"", responsable:RESPONSABLES[0], responsableCustom:"", sector:SECTORES[0], sectorCustom:"", prioridad:1, fechaLimite:"", comentario:"" };
+const FORM_INICIAL = { fotos:[], descripcion:"", responsable:RESPONSABLES[0], responsableCustom:"", sector:SECTORES[0], sectorCustom:"", prioridad:1, fechaLimite:"", comentario:"", ocultoCapataz:false };
 
 const formatFecha = (iso) => { if(!iso) return ""; const d=new Date(iso+"T00:00:00"); return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"}); };
 const formatHora  = (ts)  => { const d=new Date(ts); return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}); };
@@ -267,7 +267,7 @@ export default function App({ session }) {
         const novsPorObra={};
         for(const obra of data){
           const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-          novsPorObra[obra.id]=(novs||[]).map(n=>({...n,fotos:n.fotos||[],comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}));
+          novsPorObra[obra.id]=(novs||[]).map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}));
         }
         setNovedadesPorObra(novsPorObra);
       }
@@ -318,7 +318,7 @@ export default function App({ session }) {
     const resp=form.responsable==="Otro"&&form.responsableCustom.trim()?form.responsableCustom.trim():form.responsable;
     const sect=form.sector==="Otro"&&form.sectorCustom.trim()?form.sectorCustom.trim():form.sector;
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
-      const{data}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id}).select().single();
+      const{data}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz}).select().single();
       if(data){
         const nn={...data,fecha:data.created_at?.slice(0,10),comentarios:[]};
         if(form.comentario.trim()){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()});nn.comentarios=[{texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
@@ -350,8 +350,8 @@ export default function App({ session }) {
   };
   const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":`Operario (${invitarEsp})`;const msg=`Te invito a sumarte a la obra "${obraActual?.nombre}" en Fixgo como ${rolTxt}.\n\nAbrí este link para unirte:\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
   const copiarLink=()=>{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};
-  const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite});setEditando(true);};
-  const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite}:x));setEditando(false);setFormEdit(null);};
+  const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
+  const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos,oculto_capataz:formEdit.ocultoCapataz}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite,ocultoCapataz:formEdit.ocultoCapataz}:x));setEditando(false);setFormEdit(null);};
   const compartir=(nov)=>{const t=generarResumen(nov,obraActual?.nombre||"Obra");if(navigator.share)navigator.share({title:"Novedad",text:t}).catch(()=>{});else{navigator.clipboard?.writeText(t);setCompartidoId(nov.id);setTimeout(()=>setCompartidoId(null),2000);}};
 
   const statsResponsable=RESPONSABLES.map(r=>({nombre:r,pendientes:novedades.filter(n=>n.responsable===r&&!n.resuelta).length,resueltas:novedades.filter(n=>n.responsable===r&&n.resuelta).length,urgentes:novedades.filter(n=>n.responsable===r&&!n.resuelta&&n.prioridad===0).length})).filter(r=>r.pendientes+r.resueltas>0);
@@ -921,6 +921,15 @@ export default function App({ session }) {
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.sector===sec?"#007AFF":"#E5E5EA"}`,background:formEdit.sector===sec?"#007AFF15":"#fff",color:formEdit.sector===sec?"#007AFF":"#3A3A3C",fontWeight:formEdit.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{formEdit.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={formEdit.sectorCustom} onChange={e=>setFormEdit(f=>({...f,sectorCustom:e.target.value}))}/>}</div>
           <div><p style={s.label}>👷 Responsable</p><SelectorOficio value={formEdit.responsable} onChange={r=>setFormEdit(f=>({...f,responsable:r,responsableCustom:r==="Otro"?f.responsableCustom:""}))} customValue={formEdit.responsableCustom} onCustomChange={v=>setFormEdit(f=>({...f,responsableCustom:v}))} /></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input type="date" style={s.inputDate} value={formEdit.fechaLimite} onChange={e=>setFormEdit(f=>({...f,fechaLimite:e.target.value}))}/></div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"#F2F2F7",borderRadius:14,padding:"14px 16px"}}>
+            <div style={{flex:1}}>
+              <p style={{margin:0,fontSize:15,fontWeight:600,color:"#1C1C1E"}}>🔒 Ocultar al capataz</p>
+              <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>Solo la verán vos y el responsable asignado.</p>
+            </div>
+            <button onClick={()=>setFormEdit(f=>({...f,ocultoCapataz:!f.ocultoCapataz}))} style={{flexShrink:0,width:50,height:30,borderRadius:99,border:"none",cursor:"pointer",background:formEdit.ocultoCapataz?"#0057FF":"#C7C7CC",position:"relative",transition:"background 0.2s"}}>
+              <span style={{position:"absolute",top:3,left:formEdit.ocultoCapataz?23:3,width:24,height:24,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
+            </button>
+          </div>
           <button style={{...s.btnPrincipal,background:"#34C759",opacity:formEdit.descripcion.trim()?1:0.4}} onClick={()=>guardarEdicion(detalle.id)}><span style={{display:"flex",alignItems:"center",gap:6}}><CheckCircle size={16}/>Guardar cambios</span></button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
@@ -1006,6 +1015,15 @@ export default function App({ session }) {
             <input type="date" style={s.inputDate} value={form.fechaLimite} onChange={e=>setForm(f=>({...f,fechaLimite:e.target.value}))}/>
           </div>
           <div><p style={s.label}>💬 Nota inicial <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input style={s.input} placeholder="Ej: Revisar antes del jueves..." value={form.comentario} onChange={e=>setForm(f=>({...f,comentario:e.target.value}))}/></div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"#F2F2F7",borderRadius:14,padding:"14px 16px"}}>
+            <div style={{flex:1}}>
+              <p style={{margin:0,fontSize:15,fontWeight:600,color:"#1C1C1E"}}>🔒 Ocultar al capataz</p>
+              <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>Solo la verán vos y el responsable asignado.</p>
+            </div>
+            <button onClick={()=>setForm(f=>({...f,ocultoCapataz:!f.ocultoCapataz}))} style={{flexShrink:0,width:50,height:30,borderRadius:99,border:"none",cursor:"pointer",background:form.ocultoCapataz?"#0057FF":"#C7C7CC",position:"relative",transition:"background 0.2s"}}>
+              <span style={{position:"absolute",top:3,left:form.ocultoCapataz?23:3,width:24,height:24,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
+            </button>
+          </div>
           <button style={{...s.btnPrincipal,opacity:(form.descripcion.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={guardar}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={16}/>Guardar novedad</>}</span></button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
