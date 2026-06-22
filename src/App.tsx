@@ -208,6 +208,7 @@ export default function App({ session }) {
   const miId         = usuarioReal?.id||usuarioActivo.id;
   const miRolEnObra  = obraActual?(obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?"profesional":"operario"):(usuarioReal?"profesional":usuarioActivo.rolSistema);
   const miRolInfo    = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
+  const puedeGestionar = miRolEnObra==="profesional"||miRolEnObra==="capataz";
   const getUserById  = (id)=>USUARIOS_DEMO.find(u=>u.id===id);
 
   useEffect(()=>{
@@ -1020,10 +1021,10 @@ export default function App({ session }) {
       <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"16px 16px 0",flexShrink:0}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <button style={{background:"none",border:"none",color:"rgba(255,255,255,0.7)",fontSize:15,cursor:"pointer",padding:0,fontWeight:500}} onClick={irInicio}><span style={{display:"flex",alignItems:"center",gap:4}}><ChevronLeft size={15}/>Obras</span></button>
-          <div style={{display:"flex",gap:8}}>
+          {puedeGestionar&&<div style={{display:"flex",gap:8}}>
             <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaEquipo(true)}><span style={{display:"flex",alignItems:"center",gap:5}}><Users size={14}/>Equipo</span></button>
             <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaStats(true)}><span style={{display:"flex",alignItems:"center",gap:5}}><BarChart2 size={14}/>Stats</span></button>
-          </div>
+          </div>}
         </div>
         <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
         <p style={{margin:"3px 0 8px",fontSize:13,color:"rgba(255,255,255,0.5)"}}><MapPin size={13} style={{flexShrink:0}}/> {obraActual?.direccion||"Sin dirección"}</p>
@@ -1062,7 +1063,7 @@ export default function App({ session }) {
           <p style={{fontSize:44,margin:0}}>{filtro==="resueltas"?"🎉":filtro==="vencidas"?"✅":"📋"}</p>
           <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>{filtro==="resueltas"?"Todavía no hay resueltas":filtro==="vencidas"?"¡Todo al día!":busqueda?"Sin resultados":"Sin novedades aún"}</p>
           <p style={{fontSize:14,margin:"0 0 18px"}}>{filtro==="resueltas"?"Cuando marques una tarea como resuelta, aparece acá.":filtro==="vencidas"?"No tenés tareas vencidas. Buen trabajo.":busqueda?"Probá con otra palabra.":"Cargá la primera novedad de esta obra."}</p>
-          {!busqueda&&filtro!=="resueltas"&&<button style={{...s.btnPrincipal,width:"auto",padding:"12px 22px",display:"inline-flex",alignItems:"center",gap:8}} onClick={()=>setVista("nueva")}><Plus size={18}/>Nueva novedad</button>}
+          {puedeGestionar&&!busqueda&&filtro!=="resueltas"&&<button style={{...s.btnPrincipal,width:"auto",padding:"12px 22px",display:"inline-flex",alignItems:"center",gap:8}} onClick={()=>setVista("nueva")}><Plus size={18}/>Nueva novedad</button>}
         </div>}
         {novedadesFiltradas.map(nov=>{
           const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);
@@ -1086,9 +1087,9 @@ export default function App({ session }) {
           );
         })}
       </div>
-      <div style={{padding:"12px 16px 0",background:"#fff",borderTop:"1px solid #F2F2F7",flexShrink:0}}>
+      {puedeGestionar&&<div style={{padding:"12px 16px 0",background:"#fff",borderTop:"1px solid #F2F2F7",flexShrink:0}}>
         <button style={{...s.btnPrincipal,marginBottom:0}} onClick={()=>setVista("nueva")}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Plus size={18}/>Nueva novedad</span></button>
-      </div>
+      </div>}
       <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
 
       {menuContextual&&<div style={s.overlay} onClick={()=>setMenuContextual(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones</p><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{resolver(menuContextual.novId);setMenuContextual(null);}}>{novedades.find(n=>n.id===menuContextual.novId)?.resuelta?"↩ Reabrir":"✅ Marcar como resuelto"}</button><button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminar(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
