@@ -206,7 +206,7 @@ export default function App({ session }) {
   const equipoObra   = obraActual?(obraActual.equipo||[]).map(m=>{if(m.nombre){return{id:m.uid,nombre:m.nombre,especialidad:m.especialidad||"Profesional",avatar:m.avatar||"📐",color:"#0057FF",rolEnObra:m.rolEnObra};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);return u?{...u,rolEnObra:m.rolEnObra}:null;}).filter(Boolean):[];
   const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
   const miId         = usuarioReal?.id||usuarioActivo.id;
-  const miRolEnObra  = obraActual?(obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?"profesional":"operario"):(usuarioReal?"profesional":usuarioActivo.rolSistema);
+  const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
   const miRolInfo    = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
   const puedeGestionar = miRolEnObra==="profesional"||miRolEnObra==="capataz";
   const getUserById  = (id)=>USUARIOS_DEMO.find(u=>u.id===id);
