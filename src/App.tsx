@@ -267,7 +267,7 @@ export default function App({ session }) {
         const novsPorObra={};
         for(const obra of data){
           const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-          novsPorObra[obra.id]=(novs||[]).map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}));
+          novsPorObra[obra.id]=(novs||[]).map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}));
         }
         setNovedadesPorObra(novsPorObra);
       }
@@ -320,7 +320,7 @@ export default function App({ session }) {
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
       const{data}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz}).select().single();
       if(data){
-        const nn={...data,fecha:data.created_at?.slice(0,10),comentarios:[]};
+        const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
         if(form.comentario.trim()){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()});nn.comentarios=[{texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
         setNovedades(n=>[nn,...n]);
       }
