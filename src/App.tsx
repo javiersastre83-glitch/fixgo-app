@@ -199,6 +199,7 @@ export default function App({ session }) {
   const [formEdit,         setFormEdit]         = useState(null);
   const [perfilForm,       setPerfilForm]       = useState({nombre:"",especialidad:"",email:""});
   const esVersionPro = false;
+  const misObrasPropias = usuarioReal ? obras.filter(o=>o.propietario_id===usuarioReal.id).length : obras.length;
   const fileRef = useRef();
 
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
@@ -605,9 +606,8 @@ export default function App({ session }) {
                 {totalVenc>0&&<span style={{color:"#FFD60A",fontWeight:700}}> · ⚠️ {totalVenc} vencida{totalVenc!==1?"s":""}</span>}
               </p>
             </div>
-            <div style={{background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:22}}>{usuarioActivo.avatar}</span>
-              <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p><p style={{margin:0,fontSize:11,color:usuarioActivo.color}}>{usuarioActivo.especialidad}</p></div>
+            <div style={{background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p></div>
             </div>
           </div>
         </div>
@@ -644,7 +644,7 @@ export default function App({ session }) {
             );
           })}
           <button style={{width:"100%",border:"1.5px solid #C7C7CC",background:"#fff",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}}
-            onClick={()=>{if(!esVersionPro&&obras.length>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
+            onClick={()=>{if(!esVersionPro&&misObrasPropias>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
             <Plus size={22} color="#636366"/><span style={{fontSize:16,fontWeight:600,color:"#636366"}}>Nueva obra</span>
           </button>
         </div>
@@ -1047,7 +1047,6 @@ export default function App({ session }) {
         <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
         <p style={{margin:"3px 0 8px",fontSize:13,color:"rgba(255,255,255,0.5)"}}><MapPin size={13} style={{flexShrink:0}}/> {obraActual?.direccion||"Sin dirección"}</p>
         <div style={{display:"flex",alignItems:"center",gap:8,paddingBottom:12}}>
-          <span style={{fontSize:14}}>{usuarioActivo.avatar}</span>
           <span style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>{usuarioActivoReal.nombre}</span>
           {miRolInfo&&<span style={{fontSize:11,fontWeight:700,color:miRolInfo.color,background:miRolInfo.color+"25",padding:"2px 8px",borderRadius:99}}>{miRolInfo.emoji} {miRolInfo.label}</span>}
 
