@@ -1086,10 +1086,10 @@ export default function App({ session }) {
       <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"16px 16px 0",flexShrink:0}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <button style={{background:"none",border:"none",color:"rgba(255,255,255,0.7)",fontSize:15,cursor:"pointer",padding:0,fontWeight:500}} onClick={irInicio}><span style={{display:"flex",alignItems:"center",gap:4}}><ChevronLeft size={15}/>Obras</span></button>
-          {puedeGestionar&&<div style={{display:"flex",gap:8}}>
-            <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaEquipo(true)}><span style={{display:"flex",alignItems:"center",gap:5}}><Users size={14}/>Equipo</span></button>
-            <button style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:600}} onClick={()=>setVistaStats(true)}><span style={{display:"flex",alignItems:"center",gap:5}}><BarChart2 size={14}/>Stats</span></button>
-          </div>}
+          {puedeGestionar&&<button style={{background:"#0057FF",border:"none",borderRadius:14,width:72,height:72,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,color:"#fff",cursor:"pointer",flexShrink:0,boxShadow:"0 3px 10px rgba(0,87,255,0.45)"}} onClick={()=>setVistaEquipo(true)}>
+            <Users size={24}/>
+            <span style={{fontSize:11,fontWeight:700}}>Mi equipo</span>
+          </button>}
         </div>
         <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
         <p style={{margin:"3px 0 8px",fontSize:13,color:"rgba(255,255,255,0.5)"}}><MapPin size={13} style={{flexShrink:0}}/> {obraActual?.direccion||"Sin dirección"}</p>
@@ -1109,6 +1109,7 @@ export default function App({ session }) {
             </button>
           ))}
         </div>
+        {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",background:"none",border:"none",cursor:"pointer",color:"#0057FF",fontSize:12.5,fontWeight:600,paddingBottom:12,marginTop:-4}}><BarChart2 size={14}/>Ver estadísticas completas</button>}
         {respConTareas.length>1&&<div style={{position:"relative",paddingBottom:12}}>
           <button style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${filtroResp!=="todos"?"#0057FF":"#E5E5EA"}`,background:"#fff",fontSize:14,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:filtroResp!=="todos"?"#0057FF":"#636366",fontWeight:filtroResp!=="todos"?700:500}} onClick={()=>setFiltroRespOpen(o=>!o)}>
             <span style={{display:"flex",alignItems:"center",gap:6}}><Users size={15}/>{filtroResp==="todos"?"Todos los oficios":filtroResp}</span>
