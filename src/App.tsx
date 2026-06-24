@@ -178,6 +178,7 @@ export default function App({ session }) {
   const [modalInvitar,     setModalInvitar]     = useState(false);
   const [invitarRol,       setInvitarRol]       = useState("operario");
   const [invitarEsp,       setInvitarEsp]       = useState(RESPONSABLES[0]);
+  const [invitarNombre,    setInvitarNombre]    = useState("");
   const [linkGenerado,     setLinkGenerado]     = useState("");
   const [generandoLink,    setGenerandoLink]    = useState(false);
   const [nuevaObraForm,    setNuevaObraForm]    = useState({nombre:"",direccion:""});
@@ -260,8 +261,8 @@ export default function App({ session }) {
    if(!error){
      const obrasConEquipo=[];
      for(const obra of (data||[])){
-       const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,usuarios(nombre,especialidad,avatar)").eq("obra_id",obra.id);
-       const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.usuarios?.nombre,especialidad:m.usuarios?.especialidad,avatar:m.usuarios?.avatar}));
+       const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,nombre,especialidad,usuarios(nombre,especialidad,avatar)").eq("obra_id",obra.id);
+       const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre||m.usuarios?.nombre,especialidad:m.especialidad||m.usuarios?.especialidad,avatar:m.usuarios?.avatar}));
        obrasConEquipo.push({...obra,equipo});
      }
      setObras(obrasConEquipo);
@@ -338,13 +339,13 @@ export default function App({ session }) {
   const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
   const crearObra=async()=>{if(!nuevaObraForm.nombre.trim()||guardando)return;setGuardando(true);if(usuarioReal){const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id}).select().single();if(error){alert("Error al crear la obra: "+error.message);setGuardando(false);return;}await supabase.from("equipo_obra").insert({obra_id:data.id,usuario_id:usuarioReal.id,rol_en_obra:"profesional"});const obraConEquipo={...data,equipo:[{uid:usuarioReal.id,rolEnObra:"profesional",nombre:usuarioActivoReal.nombre,especialidad:"Profesional",avatar:"📐"}]};setObras(o=>[...o,obraConEquipo]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);setGuardando(false);mostrarToast("Obra creada con éxito");};
 
-  const abrirModalInvitar=()=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setLinkGenerado("");setModalInvitar(true);};
+  const abrirModalInvitar=()=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarNombre("");setLinkGenerado("");setModalInvitar(true);};
   const generarInvitacion=async()=>{
     if(!usuarioReal||!obraActual?.id||generandoLink)return;
     setGenerandoLink(true);
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
     const esp=invitarRol==="operario"?invitarEsp:null;
-    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id});
+    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:invitarNombre.trim()||null});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
     setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
     setGenerandoLink(false);
@@ -779,6 +780,8 @@ export default function App({ session }) {
             <div style={{marginBottom:16}}>
               <SelectorOficio value={invitarEsp} onChange={r=>setInvitarEsp(r)} customValue="" onCustomChange={()=>{}} color="#0057FF" />
             </div></>}
+            <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Nombre o empresa <span style={{fontWeight:400}}>(opcional)</span></p>
+            <input style={{...s.input,marginBottom:16}} placeholder="Ej: Jorge, Cuadrilla 2..." value={invitarNombre} onChange={e=>setInvitarNombre(e.target.value)} maxLength={40}/>
             <button style={{...s.btnPrincipal,background:"#1C1C1E",opacity:generandoLink?0.5:1}} disabled={generandoLink} onClick={generarInvitacion}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{generandoLink?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Generando...</>:"Generar link de invitación"}</span></button>
           </>:<>
             <div style={{background:"#34C75915",borderRadius:14,padding:"14px",marginBottom:16,textAlign:"center"}}>
