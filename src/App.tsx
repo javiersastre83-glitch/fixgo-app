@@ -35,7 +35,7 @@ const NOVEDADES_DEMO = [
     descripcion:"Pintura terminada en comedor", responsable:"Pintor", sector:"Comedor", prioridad:2, fechaLimite:"", resuelta:true, fecha:"2026-05-15",
     comentarios:[{texto:"Listo, dos manos aplicadas",autorId:"u2",ts:Date.now()-86400000*3},{texto:"Confirmado, quedó excelente 👍",autorId:"u1",ts:Date.now()-86400000*2}]},
 ];
-const FORM_INICIAL = { fotos:[], descripcion:"", responsable:RESPONSABLES[0], responsableCustom:"", sector:SECTORES[0], sectorCustom:"", prioridad:1, fechaLimite:"", comentario:"", ocultoCapataz:false };
+const FORM_INICIAL = { fotos:[], descripcion:"", responsable:RESPONSABLES[0], responsableCustom:"", responsableUsuarioId:null, sector:SECTORES[0], sectorCustom:"", prioridad:1, fechaLimite:"", comentario:"", ocultoCapataz:false };
 
 const formatFecha = (iso) => { if(!iso) return ""; const d=new Date(iso+"T00:00:00"); return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"}); };
 const formatHora  = (ts)  => { const d=new Date(ts); return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}); };
@@ -94,6 +94,50 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
       {value==="Otro" && (
         <input style={{width:"100%",padding:"13px 14px",borderRadius:14,border:"1.5px solid #E5E5EA",fontSize:16,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginTop:10}}
           placeholder="Escribí el oficio..." value={customValue} onChange={e=>onCustomChange(e.target.value)} autoFocus/>
+      )}
+    </div>
+  );
+};
+
+const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#007AFF" }) => {
+  const [abierto, setAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const miembros = (equipo||[]).filter(m=>m.nombre);
+  const miembrosFiltrados = miembros.filter(m=>(m.nombre||"").toLowerCase().includes(busqueda.toLowerCase()));
+  const oficiosFiltrados = RESPONSABLES.filter(r => r.toLowerCase().includes(busqueda.toLowerCase()));
+  const personaSel = usuarioId ? miembros.find(m=>m.uid===usuarioId) : null;
+  const etiqueta = personaSel ? `${personaSel.nombre}${personaSel.especialidad?" — "+personaSel.especialidad:""}` : (value||"Seleccioná...");
+  return (
+    <div style={{position:"relative"}}>
+      <button type="button" onClick={()=>setAbierto(a=>!a)}
+        style={{width:"100%",padding:"13px 14px",borderRadius:14,border:`1.5px solid ${(value||usuarioId)?color:"#E5E5EA"}`,background:"#fff",fontSize:16,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:(value||usuarioId)?"#1C1C1E":"#8E8E93"}}>
+        <span>{etiqueta}</span>
+        <span style={{color:"#8E8E93",fontSize:13}}>{abierto?"▲":"▼"}</span>
+      </button>
+      {abierto && (
+        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",borderRadius:14,border:"1.5px solid #E5E5EA",boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50,maxHeight:320,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{padding:"10px",borderBottom:"1px solid #F2F2F7"}}>
+            <input autoFocus value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar persona u oficio..."
+              style={{width:"100%",padding:"10px 12px",borderRadius:10,border:"1.5px solid #E5E5EA",fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+          </div>
+          <div style={{overflowY:"auto",flex:1}}>
+            {miembrosFiltrados.length>0 && <p style={{padding:"8px 14px 4px",margin:0,fontSize:12,fontWeight:700,color:"#8E8E93"}}>👥 Mi equipo</p>}
+            {miembrosFiltrados.map(m => (
+              <button type="button" key={m.uid} onClick={()=>{onChange({responsable:m.especialidad||"",usuarioId:m.uid});setAbierto(false);setBusqueda("");}}
+                style={{width:"100%",padding:"12px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:usuarioId===m.uid?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:usuarioId===m.uid?color:"#1C1C1E",fontWeight:usuarioId===m.uid?700:400,fontFamily:"inherit"}}>
+                {m.nombre}{m.especialidad?<span style={{color:"#8E8E93",fontWeight:400}}> — {m.especialidad}</span>:null}
+              </button>
+            ))}
+            {oficiosFiltrados.length>0 && <p style={{padding:"8px 14px 4px",margin:0,fontSize:12,fontWeight:700,color:"#8E8E93"}}>🔧 Oficio genérico</p>}
+            {oficiosFiltrados.map(r => (
+              <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setAbierto(false);setBusqueda("");}}
+                style={{width:"100%",padding:"12px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:(!usuarioId&&value===r)?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(!usuarioId&&value===r)?color:"#1C1C1E",fontWeight:(!usuarioId&&value===r)?700:400,fontFamily:"inherit"}}>
+                {r}
+              </button>
+            ))}
+            {miembrosFiltrados.length===0 && oficiosFiltrados.length===0 && <p style={{padding:"14px",margin:0,fontSize:14,color:"#8E8E93",textAlign:"center"}}>Sin resultados</p>}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -320,7 +364,7 @@ export default function App({ session }) {
     const resp=form.responsable==="Otro"&&form.responsableCustom.trim()?form.responsableCustom.trim():form.responsable;
     const sect=form.sector==="Otro"&&form.sectorCustom.trim()?form.sectorCustom.trim():form.sector;
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
-      const{data}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz}).select().single();
+      const{data}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:form.responsableUsuarioId||null}).select().single();
       if(data){
         const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
         if(form.comentario.trim()){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()});nn.comentarios=[{texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
@@ -352,8 +396,8 @@ export default function App({ session }) {
   };
   const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":`Operario (${invitarEsp})`;const msg=`Te invito a sumarte a la obra "${obraActual?.nombre}" en Fixgo como ${rolTxt}.\n\nAbrí este link para unirte:\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
   const copiarLink=()=>{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};
-  const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
-  const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos,oculto_capataz:formEdit.ocultoCapataz}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite,ocultoCapataz:formEdit.ocultoCapataz}:x));setEditando(false);setFormEdit(null);};
+  const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",responsableUsuarioId:nov.responsable_usuario_id||null,sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
+  const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos,oculto_capataz:formEdit.ocultoCapataz,responsable_usuario_id:formEdit.responsableUsuarioId||null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,responsable_usuario_id:formEdit.responsableUsuarioId||null,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite,ocultoCapataz:formEdit.ocultoCapataz}:x));setEditando(false);setFormEdit(null);};
   const compartir=(nov)=>{const t=generarResumen(nov,obraActual?.nombre||"Obra");if(navigator.share)navigator.share({title:"Novedad",text:t}).catch(()=>{});else{navigator.clipboard?.writeText(t);setCompartidoId(nov.id);setTimeout(()=>setCompartidoId(null),2000);}};
 
   const statsResponsable=RESPONSABLES.map(r=>({nombre:r,pendientes:novedades.filter(n=>n.responsable===r&&!n.resuelta).length,resueltas:novedades.filter(n=>n.responsable===r&&n.resuelta).length,urgentes:novedades.filter(n=>n.responsable===r&&!n.resuelta&&n.prioridad===0).length})).filter(r=>r.pendientes+r.resueltas>0);
@@ -922,7 +966,7 @@ export default function App({ session }) {
           <div><p style={s.label}>📝 Descripción</p><textarea style={s.textarea} rows={3} value={formEdit.descripcion} onChange={e=>setFormEdit(f=>({...f,descripcion:e.target.value}))}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.sector===sec?"#007AFF":"#E5E5EA"}`,background:formEdit.sector===sec?"#007AFF15":"#fff",color:formEdit.sector===sec?"#007AFF":"#3A3A3C",fontWeight:formEdit.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{formEdit.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={formEdit.sectorCustom} onChange={e=>setFormEdit(f=>({...f,sectorCustom:e.target.value}))}/>}</div>
-          <div><p style={s.label}>👷 Responsable</p><SelectorOficio value={formEdit.responsable} onChange={r=>setFormEdit(f=>({...f,responsable:r,responsableCustom:r==="Otro"?f.responsableCustom:""}))} customValue={formEdit.responsableCustom} onCustomChange={v=>setFormEdit(f=>({...f,responsableCustom:v}))} /></div>
+          <div><p style={s.label}>👷 Responsable</p><SelectorResponsable value={formEdit.responsable} usuarioId={formEdit.responsableUsuarioId} equipo={obraActual?.equipo||[]} onChange={({responsable,usuarioId})=>setFormEdit(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input type="date" style={s.inputDate} value={formEdit.fechaLimite} onChange={e=>setFormEdit(f=>({...f,fechaLimite:e.target.value}))}/></div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"#F2F2F7",borderRadius:14,padding:"14px 16px"}}>
             <div style={{flex:1}}>
@@ -1006,7 +1050,7 @@ export default function App({ session }) {
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.sector===sec?"#007AFF":"#E5E5EA"}`,background:form.sector===sec?"#007AFF15":"#fff",color:form.sector===sec?"#007AFF":"#3A3A3C",fontWeight:form.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{form.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={form.sectorCustom} onChange={e=>setForm(f=>({...f,sectorCustom:e.target.value}))} autoFocus/>}</div>
-          <div><p style={s.label}>👷 Responsable</p><SelectorOficio value={form.responsable} onChange={r=>setForm(f=>({...f,responsable:r,responsableCustom:r==="Otro"?f.responsableCustom:""}))} customValue={form.responsableCustom} onCustomChange={v=>setForm(f=>({...f,responsableCustom:v}))} /></div>
+          <div><p style={s.label}>👷 Responsable</p><SelectorResponsable value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={obraActual?.equipo||[]} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p>
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               {[["Hoy",0],["Mañana",1],["En 1 semana",7]].map(([lbl,dias])=>{
