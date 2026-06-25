@@ -229,6 +229,8 @@ export default function App({ session }) {
   const [vistaStats,       setVistaStats]       = useState(false);
   const [vistaEquipo,      setVistaEquipo]      = useState(false);
   const [miembroSel,       setMiembroSel]       = useState(null);
+  const [editandoNombreId, setEditandoNombreId] = useState(null);
+  const [nombreEditado,    setNombreEditado]    = useState("");
   const [vistaPerfil,      setVistaPerfil]      = useState(false);
   const [vistaInfoApp,     setVistaInfoApp]     = useState(false);
   const [modoOscuro,       setModoOscuro]       = useState(false);
@@ -249,7 +251,7 @@ export default function App({ session }) {
 
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
-  const equipoObra   = obraActual?(obraActual.equipo||[]).map(m=>{if(m.nombre){return{id:m.uid,nombre:m.nombre,especialidad:m.especialidad||"Profesional",avatar:m.avatar||"📐",color:"#0057FF",rolEnObra:m.rolEnObra};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);return u?{...u,rolEnObra:m.rolEnObra}:null;}).filter(Boolean):[];
+  const equipoObra   = obraActual?(obraActual.equipo||[]).map(m=>{if(m.nombre){return{id:m.uid,uid:m.uid,nombre:m.nombre,especialidad:m.especialidad||"Profesional",avatar:m.avatar||"📐",color:"#0057FF",rolEnObra:m.rolEnObra};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color:"#0057FF",rolEnObra:m.rolEnObra};}).filter(Boolean):[];
   const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
   const miId         = usuarioReal?.id||usuarioActivo.id;
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
@@ -384,6 +386,7 @@ export default function App({ session }) {
   const crearObra=async()=>{if(!nuevaObraForm.nombre.trim()||guardando)return;setGuardando(true);if(usuarioReal){const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id}).select().single();if(error){alert("Error al crear la obra: "+error.message);setGuardando(false);return;}await supabase.from("equipo_obra").insert({obra_id:data.id,usuario_id:usuarioReal.id,rol_en_obra:"profesional"});const obraConEquipo={...data,equipo:[{uid:usuarioReal.id,rolEnObra:"profesional",nombre:usuarioActivoReal.nombre,especialidad:"Profesional",avatar:"📐"}]};setObras(o=>[...o,obraConEquipo]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);setGuardando(false);mostrarToast("Obra creada con éxito");};
 
   const abrirModalInvitar=()=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarNombre("");setLinkGenerado("");setModalInvitar(true);};
+  const guardarNombreIntegrante=async(uid)=>{const nuevo=nombreEditado.trim();if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){await supabase.from("equipo_obra").update({nombre:nuevo||null}).eq("obra_id",obraActual.id).eq("usuario_id",uid);}setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:o));setEditandoNombreId(null);setNombreEditado("");mostrarToast("Nombre actualizado");};
   const generarInvitacion=async()=>{
     if(!usuarioReal||!obraActual?.id||generandoLink)return;
     setGenerandoLink(true);
@@ -791,7 +794,17 @@ export default function App({ session }) {
                   <div key={u.id} style={{background:"#fff",borderRadius:18,padding:"16px",border:`1.5px solid ${u.color}25`}}>
                     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
                       <div style={{width:50,height:50,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{u.avatar}</div>
-                      <div style={{flex:1}}><p style={{margin:0,fontWeight:700,fontSize:17,color:"#1C1C1E"}}>{u.nombre}</p>
+                      <div style={{flex:1}}>
+                        {editandoNombreId===u.uid?(
+                          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                            <input autoFocus value={nombreEditado} onChange={e=>setNombreEditado(e.target.value)} placeholder="Nombre o empresa" maxLength={40}
+                              style={{flex:1,padding:"8px 10px",borderRadius:10,border:"1.5px solid #0057FF",fontSize:15,outline:"none",fontFamily:"inherit",minWidth:0}}/>
+                            <button onClick={()=>guardarNombreIntegrante(u.uid)} style={{background:"#34C759",border:"none",borderRadius:10,padding:"8px 10px",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>✓</button>
+                            <button onClick={()=>{setEditandoNombreId(null);setNombreEditado("");}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"8px 10px",color:"#8E8E93",cursor:"pointer",fontSize:13}}>✕</button>
+                          </div>
+                        ):(
+                          <p style={{margin:0,fontWeight:700,fontSize:17,color:"#1C1C1E",display:"flex",alignItems:"center",gap:8}}>{u.nombre}{puedeGestionar&&u.rolEnObra!=="profesional"&&<button onClick={()=>{setEditandoNombreId(u.uid);setNombreEditado(u.nombre||"");}} style={{background:"none",border:"none",cursor:"pointer",color:"#0057FF",padding:0,display:"flex",alignItems:"center"}}><Edit2 size={14}/></button>}</p>
+                        )}
                         <div style={{display:"flex",gap:6,marginTop:2,alignItems:"center"}}>{r&&<span style={{fontSize:11,fontWeight:700,color:u.color,background:u.color+"15",padding:"2px 8px",borderRadius:99}}>{r.emoji} {r.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
                       </div>
                       {u.uid===miId&&<span style={{...s.chip,background:"#1C1C1E",color:"#fff",fontSize:11}}>Vos</span>}
