@@ -791,7 +791,7 @@ export default function App({ session }) {
                             <button onClick={()=>{setEditandoNombreId(null);setNombreEditado("");}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"8px 10px",color:"#8E8E93",cursor:"pointer",fontSize:13}}>✕</button>
                           </div>
                         ):(
-                          <p style={{margin:0,fontWeight:700,fontSize:17,color:"#1C1C1E",display:"flex",alignItems:"center",gap:8}}>{u.nombre}{puedeGestionar&&u.rolEnObra!=="profesional"&&<button onClick={()=>{setEditandoNombreId(u.uid);setNombreEditado(u.nombre||"");}} style={{background:"none",border:"none",cursor:"pointer",color:"#0057FF",padding:0,display:"flex",alignItems:"center"}}><Edit2 size={14}/></button>}</p>
+                          <p style={{margin:0,fontWeight:700,fontSize:17,color:"#1C1C1E",display:"flex",alignItems:"center",gap:8}}>{u.nombre}{puedeGestionar&&(u.rolEnObra!=="profesional"||u.uid===miId)&&<button onClick={()=>{setEditandoNombreId(u.uid);setNombreEditado(u.nombre||"");}} style={{background:"none",border:"none",cursor:"pointer",color:"#0057FF",padding:0,display:"flex",alignItems:"center"}}><Edit2 size={14}/></button>}</p>
                         )}
                         <div style={{display:"flex",gap:6,marginTop:2,alignItems:"center"}}>{r&&<span style={{fontSize:11,fontWeight:700,color:u.color,background:u.color+"15",padding:"2px 8px",borderRadius:99}}>{r.emoji} {r.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
                       </div>
@@ -967,7 +967,7 @@ export default function App({ session }) {
           <div><p style={s.label}>📝 Descripción</p><textarea style={s.textarea} rows={3} value={formEdit.descripcion} onChange={e=>setFormEdit(f=>({...f,descripcion:e.target.value}))}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.sector===sec?"#007AFF":"#E5E5EA"}`,background:formEdit.sector===sec?"#007AFF15":"#fff",color:formEdit.sector===sec?"#007AFF":"#3A3A3C",fontWeight:formEdit.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{formEdit.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={formEdit.sectorCustom} onChange={e=>setFormEdit(f=>({...f,sectorCustom:e.target.value}))}/>}</div>
-          <div><p style={s.label}>👷 Responsable</p><SelectorResponsable value={formEdit.responsable} usuarioId={formEdit.responsableUsuarioId} equipo={obraActual?.equipo||[]} onChange={({responsable,usuarioId})=>setFormEdit(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
+          <div><p style={s.label}>👷 Responsable</p><p style={{margin:"-4px 0 8px",fontSize:12.5,color:"#8E8E93"}}>Elegí a alguien de tu equipo o un oficio genérico</p><SelectorResponsable value={formEdit.responsable} usuarioId={formEdit.responsableUsuarioId} equipo={obraActual?.equipo||[]} onChange={({responsable,usuarioId})=>setFormEdit(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input type="date" style={s.inputDate} value={formEdit.fechaLimite} onChange={e=>setFormEdit(f=>({...f,fechaLimite:e.target.value}))}/></div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"#F2F2F7",borderRadius:14,padding:"14px 16px"}}>
             <div style={{flex:1}}>
@@ -1053,7 +1053,7 @@ export default function App({ session }) {
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.sector===sec?"#007AFF":"#E5E5EA"}`,background:form.sector===sec?"#007AFF15":"#fff",color:form.sector===sec?"#007AFF":"#3A3A3C",fontWeight:form.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{form.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={form.sectorCustom} onChange={e=>setForm(f=>({...f,sectorCustom:e.target.value}))} autoFocus/>}</div>
-          <div><p style={s.label}>👷 Responsable</p><SelectorResponsable value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={obraActual?.equipo||[]} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
+          <div><p style={s.label}>👷 Responsable</p><p style={{margin:"-4px 0 8px",fontSize:12.5,color:"#8E8E93"}}>Elegí a alguien de tu equipo o un oficio genérico</p><SelectorResponsable value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={obraActual?.equipo||[]} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p>
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               {[["Hoy",0],["Mañana",1],["En 1 semana",7]].map(([lbl,dias])=>{
@@ -1087,11 +1087,10 @@ export default function App({ session }) {
   return(
     <div style={s.root}>
       <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"16px 16px 0",flexShrink:0}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <button style={{background:"none",border:"none",color:"rgba(255,255,255,0.7)",fontSize:15,cursor:"pointer",padding:0,fontWeight:500}} onClick={irInicio}><span style={{display:"flex",alignItems:"center",gap:4}}><ChevronLeft size={15}/>Obras</span></button>
-          {puedeGestionar&&<button style={{background:"rgba(0,87,255,0.18)",border:"1px solid rgba(120,170,255,0.35)",borderRadius:16,width:68,height:68,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,color:"#fff",cursor:"pointer",flexShrink:0}} onClick={()=>setVistaEquipo(true)}>
-            <Users size={22} color="#4D8DFF"/>
-            <span style={{fontSize:10.5,fontWeight:700,letterSpacing:0.2}}>Mi equipo</span>
+        <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",marginBottom:10}}>
+          {puedeGestionar&&<button style={{background:"#fff",border:"none",borderRadius:16,width:68,height:68,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,color:"#0057FF",cursor:"pointer",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,0.2)"}} onClick={()=>setVistaEquipo(true)}>
+            <Users size={22} color="#0057FF"/>
+            <span style={{fontSize:10.5,fontWeight:700,letterSpacing:0.2,color:"#0057FF"}}>Mi equipo</span>
           </button>}
         </div>
         <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
@@ -1103,7 +1102,7 @@ export default function App({ session }) {
         </div>
       </div>
       <div style={{background:"#fff",borderBottom:"1px solid #F2F2F7",padding:"12px 16px 0",flexShrink:0}}>
-        <div style={{position:"relative",marginBottom:10}}><Search size={16} color="#8E8E93" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/><input style={{...s.input,background:"#F2F2F7",border:"none",paddingLeft:38}} placeholder="Buscar novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></div>
+        <div style={{position:"relative",marginBottom:10}}><Search size={16} color="#8E8E93" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/><input style={{...s.input,background:"#F2F2F7",border:"none",paddingLeft:38}} placeholder="Buscar oficios o novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></div>
         <div style={{display:"flex",gap:6,paddingBottom:12}}>
           {[["todas","Todas",contadores.todas,"#1C1C1E"],["pendientes","Pendientes",contadores.pendientes,"#FF6B00"],["vencidas","Vencidas",contadores.vencidas,"#FF3B30"],["resueltas","Resueltas",contadores.resueltas,"#34C759"]].map(([key,lbl,val,col])=>(
             <button key={key} style={{flex:1,minWidth:0,padding:"8px 2px",borderRadius:12,border:`1.5px solid ${filtro===key?col:"#E5E5EA"}`,background:filtro===key?col:"#fff",color:filtro===key?"#fff":"#636366",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1}} onClick={()=>setFiltro(key)}>
@@ -1112,19 +1111,7 @@ export default function App({ session }) {
             </button>
           ))}
         </div>
-        {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"11px",marginBottom:4}}><BarChart2 size={15}/>Ver estadísticas completas<ChevronRight size={15}/></button>}
-        {respConTareas.length>1&&<div style={{position:"relative",paddingBottom:12}}>
-          <button style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${filtroResp!=="todos"?"#0057FF":"#E5E5EA"}`,background:"#fff",fontSize:14,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:filtroResp!=="todos"?"#0057FF":"#636366",fontWeight:filtroResp!=="todos"?700:500}} onClick={()=>setFiltroRespOpen(o=>!o)}>
-            <span style={{display:"flex",alignItems:"center",gap:6}}><Users size={15}/>{filtroResp==="todos"?"Todos los oficios":filtroResp}</span>
-            <span style={{color:"#8E8E93",fontSize:12}}>{filtroRespOpen?"▲":"▼"}</span>
-          </button>
-          {filtroRespOpen&&<div style={{position:"absolute",top:"calc(100% - 4px)",left:0,right:0,background:"#fff",borderRadius:12,border:"1.5px solid #E5E5EA",boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50,maxHeight:240,overflowY:"auto"}}>
-            <button style={{width:"100%",padding:"11px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:filtroResp==="todos"?"#0057FF12":"#fff",textAlign:"left",cursor:"pointer",fontSize:14,color:filtroResp==="todos"?"#0057FF":"#1C1C1E",fontWeight:filtroResp==="todos"?700:400,fontFamily:"inherit"}} onClick={()=>{setFiltroResp("todos");setFiltroRespOpen(false);}}>Todos los oficios</button>
-            {respConTareas.map(r=>(
-              <button key={r.nombre} style={{width:"100%",padding:"11px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:filtroResp===r.nombre?"#0057FF12":"#fff",textAlign:"left",cursor:"pointer",fontSize:14,color:filtroResp===r.nombre?"#0057FF":"#1C1C1E",fontWeight:filtroResp===r.nombre?700:400,fontFamily:"inherit"}} onClick={()=>{setFiltroResp(r.nombre);setFiltroRespOpen(false);}}>{r.nombre} ({r.cant})</button>
-            ))}
-          </div>}
-        </div>}
+        {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"11px",marginBottom:12}}><BarChart2 size={15}/>Ver estadísticas completas<ChevronRight size={15}/></button>}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
         {novedadesFiltradas.length===0&&<div style={{textAlign:"center",padding:"50px 20px",color:"#8E8E93"}}>
