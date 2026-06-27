@@ -167,34 +167,19 @@ const Header = ({ migas=[], accionDerecha=null, dark=false }) => {
   const bg   = dark ? "linear-gradient(135deg,#1C1C1E,#2C2C2E)" : "#fff";
   const col  = dark ? "#fff" : "#1C1C1E";
   const sub  = dark ? "rgba(255,255,255,0.5)" : "#8E8E93";
-  // migas: array de {label, onClick?}  — el último es el título actual (sin onClick)
+  // migas: array de {label, onClick?}  — el último es el título actual; el penúltimo (si existe) es a dónde vuelve la flecha
   const padre = migas.slice(0,-1);
   const actual = migas[migas.length-1];
+  const volver = padre.length>0 ? padre[padre.length-1].onClick : null;
   return (
     <div style={{background:bg,borderBottom:dark?"none":"1px solid #E5E5EA",padding:"14px 16px 10px",flexShrink:0}}>
-      {padre.length>0&&(
-        <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
-          {padre.map((m,i)=>(
-            <span key={i} style={{display:"flex",alignItems:"center",gap:4}}>
-              {i>0&&<span style={{color:sub,fontSize:12}}>›</span>}
-              <button onClick={m.onClick} style={{background:"none",border:"none",padding:0,fontSize:13,color:dark?"rgba(255,255,255,0.6)":"#007AFF",cursor:"pointer",fontWeight:500}}>
-                {m.label}
-              </button>
-            </span>
-          ))}
-          <span style={{color:sub,fontSize:12}}>›</span>
-          <span style={{fontSize:13,color:col,fontWeight:600}}>{actual?.label}</span>
-        </div>
-      )}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        {padre.length>0
-          ? <button onClick={padre[padre.length-1].onClick}
-              style={{background:"none",border:"none",padding:0,fontSize:15,color:dark?"rgba(255,255,255,0.7)":"#007AFF",cursor:"pointer",fontWeight:500,display:"flex",alignItems:"center",gap:4}}><ChevronLeft size={16}/>
-              ← {padre[padre.length-1].label}
-            </button>
-          : <div style={{width:8}}/>
-        }
-        {accionDerecha&&<div style={{marginLeft:"auto"}}>{accionDerecha}</div>}
+        <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+          {volver&&<button onClick={volver} aria-label="Volver"
+            style={{background:dark?"rgba(255,255,255,0.1)":"#F2F2F7",border:"none",borderRadius:99,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",color:dark?"#fff":"#007AFF",cursor:"pointer",flexShrink:0,padding:0}}><ChevronLeft size={20}/></button>}
+          <span style={{fontSize:16,color:col,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{actual?.label}</span>
+        </div>
+        {accionDerecha&&<div style={{marginLeft:"auto",flexShrink:0}}>{accionDerecha}</div>}
       </div>
     </div>
   );
@@ -1004,8 +989,7 @@ export default function App({ session }) {
     const pri=PRIORIDADES[detalle.prioridad];const badge=estadoBadge(detalle);
     return(
       <div style={s.root}>
-        <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVista("lista")},{label:"Novedades",onClick:()=>setVista("lista")},{label:"Detalle"}]}
-          accionDerecha={<button style={{background:"none",border:"none",fontSize:15,color:"#FF3B30",cursor:"pointer",fontWeight:600}} onClick={()=>setConfirmarEliminar(detalle.id)}>Borrar</button>} />
+        <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVista("lista")},{label:"Novedades",onClick:()=>setVista("lista")},{label:"Detalle"}]} />
         <div style={{padding:"16px",flex:1,overflowY:"auto"}}>
           {detalle.fotos.length>0?<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:16}}>{detalle.fotos.map((f,i)=><img key={i} src={f} alt="" style={{height:200,borderRadius:14,objectFit:"cover",flexShrink:0,maxWidth:"85%"}}/>)}</div>:<div style={s.fotoPlaceholder}>📷</div>}
           <div style={{background:pri.color,borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,marginBottom:16,boxShadow:`0 2px 10px ${pri.color}40`}}>
@@ -1037,6 +1021,9 @@ export default function App({ session }) {
             <button style={{...s.btnPrincipal,background:"#fff",border:"1.5px solid #25D366",flex:1,fontSize:14,padding:"13px 4px"}} onClick={()=>{const t=generarResumen(detalle,obraActual?.nombre||"Obra");window.open(`https://wa.me/?text=${encodeURIComponent(t)}`,"_blank");}}>
               <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><svg width="17" height="17" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span style={{color:"#25D366",fontWeight:700}}>WhatsApp</span></span>
             </button>
+          </div>
+          <div style={{display:"flex",justifyContent:"center",marginTop:28}}>
+            <button style={{background:"none",border:"none",color:"#FF3B30",cursor:"pointer",fontSize:13.5,fontWeight:600,opacity:0.85,display:"flex",alignItems:"center",gap:5,padding:"6px 12px"}} onClick={()=>setConfirmarEliminar(detalle.id)}><Trash2 size={14}/>Borrar novedad</button>
           </div>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
@@ -1099,9 +1086,9 @@ export default function App({ session }) {
       <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"16px 16px 0",flexShrink:0}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <button style={{background:"none",border:"none",color:"rgba(255,255,255,0.7)",fontSize:15,cursor:"pointer",padding:0,fontWeight:500}} onClick={irInicio}><span style={{display:"flex",alignItems:"center",gap:4}}><ChevronLeft size={15}/>Obras</span></button>
-          {puedeGestionar&&<button style={{background:"#0057FF",border:"none",borderRadius:14,width:72,height:72,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,color:"#fff",cursor:"pointer",flexShrink:0,boxShadow:"0 3px 10px rgba(0,87,255,0.45)"}} onClick={()=>setVistaEquipo(true)}>
-            <Users size={24}/>
-            <span style={{fontSize:11,fontWeight:700}}>Mi equipo</span>
+          {puedeGestionar&&<button style={{background:"rgba(0,87,255,0.18)",border:"1px solid rgba(120,170,255,0.35)",borderRadius:16,width:68,height:68,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,color:"#fff",cursor:"pointer",flexShrink:0}} onClick={()=>setVistaEquipo(true)}>
+            <Users size={22} color="#4D8DFF"/>
+            <span style={{fontSize:10.5,fontWeight:700,letterSpacing:0.2}}>Mi equipo</span>
           </button>}
         </div>
         <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
@@ -1122,7 +1109,7 @@ export default function App({ session }) {
             </button>
           ))}
         </div>
-        {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",background:"none",border:"none",cursor:"pointer",color:"#0057FF",fontSize:12.5,fontWeight:600,paddingBottom:12,marginTop:-4}}><BarChart2 size={14}/>Ver estadísticas completas</button>}
+        {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"11px",marginBottom:4}}><BarChart2 size={15}/>Ver estadísticas completas<ChevronRight size={15}/></button>}
         {respConTareas.length>1&&<div style={{position:"relative",paddingBottom:12}}>
           <button style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${filtroResp!=="todos"?"#0057FF":"#E5E5EA"}`,background:"#fff",fontSize:14,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:filtroResp!=="todos"?"#0057FF":"#636366",fontWeight:filtroResp!=="todos"?700:500}} onClick={()=>setFiltroRespOpen(o=>!o)}>
             <span style={{display:"flex",alignItems:"center",gap:6}}><Users size={15}/>{filtroResp==="todos"?"Todos los oficios":filtroResp}</span>
@@ -1165,7 +1152,7 @@ export default function App({ session }) {
           );
         })}
       </div>
-      {puedeGestionar&&<div style={{padding:"12px 16px 0",background:"#fff",borderTop:"1px solid #F2F2F7",flexShrink:0}}>
+      {puedeGestionar&&novedadesFiltradas.length>0&&<div style={{padding:"12px 16px 0",background:"#fff",borderTop:"1px solid #F2F2F7",flexShrink:0}}>
         <button style={{...s.btnPrincipal,marginBottom:0}} onClick={()=>setVista("nueva")}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Plus size={18}/>Nueva novedad</span></button>
       </div>}
       <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
