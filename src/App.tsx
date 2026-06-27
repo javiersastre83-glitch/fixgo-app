@@ -326,8 +326,8 @@ export default function App({ session }) {
    if(!error){
      const obrasConEquipo=[];
      for(const obra of (data||[])){
-       const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,nombre,especialidad,usuarios(nombre,especialidad,avatar)").eq("obra_id",obra.id);
-       const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre||m.usuarios?.nombre,especialidad:m.especialidad||m.usuarios?.especialidad,avatar:m.usuarios?.avatar}));
+       const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,nombre,especialidad").eq("obra_id",obra.id);
+       const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad}));
        obrasConEquipo.push({...obra,equipo});
      }
      setObras(obrasConEquipo);
