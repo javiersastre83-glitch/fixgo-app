@@ -270,8 +270,42 @@ export default function App({ session }) {
     }
   },[toast]);
 
+  // ── ETAPA 4: detectar el link de invitación al abrir la app ──
   useEffect(()=>{
-    if(!usuarioReal)return;
+    const params=new URLSearchParams(window.location.search);
+    const codigo=params.get("invitacion");
+    if(codigo){
+      localStorage.setItem("fixgo_invitacion",codigo);
+    }
+  },[]);
+
+  // ── ETAPA 4: usar el link una vez que la persona inició sesión (ANTES de cargar obras) ──
+  const [invitacionProcesada, setInvitacionProcesada] = useState(false);
+  useEffect(()=>{
+    if(!usuarioReal){setInvitacionProcesada(false);return;}
+    const codigo=localStorage.getItem("fixgo_invitacion");
+    if(!codigo){setInvitacionProcesada(true);return;}
+    (async()=>{
+      const{data,error}=await supabase.rpc("usar_invitacion",{codigo_input:codigo});
+      localStorage.removeItem("fixgo_invitacion");
+      if(error){console.error("Error al usar invitación:",error);setInvitacionProcesada(true);return;}
+      if(data?.ok){
+        setToast("¡Te uniste a la obra!");
+        setTimeout(()=>setToast(""),2500);
+        window.history.replaceState({},"","https://www.fixgo.ar/");
+      }else if(data?.motivo==="ya_usada"){
+        setToast("Este link de invitación ya fue usado");
+        setTimeout(()=>setToast(""),2500);
+      }else if(data?.motivo==="no_existe"){
+        setToast("El link de invitación no es válido");
+        setTimeout(()=>setToast(""),2500);
+      }
+      setInvitacionProcesada(true);
+    })();
+  },[usuarioReal]);
+
+  useEffect(()=>{
+    if(!usuarioReal||!invitacionProcesada)return;
     (async()=>{
       // Obras propias (donde es dueño)
       const{data:obrasPropias}=await supabase.from("obras").select("*").eq("propietario_id",usuarioReal.id);
@@ -305,38 +339,7 @@ export default function App({ session }) {
         setNovedadesPorObra(novsPorObra);
       }
     })();
-  },[usuarioReal]);
-
-  // ── ETAPA 4: detectar el link de invitación al abrir la app ──
-  useEffect(()=>{
-    const params=new URLSearchParams(window.location.search);
-    const codigo=params.get("invitacion");
-    if(codigo){
-      localStorage.setItem("fixgo_invitacion",codigo);
-    }
-  },[]);
-
-  // ── ETAPA 4: usar el link una vez que la persona inició sesión ──
-  useEffect(()=>{
-    if(!usuarioReal)return;
-    const codigo=localStorage.getItem("fixgo_invitacion");
-    if(!codigo)return;
-    (async()=>{
-      const{data,error}=await supabase.rpc("usar_invitacion",{codigo_input:codigo});
-      localStorage.removeItem("fixgo_invitacion");
-      if(error){console.error("Error al usar invitación:",error);return;}
-      if(data?.ok){
-        setToast("¡Te uniste a la obra!");
-        setTimeout(()=>window.location.replace("https://www.fixgo.ar/"),1500);
-      }else if(data?.motivo==="ya_usada"){
-        setToast("Este link de invitación ya fue usado");
-        setTimeout(()=>setToast(""),2500);
-      }else if(data?.motivo==="no_existe"){
-        setToast("El link de invitación no es válido");
-        setTimeout(()=>setToast(""),2500);
-      }
-    })();
-  },[usuarioReal]);
+  },[usuarioReal,invitacionProcesada]);
 
   useEffect(()=>{
     setPerfilForm({nombre:usuarioActivoReal.nombre,especialidad:usuarioActivo.especialidad,email:usuarioReal?.email||"demo@fixgo.app"});
