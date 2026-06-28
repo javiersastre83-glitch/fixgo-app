@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff } from "lucide-react";
+import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, FileText, ClipboardList } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -920,8 +920,8 @@ export default function App({ session }) {
               <div key={g.nombre} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid #F2F2F7"}}>
                 <span style={{fontSize:14,fontWeight:600,color:"#1C1C1E",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",paddingRight:10}}>{g.nombre}</span>
                 <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-                  <div style={{width:70,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${g.cant/maxGre*100}%`,background:"#8E44AD",borderRadius:99}}/></div>
-                  <span style={{fontSize:14,fontWeight:800,color:"#8E44AD",width:20,textAlign:"right"}}>{g.cant}</span>
+                  <div style={{width:70,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${g.cant/maxGre*100}%`,background:"#3C4A5E",borderRadius:99}}/></div>
+                  <span style={{fontSize:14,fontWeight:800,color:"#3C4A5E",width:20,textAlign:"right"}}>{g.cant}</span>
                 </div>
               </div>
             ))}
@@ -933,29 +933,29 @@ export default function App({ session }) {
               <div key={sec.nombre} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid #F2F2F7"}}>
                 <span style={{fontSize:14,fontWeight:600,color:"#1C1C1E"}}>{sec.nombre}</span>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:70,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${sec.cant/maxSec*100}%`,background:"#FF6B00",borderRadius:99}}/></div>
-                  <span style={{fontSize:14,fontWeight:800,color:"#FF6B00",width:20,textAlign:"right"}}>{sec.cant}</span>
+                  <div style={{width:70,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${sec.cant/maxSec*100}%`,background:"#3C4A5E",borderRadius:99}}/></div>
+                  <span style={{fontSize:14,fontWeight:800,color:"#3C4A5E",width:20,textAlign:"right"}}>{sec.cant}</span>
                 </div>
               </div>
             ))}
           </div>}
           {/* 5. URGENTES (al final, lleva a Urgencias) */}
           {(urgentesPend.length>0||contadores.vencidas>0)&&(
-            <button onClick={()=>{setVistaStats(false);setTabActiva("alertas");irInicio();}} style={{background:"#FF3B30",borderRadius:16,padding:"16px 18px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 10px #FF3B3040",border:"none",width:"100%",textAlign:"left",cursor:"pointer"}}>
-              <AlertTriangle size={26} color="#fff" style={{flexShrink:0}}/>
+            <button onClick={()=>{setVistaStats(false);setTabActiva("alertas");irInicio();}} style={{background:"#FF3B3012",borderRadius:16,padding:"16px 18px",display:"flex",alignItems:"center",gap:12,border:"none",width:"100%",textAlign:"left",cursor:"pointer"}}>
+              <span style={{width:40,height:40,borderRadius:11,background:"#FF3B3018",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><AlertTriangle size={22} color="#FF3B30"/></span>
               <div style={{flex:1}}>
-                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#fff"}}>{urgentesPend.length>0?`${urgentesPend.length} urgente${urgentesPend.length!==1?"s":""} sin resolver`:`${contadores.vencidas} vencida${contadores.vencidas!==1?"s":""}`}</p>
-                <p style={{margin:"2px 0 0",fontSize:13,color:"rgba(255,255,255,0.85)"}}>Tocá para ver en Urgencias</p>
+                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#FF3B30"}}>{urgentesPend.length>0?`${urgentesPend.length} urgente${urgentesPend.length!==1?"s":""} sin resolver`:`${contadores.vencidas} vencida${contadores.vencidas!==1?"s":""}`}</p>
+                <p style={{margin:"2px 0 0",fontSize:13,color:"#8E8E93"}}>Tocá para ver en Urgencias</p>
               </div>
-              <ChevronRight size={20} color="#fff" style={{flexShrink:0}}/>
+              <ChevronRight size={20} color="#FF3B30" style={{flexShrink:0,opacity:0.6}}/>
             </button>
           )}
           {/* INFORMES PRO */}
           <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
             <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
             <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
-            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span>📋 Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
-            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span>📄 Informe para cliente</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
+            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span style={{display:"flex",alignItems:"center",gap:8}}><ClipboardList size={17}/>Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
+            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span style={{display:"flex",alignItems:"center",gap:8}}><FileText size={17}/>Informe para cliente</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
           </div>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
