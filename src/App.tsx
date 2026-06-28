@@ -1133,13 +1133,13 @@ export default function App({ session }) {
               onContextMenu={e=>{e.preventDefault();setMenuContextual({novId:nov.id});}}
               onPointerDown={e=>{const t=setTimeout(()=>setMenuContextual({novId:nov.id}),600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
               onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuContextual({novId:nov.id}),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
-              <div style={{display:"flex",alignItems:"stretch"}}>
+              <div style={{display:"flex",alignItems:"center"}}>
                 {nov.fotos.length>0
-                  ?<div style={{position:"relative",width:80,flexShrink:0,alignSelf:"stretch"}}>
-                     <img src={nov.fotos[0]} alt="" style={{width:80,height:"100%",objectFit:"cover",display:"block"}}/>
+                  ?<div style={{position:"relative",width:72,height:72,flexShrink:0,marginLeft:11}}>
+                     <img src={nov.fotos[0]} alt="" style={{width:72,height:72,objectFit:"cover",display:"block",borderRadius:10}}/>
                      {nov.fotos.length>1&&<span style={{position:"absolute",right:4,bottom:4,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:99,lineHeight:1}}>+{nov.fotos.length-1}</span>}
                    </div>
-                  :<div style={{width:80,minHeight:80,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,alignSelf:"stretch"}}>{emojiDeOficio(nov.responsable)}</div>}
+                  :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,borderRadius:10,marginLeft:11}}>{emojiDeOficio(nov.responsable)}</div>}
                 <div style={{padding:"11px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
                   <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
                     <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":pri.color,flexShrink:0,display:"inline-block"}}/>
