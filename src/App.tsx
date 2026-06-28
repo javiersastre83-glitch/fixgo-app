@@ -495,33 +495,36 @@ export default function App({ session }) {
     const rolInfo2=ROLES_SISTEMA.find(r=>r.id===usuarioActivo.rolSistema);
     return(
       <div style={{...s.root,background:modoOscuro?"#1C1C1E":"#F2F2F7"}}>
-        <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderBottom:`1px solid ${modoOscuro?"#3A3A3C":"#E5E5EA"}`,padding:"14px 16px 10px",flexShrink:0}}>
-          <button onClick={()=>{setVistaPerfil(false);}} style={{background:"none",border:"none",padding:0,fontSize:15,color:"#007AFF",cursor:"pointer",fontWeight:500}}><span style={{display:"flex",alignItems:"center",gap:4}}><ChevronLeft size={16}/>Volver</span></button>
-          <p style={{margin:"4px 0 0",fontSize:22,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>Mi perfil</p>
-        </div>
-        <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
-          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"20px 16px",flexShrink:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16}}>
-              <div style={{width:64,height:64,borderRadius:99,background:usuarioActivo.color+"20",border:`3px solid ${usuarioActivo.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,flexShrink:0}}>{usuarioActivo.avatar}</div>
-              <div style={{flex:1}}>
-                <p style={{margin:0,fontSize:20,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>{perfilForm.nombre}</p>
-                <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>
-                  {rolInfo2&&<span style={{fontSize:11,fontWeight:700,color:usuarioActivo.color,background:usuarioActivo.color+"15",padding:"2px 8px",borderRadius:99}}>{rolInfo2.emoji} {rolInfo2.label}</span>}
-                  <span style={{fontSize:13,color:"#8E8E93"}}>{perfilForm.especialidad}</span>
-                </div>
+        <div style={{padding:"14px 12px 4px",flexShrink:0}}>
+          <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"18px 18px",display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:60,height:60,borderRadius:99,background:"rgba(255,255,255,0.12)",border:"2px solid rgba(255,255,255,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,flexShrink:0}}>{usuarioActivo.avatar}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff"}}>{perfilForm.nombre}</p>
+              <div style={{display:"flex",gap:7,alignItems:"center",marginTop:5,flexWrap:"wrap"}}>
+                {rolInfo2&&<span style={{fontSize:11,fontWeight:700,color:"#fff",background:"rgba(255,255,255,0.18)",padding:"2px 9px",borderRadius:99}}>{rolInfo2.emoji} {rolInfo2.label}</span>}
+                <span style={{fontSize:13,color:"rgba(255,255,255,0.65)"}}>{perfilForm.especialidad}</span>
               </div>
             </div>
-            {[["Nombre","nombre","Tu nombre"],["Especialidad","especialidad","Tu especialidad"],["Email","email","Tu email"]].map(([lbl,key,ph])=>(
+          </div>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
+          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"18px 16px",flexShrink:0}}>
+            {[["Nombre","nombre","Tu nombre"],["Especialidad","especialidad","Tu especialidad"]].map(([lbl,key,ph])=>(
               <div key={key}><p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>{lbl}</p>
-              <input style={{...s.input,marginBottom:12,background:modoOscuro?"#3A3A3C":"#F2F2F7",color:modoOscuro?"#fff":"#1C1C1E",border:"none"}} value={perfilForm[key]} onChange={e=>setPerfilForm(f=>({...f,[key]:e.target.value}))} placeholder={ph}/></div>
+              <input style={{...s.input,marginBottom:14,background:modoOscuro?"#3A3A3C":"#F2F2F7",color:modoOscuro?"#fff":"#1C1C1E",border:"none"}} value={perfilForm[key]} onChange={e=>setPerfilForm(f=>({...f,[key]:e.target.value}))} placeholder={ph}/></div>
             ))}
-            <button style={{...s.btnPrincipal,background:"#1C1C1E",marginTop:4}} onClick={async()=>{setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));if(usuarioReal)await supabase.auth.updateUser({data:{full_name:perfilForm.nombre}});alert("✅ Cambios guardados");}}>Guardar cambios</button>
+            <p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Email</p>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,background:"transparent",border:"1px dashed #E0E0E5",borderRadius:12,padding:"13px 14px",marginBottom:16}}>
+              <span style={{fontSize:15,color:"#8E8E93",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{perfilForm.email}</span>
+              <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#C7C7CC",flexShrink:0}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Google</span>
+            </div>
+            <button style={{...s.btnPrincipal,background:"#34C759",marginTop:0}} onClick={async()=>{setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));if(usuarioReal)await supabase.auth.updateUser({data:{full_name:perfilForm.nombre}});alert("✅ Cambios guardados");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar cambios</span></button>
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
-              <span style={{display:"flex"}}><LogOut size={22} color="#FF6B00"/></span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF6B00"}}>Cerrar sesión</p>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
+              <LogOut size={20} color="#8E8E93"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Cerrar sesión</p><ChevronRight size={16} color="#C7C7CC"/>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer"}} onClick={async()=>{
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",cursor:"pointer"}} onClick={async()=>{
               if(!window.confirm("¿Eliminar tu cuenta?\n\nEsto borrará para siempre todas tus obras, novedades, comentarios y tu cuenta. Esta acción NO se puede deshacer."))return;
               if(!window.confirm("Última confirmación.\n\n¿Seguro que querés eliminar tu cuenta y todos tus datos de forma permanente?"))return;
               try{
@@ -535,7 +538,7 @@ export default function App({ session }) {
                 alert("Tu cuenta y tus datos fueron eliminados.");
               }catch(e){alert("Hubo un problema al eliminar la cuenta. Escribinos a soporte@fixgo.ar");}
             }}>
-              <span style={{fontSize:22}}>🗑️</span><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF3B30"}}>Eliminar cuenta</p>
+              <Trash2 size={20} color="#FF3B30"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#FF3B30"}}>Eliminar cuenta</p>
             </div>
           </div>
           <p style={{textAlign:"center",fontSize:12,color:"#C7C7CC",marginBottom:8}}>Fixgo · Versión 1.0.0</p>
