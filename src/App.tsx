@@ -1086,19 +1086,19 @@ export default function App({ session }) {
   // ─────────────────────────────
   return(
     <div style={s.root}>
-      <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"16px 16px 0",flexShrink:0}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+      <div style={{padding:"14px 12px 4px",flexShrink:0}}>
+        <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"18px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
             <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
-            <p style={{margin:"3px 0 8px",fontSize:13,color:"rgba(255,255,255,0.5)"}}><MapPin size={13} style={{flexShrink:0}}/> {obraActual?.direccion||"Sin dirección"}</p>
-            <div style={{display:"flex",alignItems:"center",gap:8,paddingBottom:12,flexWrap:"wrap"}}>
-              <span style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>{usuarioActivoReal.nombre}</span>
-              {miRolInfo&&<span style={{fontSize:11,fontWeight:700,color:miRolInfo.color,background:miRolInfo.color+"25",padding:"2px 8px",borderRadius:99}}>{miRolInfo.emoji} {miRolInfo.label}</span>}
+            <p style={{margin:"3px 0 8px",fontSize:13,color:"rgba(255,255,255,0.6)"}}><MapPin size={13} style={{flexShrink:0}}/> {obraActual?.direccion||"Sin dirección"}</p>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>{usuarioActivoReal.nombre}</span>
+              {miRolInfo&&<span style={{fontSize:11,fontWeight:700,color:"#fff",background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:99}}>{miRolInfo.emoji} {miRolInfo.label}</span>}
             </div>
           </div>
-          {puedeGestionar&&<button style={{background:"#fff",border:"none",borderRadius:14,width:60,height:60,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,color:"#0057FF",cursor:"pointer",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,0.2)"}} onClick={()=>setVistaEquipo(true)}>
-            <Users size={19} color="#0057FF"/>
-            <span style={{fontSize:9.5,fontWeight:700,letterSpacing:0.1,color:"#0057FF"}}>Mi equipo</span>
+          {puedeGestionar&&<button style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:14,width:60,height:60,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,color:"#fff",cursor:"pointer",flexShrink:0}} onClick={()=>setVistaEquipo(true)}>
+            <Users size={19} color="#fff"/>
+            <span style={{fontSize:9.5,fontWeight:700,letterSpacing:0.1,color:"#fff"}}>Mi equipo</span>
           </button>}
         </div>
       </div>
