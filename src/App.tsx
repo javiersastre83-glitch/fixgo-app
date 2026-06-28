@@ -997,16 +997,22 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVista("lista")},{label:"Novedades",onClick:()=>setVista("lista")},{label:"Detalle"}]} />
-        <div style={{padding:"16px",flex:1,overflowY:"auto"}}>
-          {detalle.fotos.length>0?<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:16}}>{detalle.fotos.map((f,i)=><img key={i} src={f} alt="" style={{height:200,borderRadius:14,objectFit:"cover",flexShrink:0,maxWidth:"85%"}}/>)}</div>:<div style={s.fotoPlaceholder}>📷</div>}
-          <div style={{background:pri.color,borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,marginBottom:16,boxShadow:`0 2px 10px ${pri.color}40`}}>
-            <span style={{width:15,height:15,borderRadius:99,background:"#fff",flexShrink:0}}/>
-            <span style={{color:"#fff",fontSize:21,fontWeight:900,letterSpacing:0.5}}>{pri.label}</span>
-            {badge&&<span style={{marginLeft:"auto",background:"rgba(255,255,255,0.25)",color:"#fff",fontSize:12,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{badge.label}</span>}
+        <div style={{flex:1,overflowY:"auto"}}>
+          {detalle.fotos.length>0
+            ?<div style={{position:"relative",width:"100%",height:200,background:"#000",display:"flex",overflowX:"auto",scrollSnapType:"x mandatory"}}>
+               {detalle.fotos.map((f,i)=><img key={i} src={f} alt="" style={{width:"100%",height:200,objectFit:"cover",flexShrink:0,scrollSnapAlign:"start"}}/>)}
+               {detalle.fotos.length>1&&<span style={{position:"absolute",right:10,bottom:10,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:12,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{detalle.fotos.length} fotos</span>}
+             </div>
+            :<div style={{width:"100%",height:160,background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:46}}>{emojiDeOficio(detalle.responsable)}</div>}
+          <div style={{padding:"16px"}}>
+          <div style={{background:detalle.resuelta?"#34C75912":pri.color+"12",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+            <span style={{width:11,height:11,borderRadius:99,background:detalle.resuelta?"#34C759":pri.color,flexShrink:0}}/>
+            <span style={{color:detalle.resuelta?"#34C759":pri.color,fontSize:17,fontWeight:800,letterSpacing:0.3}}>{detalle.resuelta?"RESUELTO":pri.label}</span>
+            {!detalle.resuelta&&badge&&<span style={{marginLeft:"auto",color:"#8E8E93",fontSize:13,fontWeight:600}}>{badge.label.replace(/^[^\s]+\s/,"")}</span>}
           </div>
           <p style={{fontSize:22,fontWeight:800,color:"#000",marginBottom:18,lineHeight:1.25}}>{detalle.descripcion}</p>
-          {[["👷","Responsable",detalle.responsable],["📍","Sector",detalle.sector],detalle.fechaLimite?["📅","Fecha límite",formatFecha(detalle.fechaLimite)]:null,["🗓","Cargada",detalle.fecha?formatFecha(detalle.fecha):"—"]].filter(Boolean).map(([ic,lb,vl])=>(
-            <div key={lb} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 0",borderBottom:"1.5px solid #E0E0E5"}}><span style={{fontSize:20,width:24,textAlign:"center"}}>{ic}</span><span style={{fontSize:13,color:"#6B6B70",fontWeight:600,width:90}}>{lb}</span><span style={{flex:1,fontSize:16,color:"#000",fontWeight:700,textAlign:"right"}}>{vl}</span></div>
+          {[[<User size={20}/>,"Responsable",detalle.responsable],[<MapPin size={20}/>,"Sector",detalle.sector],detalle.fechaLimite?[<Calendar size={20}/>,"Fecha límite",formatFecha(detalle.fechaLimite)]:null,[<Calendar size={20}/>,"Cargada",detalle.fecha?formatFecha(detalle.fecha):"—"]].filter(Boolean).map(([ic,lb,vl])=>(
+            <div key={lb} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 0",borderBottom:"1px solid #E0E0E5"}}><span style={{width:24,display:"flex",justifyContent:"center",color:"#8E8E93"}}>{ic}</span><span style={{fontSize:13,color:"#6B6B70",fontWeight:600,width:90}}>{lb}</span><span style={{flex:1,fontSize:16,color:"#000",fontWeight:700,textAlign:"right"}}>{vl}</span></div>
           ))}
           <p style={{fontSize:16,fontWeight:800,color:"#000",margin:"24px 0 12px"}}>Comentarios</p>
           {detalle.comentarios.length===0&&<p style={{color:"#8E8E93",fontSize:14,margin:"0 0 10px"}}>Sin comentarios aún</p>}
@@ -1031,6 +1037,7 @@ export default function App({ session }) {
           </div>
           <div style={{display:"flex",justifyContent:"center",marginTop:28}}>
             <button style={{background:"none",border:"none",color:"#FF3B30",cursor:"pointer",fontSize:13.5,fontWeight:600,opacity:0.85,display:"flex",alignItems:"center",gap:5,padding:"6px 12px"}} onClick={()=>setConfirmarEliminar(detalle.id)}><Trash2 size={14}/>Borrar novedad</button>
+          </div>
           </div>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
