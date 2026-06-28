@@ -47,10 +47,10 @@ const diasRestantes = (f) => { if(!f) return null; const h=new Date(); h.setHour
 const estadoBadge = (nov) => {
   if(nov.resuelta) return {label:"✅ Resuelto",color:"#34C759",bg:"#34C75920"};
   const d=diasRestantes(nov.fechaLimite); if(d===null) return null;
-  if(d<0)  return {label:`⚠️ Vencida hace ${Math.abs(d)}d`,color:"#FF3B30",bg:"#FF3B3020"};
+  if(d<0)  return {label:`⚠️ Vencida hace ${Math.abs(d)} ${Math.abs(d)===1?"día":"días"}`,color:"#FF3B30",bg:"#FF3B3020"};
   if(d===0) return {label:"⏰ Vence hoy",color:"#FF6B00",bg:"#FF6B0020"};
-  if(d<=3)  return {label:`⏳ ${d}d restantes`,color:"#FF6B00",bg:"#FF6B0020"};
-  return {label:`📅 ${d}d restantes`,color:"#8E8E93",bg:"#8E8E9315"};
+  if(d<=3)  return {label:`⏳ ${d} ${d===1?"día":"días"} restantes`,color:"#FF6B00",bg:"#FF6B0020"};
+  return {label:`📅 ${d} ${d===1?"día":"días"} restantes`,color:"#8E8E93",bg:"#8E8E9315"};
 };
 const generarResumen = (nov,obraNombre) => {
   const pri=PRIORIDADES[nov.prioridad]; const badge=estadoBadge(nov);
@@ -1140,11 +1140,11 @@ export default function App({ session }) {
                      {nov.fotos.length>1&&<span style={{position:"absolute",right:4,bottom:4,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:99,lineHeight:1}}>+{nov.fotos.length-1}</span>}
                    </div>
                   :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,borderRadius:10,marginLeft:11}}>{emojiDeOficio(nov.responsable)}</div>}
-                <div style={{padding:"11px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+                <div style={{padding:"11px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center",minHeight:94}}>
                   <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
                     <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":pri.color,flexShrink:0,display:"inline-block"}}/>
                     <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":pri.color}}>{nov.resuelta?"RESUELTO":pri.label}</span>
-                    {!nov.resuelta&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:badge.color==="#8E8E93"?"#8E8E93":badge.color}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
+                    {!nov.resuelta&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                   </div>
                   <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
                   <p style={{margin:0,fontSize:12,color:"#636366"}}>{emojiDeOficio(nov.responsable)} {nov.responsable} · 📍 {nov.sector}</p>
