@@ -628,21 +628,21 @@ export default function App({ session }) {
     const totalVenc=Object.values(novedadesPorObra).flat().filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length;
     return(
       <div style={s.root}>
-        <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"28px 20px 20px",flexShrink:0}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div style={{padding:"14px 12px 4px",flexShrink:0}}>
+          <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"22px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
-                <button onClick={()=>setVistaInfoApp(true)} style={{width:44,height:44,borderRadius:13,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}>
+                <button onClick={()=>setVistaInfoApp(true)} style={{width:44,height:44,borderRadius:13,background:"rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}>
                   <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:44,height:44,objectFit:"cover",borderRadius:13}}/>
                 </button>
                 <p style={{margin:0,fontSize:30,fontWeight:900,color:"#fff",letterSpacing:-0.5}}>Fixgo</p>
               </div>
-              <p style={{margin:0,fontSize:14,color:"rgba(255,255,255,0.6)"}}>
+              <p style={{margin:0,fontSize:14,color:"rgba(255,255,255,0.7)"}}>
                 {obras.length} obra{obras.length!==1?"s":""} · {totalPend} pendiente{totalPend!==1?"s":""}
                 {totalVenc>0&&<span style={{color:"#FFD60A",fontWeight:700}}> · ⚠️ {totalVenc} vencida{totalVenc!==1?"s":""}</span>}
               </p>
             </div>
-            <div style={{background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{background:"rgba(255,255,255,0.15)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
               <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p></div>
             </div>
           </div>
