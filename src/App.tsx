@@ -556,19 +556,19 @@ export default function App({ session }) {
       novs.forEach(nov => {
         if (nov.resuelta) return;
         const d = diasRestantes(nov.fechaLimite);
-        // Vencidas
+        // Vencidas (lo más urgente)
         if (d !== null && d < 0) {
           alertasDinamicas.push({ key:`venc-${nov.id}`, tipo:"urgente",
-            texto:`Vencida hace ${Math.abs(d)}d — ${nov.descripcion}`,
+            texto:`Vencida hace ${Math.abs(d)} ${Math.abs(d)===1?"día":"días"} — ${nov.descripcion}`,
             sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:0 });
         }
-        // Vence hoy o en 3 días
-        else if (d !== null && d <= 3) {
-          alertasDinamicas.push({ key:`prox-${nov.id}`, tipo:"aviso",
-            texto: d===0 ? `Vence hoy — ${nov.descripcion}` : `Vence en ${d}d — ${nov.descripcion}`,
+        // Vence hoy
+        else if (d === 0) {
+          alertasDinamicas.push({ key:`hoy-${nov.id}`, tipo:"urgente",
+            texto:`Vence hoy — ${nov.descripcion}`,
             sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:1 });
         }
-        // Urgentes sin fecha
+        // Marcadas URGENTE (aunque la fecha sea futura o no tenga)
         else if (nov.prioridad === 0) {
           alertasDinamicas.push({ key:`urg-${nov.id}`, tipo:"urgente",
             texto:`Urgente — ${nov.descripcion}`,
@@ -590,11 +590,13 @@ export default function App({ session }) {
 
     return(
       <div style={s.root}>
-        <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",padding:"22px 16px 16px",flexShrink:0}}>
-          <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff"}}>🔔 Alertas</p>
-          <p style={{margin:"4px 0 0",fontSize:13,color:"rgba(255,255,255,0.5)"}}>
-            {alertasDinamicas.length > 0 ? `${alertasDinamicas.length} notificaciones` : "Todo en orden"}
-          </p>
+        <div style={{padding:"14px 12px 4px",flexShrink:0}}>
+          <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"20px 18px"}}>
+            <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff",display:"flex",alignItems:"center",gap:9}}><Bell size={22}/>Urgencias</p>
+            <p style={{margin:"5px 0 0",fontSize:13,color:"rgba(255,255,255,0.6)"}}>
+              {alertasDinamicas.length > 0 ? `${alertasDinamicas.length} ${alertasDinamicas.length===1?"urgencia":"urgencias"}` : "Todo en orden"}
+            </p>
+          </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
           {alertasDinamicas.length===0&&(
@@ -607,15 +609,15 @@ export default function App({ session }) {
           {alertasDinamicas.map(a=>(
             <button key={a.key} onClick={()=>irAAlerta(a)}
               style={{background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",gap:12,
-                alignItems:"flex-start",borderLeft:`4px solid ${a.tipo==="urgente"?"#FF3B30":a.tipo==="comentario"?"#007AFF":"#FFB800"}`,
+                alignItems:"center",
                 border:"none",width:"100%",textAlign:"left",cursor:"pointer",
-                outline:"none",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-              <span style={{fontSize:22,flexShrink:0}}>{a.tipo==="urgente"?"⚠️":a.tipo==="comentario"?"💬":"📅"}</span>
+                outline:"none",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
+              <span style={{width:36,height:36,borderRadius:10,background:"#FF3B3012",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><AlertTriangle size={19} color="#FF3B30"/></span>
               <div style={{flex:1,minWidth:0}}>
-                <p style={{margin:0,fontSize:14,fontWeight:600,color:"#1C1C1E",lineHeight:1.4}}>{a.texto}</p>
-                <p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{a.sub}</p>
+                <p style={{margin:0,fontSize:14,fontWeight:700,color:"#1C1C1E",lineHeight:1.35}}>{a.texto}</p>
+                <p style={{margin:"3px 0 0",fontSize:12,color:"#8E8E93"}}>{a.sub}</p>
               </div>
-              <span style={{color:"#C7C7CC",fontSize:18,flexShrink:0,alignSelf:"center"}}>›</span>
+              <ChevronRight size={18} color="#C7C7CC" style={{flexShrink:0}}/>
             </button>
           ))}
         </div>
