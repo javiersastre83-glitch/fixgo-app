@@ -9,6 +9,10 @@ const PRIORIDADES = [
 ];
 const RESPONSABLES = ["Albañil","Demoledor","Encofrador carpintero","Fierrero / Armador de hierro","Hormigonero","Pilotero","Pocero / Excavador","Techista","Calderista","Electricista de obra","Gasista","Instalador de ascensores y montacargas","Instalador de corrientes débiles","Instalador de sistemas contra incendios","Instalador de sistemas de climatización","Instalador de sistemas solares / renovables","Instalador sanitario","Plomero / Fontanero","Técnico en domótica y automatización","Carpintero de obra / terminaciones","Carpintero de obra gruesa","Cerrajero de obra","Herrero de obra","Instalador de aberturas de aluminio","Instalador de aberturas de PVC","Instalador de aberturas metálicas","Montador de estructuras metálicas","Soldador","Vidriero","Zinguería","Ceramista","Colocador de pisos de madera / Parquetista","Colocador de pisos vinílicos / Alfombrista","Colocador revestimientos plásticos texturados","Durlero / Montador de construcción en seco","Enduido","Impermeabilizador / Techista de membranas","Marmolero","Pintor de obra","Pintor industrial","Pulidor de pisos","Yesero","Armador de andamios / Andamiero","Jardinero","Operario de limpieza de obra (fin de obra)","Proveedor de servicios","Restaurador","Riego","Sereno / Personal de vigilancia de obra","Técnico en Higiene y Seguridad en el Trabajo","Topógrafo / Agrimensor","Tunelero","Otro"];
 const SECTORES     = ["General","Planta baja","Planta alta","Terraza","Jardín","Cocina","Baño PB","Baño PA","Dormitorio","Comedor","Garage","Otro"];
+const EMOJI_OFICIO = {
+  "Albañil":"🧱","Demoledor":"🔨","Encofrador carpintero":"🪵","Fierrero / Armador de hierro":"⛓️","Hormigonero":"🏗️","Pilotero":"🛠️","Pocero / Excavador":"⛏️","Techista":"🏠","Calderista":"🔥","Electricista de obra":"⚡","Gasista":"🔧","Instalador de ascensores y montacargas":"🛗","Instalador de corrientes débiles":"🔌","Instalador de sistemas contra incendios":"🧯","Instalador de sistemas de climatización":"❄️","Instalador de sistemas solares / renovables":"☀️","Instalador sanitario":"🚿","Plomero / Fontanero":"🔧","Técnico en domótica y automatización":"🤖","Carpintero de obra / terminaciones":"🪚","Carpintero de obra gruesa":"🪵","Cerrajero de obra":"🔑","Herrero de obra":"⚒️","Instalador de aberturas de aluminio":"🪟","Instalador de aberturas de PVC":"🪟","Instalador de aberturas metálicas":"🪟","Montador de estructuras metálicas":"🏗️","Soldador":"🔥","Vidriero":"🪟","Zinguería":"🏠","Ceramista":"🧱","Colocador de pisos de madera / Parquetista":"🪵","Colocador de pisos vinílicos / Alfombrista":"🧶","Colocador revestimientos plásticos texturados":"🎨","Durlero / Montador de construcción en seco":"🧱","Enduido":"🪣","Impermeabilizador / Techista de membranas":"🏠","Marmolero":"🪨","Pintor de obra":"🖌️","Pintor industrial":"🎨","Pulidor de pisos":"✨","Yesero":"🪣","Armador de andamios / Andamiero":"🚧","Jardinero":"🌳","Operario de limpieza de obra (fin de obra)":"🧹","Proveedor de servicios":"📦","Restaurador":"🛠️","Riego":"💧","Sereno / Personal de vigilancia de obra":"👁️","Técnico en Higiene y Seguridad en el Trabajo":"🦺","Topógrafo / Agrimensor":"📐","Tunelero":"⛏️","Otro":"👷"
+};
+const emojiDeOficio = (oficio) => EMOJI_OFICIO[oficio] || "👷";
 const ROLES_SISTEMA = [
   { id:"profesional", label:"Profesional", emoji:"📐", color:"#0057FF", desc:"Arquitecto, Ingeniero o Idóneo." },
   { id:"capataz",     label:"Capataz",     emoji:"🦺",   color:"#FF6B00", desc:"Gestiona subcontratos y hace seguimiento." },
@@ -1124,18 +1128,27 @@ export default function App({ session }) {
         {novedadesFiltradas.map(nov=>{
           const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);
           return(
-            <button key={nov.id} style={{width:"100%",flexShrink:0,background:"#fff",borderRadius:16,border:`1.5px solid ${nov.resuelta?"#E5E5EA":pri.color+"40"}`,padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",boxShadow:nov.resuelta?"none":`0 2px 8px ${pri.color}12`,opacity:nov.resuelta?0.7:1}}
+            <button key={nov.id} style={{width:"100%",flexShrink:0,background:"#fff",borderRadius:16,border:"1px solid #ECECEF",padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.05)",opacity:nov.resuelta?0.65:1}}
               onClick={()=>{setDetalleId(nov.id);setVista("detalle");}}
               onContextMenu={e=>{e.preventDefault();setMenuContextual({novId:nov.id});}}
               onPointerDown={e=>{const t=setTimeout(()=>setMenuContextual({novId:nov.id}),600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
               onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuContextual({novId:nov.id}),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
               <div style={{display:"flex",alignItems:"stretch"}}>
-                <div style={{width:5,background:nov.resuelta?"#C7C7CC":pri.color,flexShrink:0}}/>
-                {nov.fotos.length>0?<img src={nov.fotos[0]} alt="" style={{width:80,objectFit:"cover",flexShrink:0,alignSelf:"stretch"}}/>:<div style={{width:80,minHeight:80,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#C7C7CC",alignSelf:"stretch"}}><Camera size={26}/></div>}
-                <div style={{padding:"12px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-                  <p style={{margin:"0 0 4px",fontSize:15,fontWeight:700,color:"#1C1C1E",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nov.descripcion}</p>
-                  <p style={{margin:"0 0 6px",fontSize:12,color:"#636366"}}>👷 {nov.responsable} · 📍 {nov.sector}</p>
-                  <div style={{display:"flex",gap:5,flexWrap:"wrap"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11}}>{badge.label}</span>}{nov.comentarios.length>0&&<span style={{...s.chip,background:"#007AFF15",color:"#007AFF",fontSize:11}}><MessageCircle size={11}/> {nov.comentarios.length}</span>}</div>
+                {nov.fotos.length>0
+                  ?<div style={{position:"relative",width:80,flexShrink:0,alignSelf:"stretch"}}>
+                     <img src={nov.fotos[0]} alt="" style={{width:80,height:"100%",objectFit:"cover",display:"block"}}/>
+                     {nov.fotos.length>1&&<span style={{position:"absolute",right:4,bottom:4,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:99,lineHeight:1}}>+{nov.fotos.length-1}</span>}
+                   </div>
+                  :<div style={{width:80,minHeight:80,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,alignSelf:"stretch"}}>{emojiDeOficio(nov.responsable)}</div>}
+                <div style={{padding:"11px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
+                    <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":pri.color,flexShrink:0,display:"inline-block"}}/>
+                    <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":pri.color}}>{nov.resuelta?"RESUELTO":pri.label}</span>
+                    {!nov.resuelta&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:badge.color==="#8E8E93"?"#8E8E93":badge.color}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
+                  </div>
+                  <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
+                  <p style={{margin:0,fontSize:12,color:"#636366"}}>{emojiDeOficio(nov.responsable)} {nov.responsable} · 📍 {nov.sector}</p>
+                  {nov.comentarios.length>0&&<span style={{marginTop:5,fontSize:11.5,color:"#8E8E93",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><MessageCircle size={12}/> {nov.comentarios.length} comentario{nov.comentarios.length!==1?"s":""}</span>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
               </div>
