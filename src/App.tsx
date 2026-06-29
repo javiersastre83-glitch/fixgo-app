@@ -383,8 +383,9 @@ export default function App({ session }) {
     if(!usuarioReal||!obraActual?.id||generandoLink)return;
     setGenerandoLink(true);
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
-    const esp=invitarRol==="operario"?invitarEsp:null;
-    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:invitarNombre.trim()||null});
+    const rolFinal=miRolEnObra==="profesional"?invitarRol:"operario";
+    const esp=rolFinal==="operario"?invitarEsp:null;
+    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:rolFinal,especialidad:esp,invitado_por:usuarioReal.id,nombre:invitarNombre.trim()||null});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
     setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
     setGenerandoLink(false);
@@ -842,12 +843,12 @@ export default function App({ session }) {
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
           <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Generá un link para sumar a alguien a "{obraActual?.nombre}"</p>
           {!linkGenerado?<>
-            <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Rol</p>
+            {miRolEnObra==="profesional"&&<><p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Rol</p>
             <div style={{display:"flex",gap:8,marginBottom:16}}>
               {[["operario","👷 Operario"],["capataz","🦺 Capataz"]].map(([val,lbl])=>(
                 <button key={val} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol===val?"#0057FF":"#E5E5EA"}`,background:invitarRol===val?"#0057FF15":"#fff",color:invitarRol===val?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol===val?700:400,cursor:"pointer"}} onClick={()=>setInvitarRol(val)}>{lbl}</button>
               ))}
-            </div>
+            </div></>}
             {invitarRol==="operario"&&<><p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Especialidad (gremio)</p>
             <div style={{marginBottom:16}}>
               <SelectorOficio value={invitarEsp} onChange={r=>setInvitarEsp(r)} customValue="" onCustomChange={()=>{}} color="#0057FF" />
