@@ -198,6 +198,7 @@ export default function App({ session }) {
   const [vistaRaiz,        setVistaRaiz]        = useState("inicio");
   const [obraActual,       setObraActual]       = useState(null);
   const [obras,            setObras]            = useState(OBRAS_DEMO);
+  const [cargandoDatos,    setCargandoDatos]    = useState(true);
   const [novedadesPorObra, setNovedadesPorObra] = useState({1:NOVEDADES_DEMO,2:[]});
   const [vista,            setVista]            = useState("lista");
   const [form,             setForm]             = useState(FORM_INICIAL);
@@ -309,8 +310,10 @@ export default function App({ session }) {
   },[usuarioReal]);
 
   useEffect(()=>{
-    if(!usuarioReal||!invitacionProcesada)return;
+    if(!usuarioReal){setCargandoDatos(false);return;}
+    if(!invitacionProcesada)return;
     (async()=>{
+     try{
       // Obras propias (donde es dueño)
       const{data:obrasPropias}=await supabase.from("obras").select("*").eq("propietario_id",usuarioReal.id);
       // Obras donde fue invitado (figura en equipo_obra)
@@ -342,6 +345,9 @@ export default function App({ session }) {
         }
         setNovedadesPorObra(novsPorObra);
       }
+     }finally{
+       setCargandoDatos(false);
+     }
     })();
   },[usuarioReal,invitacionProcesada]);
 
@@ -383,9 +389,8 @@ export default function App({ session }) {
     if(!usuarioReal||!obraActual?.id||generandoLink)return;
     setGenerandoLink(true);
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
-    const rolFinal=miRolEnObra==="profesional"?invitarRol:"operario";
-    const esp=rolFinal==="operario"?invitarEsp:null;
-    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:rolFinal,especialidad:esp,invitado_por:usuarioReal.id,nombre:invitarNombre.trim()||null});
+    const esp=invitarRol==="operario"?invitarEsp:null;
+    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:invitarNombre.trim()||null});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
     setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
     setGenerandoLink(false);
@@ -658,6 +663,12 @@ export default function App({ session }) {
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
+          {cargandoDatos?(
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,padding:"48px 16px"}}>
+              <span style={{width:28,height:28,border:"3px solid #E5E5EA",borderTopColor:"#2E3A4B",borderRadius:"50%",display:"inline-block",animation:"spin 0.8s linear infinite"}}/>
+              <p style={{margin:0,fontSize:14,fontWeight:600,color:"#8E8E93"}}>Cargando tus obras…</p>
+            </div>
+          ):(<>
           {obras.map(obra=>{
             const novs=novedadesPorObra[obra.id]||[];
             const pend=novs.filter(n=>!n.resuelta).length;
@@ -693,6 +704,7 @@ export default function App({ session }) {
             onClick={()=>{if(!esVersionPro&&misObrasPropias>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
             <Plus size={22} color="#636366"/><span style={{fontSize:16,fontWeight:600,color:"#636366"}}>Nueva obra</span>
           </button>
+          </>)}
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
@@ -843,12 +855,12 @@ export default function App({ session }) {
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
           <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Generá un link para sumar a alguien a "{obraActual?.nombre}"</p>
           {!linkGenerado?<>
-            {miRolEnObra==="profesional"&&<><p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Rol</p>
+            <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Rol</p>
             <div style={{display:"flex",gap:8,marginBottom:16}}>
               {[["operario","👷 Operario"],["capataz","🦺 Capataz"]].map(([val,lbl])=>(
                 <button key={val} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol===val?"#0057FF":"#E5E5EA"}`,background:invitarRol===val?"#0057FF15":"#fff",color:invitarRol===val?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol===val?700:400,cursor:"pointer"}} onClick={()=>setInvitarRol(val)}>{lbl}</button>
               ))}
-            </div></>}
+            </div>
             {invitarRol==="operario"&&<><p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Especialidad (gremio)</p>
             <div style={{marginBottom:16}}>
               <SelectorOficio value={invitarEsp} onChange={r=>setInvitarEsp(r)} customValue="" onCustomChange={()=>{}} color="#0057FF" />
