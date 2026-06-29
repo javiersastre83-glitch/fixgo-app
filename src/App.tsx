@@ -240,7 +240,7 @@ export default function App({ session }) {
 
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
-  const equipoObra   = obraActual?(obraActual.equipo||[]).map(m=>{if(m.nombre){return{id:m.uid,uid:m.uid,nombre:m.nombre,especialidad:m.especialidad||"Profesional",avatar:m.avatar||"📐",color:"#0057FF",rolEnObra:m.rolEnObra};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color:"#0057FF",rolEnObra:m.rolEnObra};}).filter(Boolean):[];
+  const equipoObra   = obraActual?(obraActual.equipo||[]).map(m=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color:"#0057FF",rolEnObra:m.rolEnObra};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color:"#0057FF",rolEnObra:m.rolEnObra};}).filter(Boolean):[];
   const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
   const miId         = usuarioReal?.id||usuarioActivo.id;
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
@@ -725,9 +725,13 @@ export default function App({ session }) {
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setVistaEquipo(false);setMiembroSel(null);}},{label:"Equipo",onClick:()=>setMiembroSel(null)},{label:u.nombre}]} />
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
           <div style={{background:"#fff",borderRadius:18,padding:"16px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:56,height:56,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>{u.avatar}</div>
+            <div style={{width:56,height:56,borderRadius:99,background:(rolU?.color||"#0057FF")+"15",border:`2px solid ${rolU?.color||"#0057FF"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              {esProfesional
+                ?<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={rolU?.color||"#0057FF"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21 21 3M3 21h18M3 21V8"/></svg>
+                :<HardHat size={28} color={rolU?.color||"#0057FF"}/>}
+            </div>
             <div style={{flex:1}}><p style={{margin:0,fontWeight:800,fontSize:18,color:"#1C1C1E"}}>{u.nombre}</p>
-              <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:u.color,background:u.color+"15",padding:"2px 8px",borderRadius:99}}>{rolU.emoji} {rolU.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
+              <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:rolU.color,background:rolU.color+"15",padding:"2px 8px",borderRadius:99}}>{rolU.emoji} {rolU.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
               <p style={{margin:"6px 0 0",fontSize:12,color:"#8E8E93"}}>{esProfesional?"Resumen general de la obra":"Tareas asignadas a "+u.especialidad}</p>
             </div>
           </div>
@@ -739,14 +743,23 @@ export default function App({ session }) {
           {[["⏳ Pendientes",pend],["✅ Resueltas",res]].map(([titulo,lista])=>lista.length>0&&(
             <div key={titulo}><p style={{margin:"4px 0 8px",fontSize:13,color:"#8E8E93",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>{titulo}</p>
               {lista.map(nov=>{const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);return(
-                <button key={nov.id} style={{width:"100%",background:"#fff",borderRadius:16,border:`1.5px solid ${nov.resuelta?"#E5E5EA":pri.color+"40"}`,padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",marginBottom:8,opacity:nov.resuelta?0.7:1}}
+                <button key={nov.id} style={{width:"100%",background:"#fff",borderRadius:16,border:"1px solid #ECECEF",padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",marginBottom:8,boxShadow:"0 1px 3px rgba(0,0,0,0.05)",opacity:nov.resuelta?0.65:1}}
                   onClick={()=>{setDetalleId(nov.id);setMiembroSel(null);setVistaEquipo(false);setVista("detalle");}}>
-                  <div style={{display:"flex"}}><div style={{width:5,background:nov.resuelta?"#C7C7CC":pri.color,flexShrink:0}}/>
-                    {nov.fotos.length>0?<img src={nov.fotos[0]} alt="" style={{width:70,height:70,objectFit:"cover",flexShrink:0}}/>:<div style={{width:70,height:70,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>📷</div>}
-                    <div style={{padding:"10px 12px",flex:1,minWidth:0}}>
-                      <p style={{margin:"0 0 3px",fontSize:14,fontWeight:700,color:"#1C1C1E",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{nov.descripcion}</p>
-                      <p style={{margin:"0 0 5px",fontSize:12,color:"#636366"}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {nov.sector}</p>
-                      <div style={{display:"flex",gap:5,flexWrap:"wrap"}}><span style={{...s.chip,background:pri.bg,color:pri.color,fontSize:11}}>{pri.emoji} {pri.label}</span>{badge&&<span style={{...s.chip,background:badge.bg,color:badge.color,fontSize:11}}>{badge.label}</span>}</div>
+                  <div style={{display:"flex",alignItems:"center"}}>
+                    {nov.fotos.length>0
+                      ?<div style={{position:"relative",width:72,height:72,flexShrink:0,marginLeft:11}}>
+                         <img src={nov.fotos[0]} alt="" style={{width:72,height:72,objectFit:"cover",display:"block",borderRadius:10}}/>
+                         {nov.fotos.length>1&&<span style={{position:"absolute",right:4,bottom:4,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:99,lineHeight:1}}>+{nov.fotos.length-1}</span>}
+                       </div>
+                      :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,borderRadius:10,marginLeft:11}}>{emojiDeOficio(nov.responsable)}</div>}
+                    <div style={{padding:"11px 12px",flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
+                        <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":pri.color,flexShrink:0,display:"inline-block"}}/>
+                        <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":pri.color}}>{nov.resuelta?"RESUELTO":pri.label}</span>
+                        {!nov.resuelta&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
+                      </div>
+                      <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
+                      <p style={{margin:0,fontSize:12,color:"#636366"}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {nov.sector}</p>
                     </div>
                     <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
                   </div>
@@ -787,10 +800,15 @@ export default function App({ session }) {
                 const pend=esProf?obraPend:novedades.filter(n=>n.responsable===u.especialidad&&!n.resuelta).length;
                 const res=esProf?obraRes:novedades.filter(n=>n.responsable===u.especialidad&&n.resuelta).length;
                 const r=ROLES_SISTEMA.find(r=>r.id===u.rolEnObra);
+                const colorRol=r?.color||"#0057FF";
                 return(
-                  <div key={u.id} style={{background:"#fff",borderRadius:18,padding:"16px",border:`1.5px solid ${u.color}25`}}>
+                  <div key={u.id} style={{background:"#fff",borderRadius:18,padding:"16px",border:`1px solid #ECECEF`}}>
                     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-                      <div style={{width:50,height:50,borderRadius:99,background:u.color+"15",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{u.avatar}</div>
+                      <div style={{width:50,height:50,borderRadius:99,background:colorRol+"15",border:`2px solid ${colorRol}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        {esProf
+                          ?<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={colorRol} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21 21 3M3 21h18M3 21V8"/></svg>
+                          :<HardHat size={26} color={colorRol}/>}
+                      </div>
                       <div style={{flex:1}}>
                         {editandoNombreId===u.uid?(
                           <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -802,7 +820,7 @@ export default function App({ session }) {
                         ):(
                           <p style={{margin:0,fontWeight:700,fontSize:17,color:"#1C1C1E",display:"flex",alignItems:"center",gap:8}}>{u.nombre}{puedeGestionar&&(u.rolEnObra!=="profesional"||u.uid===miId)&&<button onClick={()=>{setEditandoNombreId(u.uid);setNombreEditado(u.nombre||"");}} style={{background:"none",border:"none",cursor:"pointer",color:"#0057FF",padding:0,display:"flex",alignItems:"center"}}><Edit2 size={14}/></button>}</p>
                         )}
-                        <div style={{display:"flex",gap:6,marginTop:2,alignItems:"center"}}>{r&&<span style={{fontSize:11,fontWeight:700,color:u.color,background:u.color+"15",padding:"2px 8px",borderRadius:99}}>{r.emoji} {r.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
+                        <div style={{display:"flex",gap:6,marginTop:2,alignItems:"center"}}>{r&&<span style={{fontSize:11,fontWeight:700,color:colorRol,background:colorRol+"15",padding:"2px 8px",borderRadius:99}}>{r.emoji} {r.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
                       </div>
                       {u.uid===miId&&<span style={{...s.chip,background:"#1C1C1E",color:"#fff",fontSize:11}}>Vos</span>}
                     </div>
