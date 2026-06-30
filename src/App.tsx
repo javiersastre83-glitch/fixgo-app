@@ -354,7 +354,33 @@ export default function App({ session }) {
     setPerfilForm({nombre:usuarioActivoReal.nombre,especialidad:usuarioActivo.especialidad,email:usuarioReal?.email||"demo@fixgo.app"});
   },[usuarioActivo.id,usuarioReal?.id]);
 
-  const handleFotos=(e)=>{Array.from(e.target.files).forEach(f=>{const r=new FileReader();r.onload=ev=>setForm(ff=>({...ff,fotos:[...ff.fotos,ev.target.result]}));r.readAsDataURL(f);});};
+  const comprimirFoto=(file)=>new Promise((resolve)=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=1280;
+        let{width,height}=img;
+        if(width>height&&width>MAX){height=Math.round(height*MAX/width);width=MAX;}
+        else if(height>MAX){width=Math.round(width*MAX/height);height=MAX;}
+        const canvas=document.createElement("canvas");
+        canvas.width=width;canvas.height=height;
+        const ctx=canvas.getContext("2d");
+        ctx.drawImage(img,0,0,width,height);
+        resolve(canvas.toDataURL("image/jpeg",0.7));
+      };
+      img.onerror=()=>resolve(ev.target.result);
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  const handleFotos=async(e)=>{
+    const files=Array.from(e.target.files);
+    for(const f of files){
+      const comprimida=await comprimirFoto(f);
+      setForm(ff=>({...ff,fotos:[...ff.fotos,comprimida]}));
+    }
+  };
   const quitarFoto=(idx)=>setForm(f=>({...f,fotos:f.fotos.filter((_,i)=>i!==idx)}));
 
   const guardar=async()=>{
