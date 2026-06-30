@@ -331,18 +331,17 @@ export default function App({ session }) {
       const data=Object.values(mapaObras);
       const error=null;
    if(!error){
-     const obrasConEquipo=[];
-     for(const obra of (data||[])){
+     const obrasConEquipo=await Promise.all((data||[]).map(async(obra)=>{
        const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,nombre,especialidad").eq("obra_id",obra.id);
        const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad}));
-       obrasConEquipo.push({...obra,equipo});
-     }
+       return{...obra,equipo};
+     }));
      setObras(obrasConEquipo);
         const novsPorObra={};
-        for(const obra of data){
+        await Promise.all((data||[]).map(async(obra)=>{
           const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
           novsPorObra[obra.id]=(novs||[]).map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}));
-        }
+        }));
         setNovedadesPorObra(novsPorObra);
       }
      }finally{
