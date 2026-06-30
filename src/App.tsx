@@ -341,7 +341,7 @@ export default function App({ session }) {
         const novsPorObra={};
         for(const obra of data){
           const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-          novsPorObra[obra.id]=(novs||[]).map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}));
+          novsPorObra[obra.id]=(novs||[]).map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}));
         }
         setNovedadesPorObra(novsPorObra);
       }
@@ -376,7 +376,10 @@ export default function App({ session }) {
     setForm(FORM_INICIAL);setVista("lista");setGuardando(false);mostrarToast("Tarea creada con éxito");
   };
 
-  const resolver=async(id)=>{const actual=novedades.find(x=>x.id===id);const nuevoEstado=!actual?.resuelta;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:nuevoEstado}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado}:x));};
+  const resolver=async(id)=>{const actual=novedades.find(x=>x.id===id);const nuevoEstado=!actual?.resuelta;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:nuevoEstado,estado_aprobacion:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null}:x));};
+  const enviarAprobacion=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({estado_aprobacion:"pendiente"}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,estadoAprobacion:"pendiente"}:x));};
+  const aprobar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null}:x));};
+  const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null}:x));};
   const eliminar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").delete().eq("id",id);}setNovedades(n=>n.filter(x=>x.id!==id));setVista("lista");};
   const agregarComentario=async(id)=>{if(!nuevoComentario.trim()||guardando)return;const texto=nuevoComentario.trim();setGuardando(true);if(usuarioReal&&typeof id==="string"){await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});}setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId:usuarioReal?.id||usuarioActivo.id,ts:Date.now()}]}:x));setNuevoComentario("");setGuardando(false);mostrarToast("Comentario agregado");};
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").delete().eq("obra_id",id);await supabase.from("obras").delete().eq("id",id);}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
@@ -767,9 +770,9 @@ export default function App({ session }) {
                       :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,borderRadius:10,marginLeft:11}}>{emojiDeOficio(nov.responsable)}</div>}
                     <div style={{padding:"11px 12px",flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
-                        <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":pri.color,flexShrink:0,display:"inline-block"}}/>
-                        <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":pri.color}}>{nov.resuelta?"RESUELTO":pri.label}</span>
-                        {!nov.resuelta&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
+                        <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
+                        <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
+                        {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                       </div>
                       <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
                       <p style={{margin:0,fontSize:12,color:"#636366"}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {nov.sector}</p>
@@ -1044,10 +1047,10 @@ export default function App({ session }) {
              </div>
             :<div style={{width:"100%",height:160,background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:46}}>{emojiDeOficio(detalle.responsable)}</div>}
           <div style={{padding:"16px"}}>
-          <div style={{background:detalle.resuelta?"#34C75912":pri.color+"12",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap"}}>
-            <span style={{width:11,height:11,borderRadius:99,background:detalle.resuelta?"#34C759":pri.color,flexShrink:0}}/>
-            <span style={{color:detalle.resuelta?"#34C759":pri.color,fontSize:17,fontWeight:800,letterSpacing:0.3}}>{detalle.resuelta?"RESUELTO":pri.label}</span>
-            {!detalle.resuelta&&badge&&<span style={{marginLeft:"auto",color:"#8E8E93",fontSize:13,fontWeight:600}}>{badge.label.replace(/^[^\s]+\s/,"")}</span>}
+          <div style={{background:detalle.resuelta?"#34C75912":detalle.estadoAprobacion==="pendiente"?"#9333EA12":pri.color+"12",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+            <span style={{width:11,height:11,borderRadius:99,background:detalle.resuelta?"#34C759":detalle.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0}}/>
+            <span style={{color:detalle.resuelta?"#34C759":detalle.estadoAprobacion==="pendiente"?"#9333EA":pri.color,fontSize:17,fontWeight:800,letterSpacing:0.3}}>{detalle.resuelta?"RESUELTO":detalle.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
+            {!detalle.resuelta&&!detalle.estadoAprobacion&&badge&&<span style={{marginLeft:"auto",color:"#8E8E93",fontSize:13,fontWeight:600}}>{badge.label.replace(/^[^\s]+\s/,"")}</span>}
           </div>
           <p style={{fontSize:22,fontWeight:800,color:"#000",marginBottom:18,lineHeight:1.25}}>{detalle.descripcion}</p>
           {[[<User size={20}/>,"Responsable",detalle.responsable],[<MapPin size={20}/>,"Sector",detalle.sector],detalle.fechaLimite?[<Calendar size={20}/>,"Fecha límite",formatFecha(detalle.fechaLimite)]:null,[<Calendar size={20}/>,"Cargada",detalle.fecha?formatFecha(detalle.fecha):"—"]].filter(Boolean).map(([ic,lb,vl])=>(
@@ -1066,7 +1069,29 @@ export default function App({ session }) {
             <input style={{...s.input,flex:1}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`} value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
             <button style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:15,cursor:"pointer",fontWeight:700,height:48}} onClick={()=>agregarComentario(detalle.id)}><Send size={16}/></button>
           </div>
-          <button style={{...s.btnPrincipal,background:detalle.resuelta?"#636366":"#34C759",marginTop:20,fontSize:17,padding:"17px",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={()=>{resolver(detalle.id);setVista("lista");}}>{detalle.resuelta?<><RotateCcw size={18}/>Reabrir</>:<><CheckCircle size={18}/>Resolver</>}</button>
+          {detalle.resuelta?(
+            <button style={{...s.btnPrincipal,background:"#636366",marginTop:20,fontSize:17,padding:"17px",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={()=>{resolver(detalle.id);setVista("lista");}}><RotateCcw size={18}/>Reabrir</button>
+          ):detalle.estadoAprobacion==="pendiente"?(
+            detalle.autorId===miId?(
+              <div style={{marginTop:20}}>
+                <div style={{background:"#A855F712",borderRadius:14,padding:"12px 16px",display:"flex",alignItems:"center",gap:9,marginBottom:12}}>
+                  <Clock size={18} color="#9333EA"/><span style={{fontSize:14,fontWeight:700,color:"#9333EA"}}>El responsable marcó esta tarea como finalizada</span>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button style={{...s.btnPrincipal,background:"#34C759",flex:1,fontSize:16,padding:"15px"}} onClick={()=>{aprobar(detalle.id);setVista("lista");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><CheckCircle size={17}/>Aprobar</span></button>
+                  <button style={{...s.btnPrincipal,background:"#fff",color:"#FF3B30",border:"1.5px solid #FF3B30",flex:1,fontSize:16,padding:"15px"}} onClick={()=>{rechazar(detalle.id);setVista("lista");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><RotateCcw size={17}/>Rechazar</span></button>
+                </div>
+              </div>
+            ):(
+              <div style={{marginTop:20,background:"#A855F712",borderRadius:14,padding:"15px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:9}}>
+                <Clock size={18} color="#9333EA"/><span style={{fontSize:15,fontWeight:700,color:"#9333EA"}}>Esperando aprobación</span>
+              </div>
+            )
+          ):(detalle.autorId===miId||puedeGestionar)?(
+            <button style={{...s.btnPrincipal,background:"#34C759",marginTop:20,fontSize:17,padding:"17px",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={()=>{resolver(detalle.id);setVista("lista");}}><CheckCircle size={18}/>Resolver</button>
+          ):(
+            <button style={{...s.btnPrincipal,background:"#34C759",marginTop:20,fontSize:16,padding:"17px",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={()=>{enviarAprobacion(detalle.id);setVista("lista");}}><CheckCircle size={18}/>Finalizado — Enviar a aprobación</button>
+          )}
           <div style={{display:"flex",gap:8,marginTop:10}}>
             <button style={{...s.btnPrincipal,background:"#fff",color:"#1C1C1E",border:"1.5px solid #E0E0E5",flex:1,fontSize:14,padding:"13px 4px"}} onClick={()=>abrirEdicion(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><Edit2 size={15}/>Editar</span></button>
             <button style={{...s.btnPrincipal,background:"#fff",color:"#1C1C1E",border:"1.5px solid #E0E0E5",flex:1,fontSize:14,padding:"13px 4px"}} onClick={()=>compartir(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>{compartidoId===detalle.id?"✓ Copiado":<><Share2 size={15}/>Compartir</>}</span></button>
@@ -1188,9 +1213,9 @@ export default function App({ session }) {
                   :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,borderRadius:10,marginLeft:11}}>{emojiDeOficio(nov.responsable)}</div>}
                 <div style={{padding:"11px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center",minHeight:94}}>
                   <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
-                    <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":pri.color,flexShrink:0,display:"inline-block"}}/>
-                    <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":pri.color}}>{nov.resuelta?"RESUELTO":pri.label}</span>
-                    {!nov.resuelta&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
+                    <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
+                    <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
+                    {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                   </div>
                   <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
                   <p style={{margin:0,fontSize:12,color:"#636366"}}>{emojiDeOficio(nov.responsable)} {nov.responsable} · 📍 {nov.sector}</p>
