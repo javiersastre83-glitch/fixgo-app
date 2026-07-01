@@ -220,6 +220,7 @@ export default function App({ session }) {
   const [vistaEquipo,      setVistaEquipo]      = useState(false);
   const [miembroSel,       setMiembroSel]       = useState(null);
   const [editandoNombreId, setEditandoNombreId] = useState(null);
+  const [confirmarEliminarMiembro, setConfirmarEliminarMiembro] = useState(null);
   const [nombreEditado,    setNombreEditado]    = useState("");
   const [vistaPerfil,      setVistaPerfil]      = useState(false);
   const [vistaInfoApp,     setVistaInfoApp]     = useState(false);
@@ -413,6 +414,16 @@ export default function App({ session }) {
 
   const abrirModalInvitar=()=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarNombre("");setLinkGenerado("");setModalInvitar(true);};
   const guardarNombreIntegrante=async(uid)=>{const nuevo=nombreEditado.trim();if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){await supabase.from("equipo_obra").update({nombre:nuevo||null}).eq("obra_id",obraActual.id).eq("usuario_id",uid);}setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:o));setEditandoNombreId(null);setNombreEditado("");mostrarToast("Nombre actualizado");};
+  const eliminarMiembro=async(u)=>{
+    if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
+      await supabase.from("novedades").update({responsable_usuario_id:null}).eq("obra_id",obraActual.id).eq("responsable_usuario_id",u.uid);
+      await supabase.from("equipo_obra").delete().eq("obra_id",obraActual.id).eq("usuario_id",u.uid);
+    }
+    setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).filter(m=>m.uid!==u.uid)}:o));
+    setNovedades(n=>n.map(x=>x.responsableUsuarioId===u.uid?{...x,responsableUsuarioId:null}:x));
+    setConfirmarEliminarMiembro(null);
+    mostrarToast("Integrante eliminado");
+  };
   const generarInvitacion=async()=>{
     if(!usuarioReal||!obraActual?.id||generandoLink)return;
     setGenerandoLink(true);
@@ -864,6 +875,7 @@ export default function App({ session }) {
                         <div style={{display:"flex",gap:6,marginTop:2,alignItems:"center"}}>{r&&<span style={{fontSize:11,fontWeight:700,color:colorRol,background:colorRol+"15",padding:"2px 8px",borderRadius:99}}>{r.emoji} {r.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
                       </div>
                       {u.uid===miId&&<span style={{...s.chip,background:"#1C1C1E",color:"#fff",fontSize:11}}>Vos</span>}
+                      {puedeGestionar&&miRolEnObra==="profesional"&&u.rolEnObra!=="profesional"&&u.uid!==miId&&<button onClick={()=>setConfirmarEliminarMiembro(u)} style={{background:"#FF3B3010",border:"none",borderRadius:11,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,marginLeft:"auto"}}><Trash2 size={18} color="#FF3B30"/></button>}
                     </div>
                     <div style={{display:"flex",gap:8}}>
                       <button style={{flex:1,background:"#F2F2F7",borderRadius:12,padding:"14px 10px",textAlign:"center",border:"none",cursor:"pointer"}} onClick={()=>setMiembroSel(u)}><p style={{margin:0,fontSize:22,fontWeight:800,color:"#FF6B00"}}>{pend}</p><p style={{margin:0,fontSize:12,color:"#8E8E93"}}>Pendientes</p></button>
@@ -879,6 +891,7 @@ export default function App({ session }) {
           </button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
+        {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Dejará de ver esta obra y sus tareas. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
         {modalInvitar&&<div style={s.overlay} onClick={()=>setModalInvitar(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
           <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Generá un link para sumar a alguien a "{obraActual?.nombre}"</p>
