@@ -147,6 +147,48 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
   );
 };
 
+const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057FF" }) => {
+  const [modalOficio, setModalOficio] = useState(false);
+  const miembros = (equipo||[]).filter(m=>m.nombre);
+  const oficioSel = (!usuarioId && value) ? value : null;
+  return (
+    <div>
+      <div style={{display:"flex",gap:9,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
+        {miembros.map(m=>{
+          const sel = usuarioId===m.uid;
+          return (
+            <button type="button" key={m.uid} onClick={()=>onChange({responsable:m.especialidad||"",usuarioId:m.uid})}
+              style={{flexShrink:0,minWidth:96,background:"#fff",border:`2px solid ${sel?color:"#E5E5EA"}`,borderRadius:14,padding:"11px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
+              <div style={{fontSize:15,fontWeight:800,lineHeight:1.15,color:sel?color:"#1C1C1E",whiteSpace:"nowrap"}}>{m.nombre}</div>
+              {m.especialidad&&<div style={{fontSize:12,color:"#8E8E93",marginTop:2,whiteSpace:"nowrap"}}>{m.especialidad}</div>}
+            </button>
+          );
+        })}
+        <button type="button" onClick={()=>setModalOficio(true)}
+          style={{flexShrink:0,minWidth:96,background:oficioSel?color+"0D":"#fff",border:`2px dashed ${oficioSel?color:"#C7C7CC"}`,borderRadius:14,padding:"11px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
+          <div style={{fontSize:20,fontWeight:800,lineHeight:1,color:oficioSel?color:"#8E8E93"}}>＋</div>
+          <div style={{fontSize:12,color:oficioSel?color:"#8E8E93",marginTop:3,whiteSpace:"nowrap",fontWeight:oficioSel?700:400}}>{oficioSel?oficioSel:"Un oficio"}</div>
+        </button>
+      </div>
+      {modalOficio && (
+        <div style={s.overlay} onClick={()=>setModalOficio(false)}>
+          <div style={{...s.modal,maxHeight:"70vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <p style={{margin:"0 0 12px",fontSize:17,fontWeight:700}}>Elegí un oficio</p>
+            <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>Para una tarea de alguien que no está en tu equipo.</p>
+            <div style={{overflowY:"auto",flex:1,margin:"0 -20px",padding:"0 20px"}}>
+              {RESPONSABLES.map(r=>(
+                <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setModalOficio(false);}}
+                  style={{width:"100%",padding:"13px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:(oficioSel===r)?color+"0D":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(oficioSel===r)?color:"#1C1C1E",fontWeight:(oficioSel===r)?700:400,fontFamily:"inherit"}}>{r}</button>
+              ))}
+            </div>
+            <button type="button" onClick={()=>setModalOficio(false)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:12}}>Cancelar</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const NavBar = ({ tabActiva, onTab, onPerfil }) => (
   <div style={{ background:"#fff", borderTop:"1px solid #E5E5EA", display:"flex", paddingBottom:"env(safe-area-inset-bottom)", flexShrink:0 }}>
     {[
@@ -202,6 +244,7 @@ export default function App({ session }) {
   const [novedadesPorObra, setNovedadesPorObra] = useState({1:NOVEDADES_DEMO,2:[]});
   const [vista,            setVista]            = useState("lista");
   const [form,             setForm]             = useState(FORM_INICIAL);
+  const [masOpciones,      setMasOpciones]      = useState(false);
   const [detalleId,        setDetalleId]        = useState(null);
   const [filtro,           setFiltro]           = useState("todas");
   const [filtroResp,       setFiltroResp]       = useState("todos");
@@ -1165,7 +1208,12 @@ export default function App({ session }) {
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.sector===sec?"#007AFF":"#E5E5EA"}`,background:form.sector===sec?"#007AFF15":"#fff",color:form.sector===sec?"#007AFF":"#3A3A3C",fontWeight:form.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{form.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={form.sectorCustom} onChange={e=>setForm(f=>({...f,sectorCustom:e.target.value}))} autoFocus/>}</div>
-          <div><p style={s.label}>👷 Responsable</p><p style={{margin:"-4px 0 8px",fontSize:12.5,color:"#8E8E93"}}>Elegí a alguien de tu equipo o un oficio genérico</p><SelectorResponsable value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
+          <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><p style={{margin:"-4px 0 10px",fontSize:12.5,color:"#8E8E93"}}>Tocá a alguien de tu equipo, o "+" para un oficio</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
+          <button type="button" onClick={()=>setMasOpciones(o=>!o)} style={{width:"100%",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit"}}>
+            <span style={{fontSize:15,fontWeight:600,color:"#1C1C1E"}}>⚙️ Más opciones</span>
+            <span style={{fontSize:13,color:"#8E8E93"}}>{masOpciones?"▲":"▼ fecha, nota, ocultar"}</span>
+          </button>
+          {masOpciones && <>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p>
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               {[["Hoy",0],["Mañana",1],["En 1 semana",7]].map(([lbl,dias])=>{
@@ -1187,6 +1235,7 @@ export default function App({ session }) {
               <span style={{position:"absolute",top:3,left:form.ocultoCapataz?23:3,width:24,height:24,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
             </button>
           </div>
+          </>}
           <button style={{...s.btnPrincipal,opacity:(form.descripcion.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={guardar}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={16}/>Guardar novedad</>}</span></button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
