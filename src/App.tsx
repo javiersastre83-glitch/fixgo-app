@@ -276,6 +276,7 @@ export default function App({ session }) {
   const [modalPro,         setModalPro]         = useState(false);
   const [menuContextual,   setMenuContextual]   = useState(null);
   const [asignacionRapida, setAsignacionRapida] = useState(null);
+  const [asignarTareaMiembro, setAsignarTareaMiembro] = useState(null);
   const [confirmarEliminar,setConfirmarEliminar]= useState(null);
   const [menuObra,         setMenuObra]         = useState(null);
   const [confirmarEliminarObra,setConfirmarEliminarObra]=useState(null);
@@ -869,6 +870,12 @@ export default function App({ session }) {
               <div key={lbl} style={{flex:1,background:"#fff",borderRadius:14,padding:"12px",textAlign:"center"}}><p style={{margin:0,fontSize:26,fontWeight:800,color:col}}>{val}</p><p style={{margin:0,fontSize:12,color:"#8E8E93"}}>{lbl}</p></div>
             ))}
           </div>
+          {puedeGestionar&&!esProfesional&&(
+            <div style={{display:"flex",gap:10}}>
+              <button style={{flex:1,background:"#1C1C1E",color:"#fff",border:"none",borderRadius:14,padding:"14px 10px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}} onClick={()=>{setForm({...FORM_INICIAL,responsable:u.especialidad||RESPONSABLES[0],responsableUsuarioId:u.uid});setMiembroSel(null);setVistaEquipo(false);setVista("nueva");}}><Plus size={16}/>Nueva tarea</button>
+              <button style={{flex:1,background:"#fff",color:"#1C1C1E",border:"1.5px solid #E0E0E5",borderRadius:14,padding:"14px 10px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}} onClick={()=>setAsignarTareaMiembro(u)}><User size={16}/>Asignar tarea</button>
+            </div>
+          )}
           {[["⏳ Pendientes",pend],["✅ Resueltas",res]].map(([titulo,lista])=>lista.length>0&&(
             <div key={titulo}><p style={{margin:"4px 0 8px",fontSize:13,color:"#8E8E93",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>{titulo}</p>
               {lista.map(nov=>{const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);return(
@@ -899,6 +906,33 @@ export default function App({ session }) {
           {tareasU.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:"#8E8E93"}}><p style={{fontSize:40,margin:0}}>🎉</p><p style={{fontSize:16,fontWeight:600,margin:"10px 0 4px"}}>{esProfesional?"La obra no tiene novedades":"Sin tareas asignadas"}</p></div>}
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
+        {asignarTareaMiembro&&(()=>{
+          const sinAsignar=novedades.filter(n=>!n.resuelta&&!n.responsable_usuario_id);
+          return(
+            <div style={s.overlay} onClick={()=>setAsignarTareaMiembro(null)}>
+              <div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+                <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>Asignar tarea a {asignarTareaMiembro.nombre}</p>
+                <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>Tareas pendientes sin responsable asignado</p>
+                <div style={{overflowY:"auto",flex:1,margin:"0 -20px",padding:"0 20px"}}>
+                  {sinAsignar.length===0
+                    ?<p style={{textAlign:"center",color:"#8E8E93",fontSize:14,padding:"20px 0"}}>Todas las tareas ya tienen un responsable asignado.</p>
+                    :sinAsignar.map(nov=>{const pri=PRIORIDADES[nov.prioridad];return(
+                      <button key={nov.id} style={{width:"100%",background:"#fff",border:"1px solid #ECECEF",borderRadius:14,padding:"12px 14px",marginBottom:8,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}
+                        onClick={()=>asignarRapido(nov.id,{responsable:asignarTareaMiembro.especialidad||"",usuarioId:asignarTareaMiembro.uid})}>
+                        <span style={{width:8,height:8,borderRadius:"50%",background:pri.color,flexShrink:0,display:"inline-block"}}/>
+                        <div style={{flex:1,minWidth:0}}>
+                          <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E"}}>{nov.descripcion}</p>
+                          {nov.sector&&<p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{nov.sector}</p>}
+                        </div>
+                        <ChevronRight size={16} color="#C7C7CC"/>
+                      </button>
+                    );})}
+                </div>
+                <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:12}} onClick={()=>setAsignarTareaMiembro(null)}>Cancelar</button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   }
