@@ -13,6 +13,8 @@ const EMOJI_OFICIO = {
   "Albañil":"🧱","Demoledor":"🔨","Encofrador carpintero":"🪵","Fierrero / Armador de hierro":"⛓️","Hormigonero":"🏗️","Pilotero":"🛠️","Pocero / Excavador":"⛏️","Techista":"🏠","Calderista":"🔥","Electricista de obra":"⚡","Gasista":"🔧","Instalador de ascensores y montacargas":"🛗","Instalador de corrientes débiles":"🔌","Instalador de sistemas contra incendios":"🧯","Instalador de sistemas de climatización":"❄️","Instalador de sistemas solares / renovables":"☀️","Instalador sanitario":"🚿","Plomero / Fontanero":"🔧","Técnico en domótica y automatización":"🤖","Carpintero de obra / terminaciones":"🪚","Carpintero de obra gruesa":"🪵","Cerrajero de obra":"🔑","Herrero de obra":"⚒️","Instalador de aberturas de aluminio":"🪟","Instalador de aberturas de PVC":"🪟","Instalador de aberturas metálicas":"🪟","Montador de estructuras metálicas":"🏗️","Soldador":"🔥","Vidriero":"🪟","Zinguería":"🏠","Ceramista":"🧱","Colocador de pisos de madera / Parquetista":"🪵","Colocador de pisos vinílicos / Alfombrista":"🧶","Colocador revestimientos plásticos texturados":"🎨","Durlero / Montador de construcción en seco":"🧱","Enduido":"🪣","Impermeabilizador / Techista de membranas":"🏠","Marmolero":"🪨","Pintor de obra":"🖌️","Pintor industrial":"🎨","Pulidor de pisos":"✨","Yesero":"🪣","Armador de andamios / Andamiero":"🚧","Jardinero":"🌳","Operario de limpieza de obra (fin de obra)":"🧹","Proveedor de servicios":"📦","Restaurador":"🛠️","Riego":"💧","Sereno / Personal de vigilancia de obra":"👁️","Técnico en Higiene y Seguridad en el Trabajo":"🦺","Topógrafo / Agrimensor":"📐","Tunelero":"⛏️","Otro":"👷"
 };
 const emojiDeOficio = (oficio) => EMOJI_OFICIO[oficio] || "👷";
+const PALETA_PASTEL = ["#C9A6E8","#F5C77E","#A8C7E8","#E8A6B8","#A6D4C4","#D4C4A6","#C4A6D4","#E8C4A6","#A6C4D4","#D4A6B8","#B8D4A6","#C4B8E8"];
+const colorPastelDe = (id) => { const s=String(id||""); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))&0xffffffff; return PALETA_PASTEL[Math.abs(h)%PALETA_PASTEL.length]; };
 const ROLES_SISTEMA = [
   { id:"profesional", label:"Profesional", emoji:"📐", color:"#0057FF", desc:"Arquitecto, Ingeniero o Idóneo." },
   { id:"capataz",     label:"Capataz",     emoji:"🦺",   color:"#FF6B00", desc:"Gestiona subcontratos y hace seguimiento." },
@@ -880,50 +882,41 @@ export default function App({ session }) {
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVistaEquipo(false)},{label:"Equipo"}]} />
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
           <div>
-            <p style={{margin:"0 0 8px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resumen de la obra</p>
-            <div style={{display:"flex",gap:8}}>
-              {[["#FF6B00",obraPend,"Pendientes"],["#34C759",obraRes,"Resueltas"],["#1C1C1E",novedades.length,"Total"]].map(([col,val,lbl])=>(
-                <div key={lbl} style={{flex:1,background:"#fff",borderRadius:14,padding:"14px 8px",textAlign:"center"}}><p style={{margin:0,fontSize:26,fontWeight:800,color:col}}>{val}</p><p style={{margin:0,fontSize:11,color:"#8E8E93"}}>{lbl}</p></div>
+            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resumen de la obra</p>
+            <div style={{display:"flex",gap:28,alignItems:"baseline",padding:"0 4px 4px"}}>
+              {[["#FF8A3D",obraPend,"Pendientes"],["#34C759",obraRes,"Resueltas"],["#1C1C1E",novedades.length,"Total"]].map(([col,val,lbl])=>(
+                <div key={lbl}><p style={{margin:0,fontSize:34,fontWeight:800,color:col,lineHeight:1}}>{val}</p><p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{lbl}</p></div>
               ))}
             </div>
           </div>
           <div>
-            <p style={{margin:"0 0 8px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Integrantes ({equipoObra.length})</p>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <p style={{margin:"0 0 4px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Integrantes ({equipoObra.length})</p>
+            <div>
               {equipoObra.map(u=>{
                 const esProf=u.rolEnObra==="profesional";
                 const pend=esProf?obraPend:novedades.filter(n=>n.responsable===u.especialidad&&!n.resuelta).length;
                 const res=esProf?obraRes:novedades.filter(n=>n.responsable===u.especialidad&&n.resuelta).length;
                 const r=ROLES_SISTEMA.find(r=>r.id===u.rolEnObra);
                 const colorRol=r?.color||"#0057FF";
+                const editando=editandoNombreId===u.uid;
+                const tareasTxt=esProf?"Dueño de la obra":pend>0?`${pend} ${pend===1?"tarea pendiente":"tareas pendientes"}`:"Sin tareas asignadas";
                 return(
-                  <div key={u.id} style={{background:"#fff",borderRadius:18,padding:"16px",border:`1px solid #ECECEF`}}>
-                    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-                      <div style={{width:50,height:50,borderRadius:99,background:colorRol+"15",border:`2px solid ${colorRol}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                        {esProf
-                          ?<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={colorRol} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21 21 3M3 21h18M3 21V8"/></svg>
-                          :<HardHat size={26} color={colorRol}/>}
-                      </div>
-                      <div style={{flex:1}}>
-                        {editandoNombreId===u.uid?(
-                          <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                            <input autoFocus value={nombreEditado} onChange={e=>setNombreEditado(e.target.value)} placeholder="Nombre o empresa" maxLength={40}
-                              style={{flex:1,padding:"8px 10px",borderRadius:10,border:"1.5px solid #0057FF",fontSize:15,outline:"none",fontFamily:"inherit",minWidth:0}}/>
-                            <button onClick={()=>guardarNombreIntegrante(u.uid)} style={{background:"#34C759",border:"none",borderRadius:10,padding:"8px 10px",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>✓</button>
-                            <button onClick={()=>{setEditandoNombreId(null);setNombreEditado("");}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"8px 10px",color:"#8E8E93",cursor:"pointer",fontSize:13}}>✕</button>
-                          </div>
-                        ):(
-                          <p style={{margin:0,fontWeight:700,fontSize:17,color:"#1C1C1E",display:"flex",alignItems:"center",gap:8}}>{u.nombre}{puedeGestionar&&(u.rolEnObra!=="profesional"||u.uid===miId)&&<button onClick={()=>{setEditandoNombreId(u.uid);setNombreEditado(u.nombre||"");}} style={{background:"none",border:"none",cursor:"pointer",color:"#0057FF",padding:0,display:"flex",alignItems:"center"}}><Edit2 size={14}/></button>}</p>
-                        )}
-                        <div style={{display:"flex",gap:6,marginTop:2,alignItems:"center"}}>{r&&<span style={{fontSize:11,fontWeight:700,color:colorRol,background:colorRol+"15",padding:"2px 8px",borderRadius:99}}>{r.emoji} {r.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
-                      </div>
-                      {u.uid===miId&&<span style={{...s.chip,background:"#1C1C1E",color:"#fff",fontSize:11}}>Vos</span>}
-                      {puedeGestionar&&miRolEnObra==="profesional"&&u.rolEnObra!=="profesional"&&u.uid!==miId&&<button onClick={()=>setConfirmarEliminarMiembro(u)} style={{background:"#FF3B3010",border:"none",borderRadius:11,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,marginLeft:"auto"}}><Trash2 size={18} color="#FF3B30"/></button>}
+                  <div key={u.id} style={{display:"flex",alignItems:"center",gap:13,padding:"14px 4px",borderBottom:"1px solid #E8E8ED"}}>
+                    <div onClick={()=>!editando&&setMiembroSel(u)} style={{width:44,height:44,borderRadius:99,background:colorPastelDe(u.uid),flexShrink:0,cursor:"pointer"}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      {editando?(
+                        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                          <input autoFocus value={nombreEditado} onChange={e=>setNombreEditado(e.target.value)} placeholder="Nombre o empresa" maxLength={40}
+                            style={{flex:1,padding:"8px 10px",borderRadius:10,border:"1.5px solid #0057FF",fontSize:15,outline:"none",fontFamily:"inherit",minWidth:0}}/>
+                          <button onClick={()=>guardarNombreIntegrante(u.uid)} style={{background:"#34C759",border:"none",borderRadius:10,padding:"8px 10px",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>✓</button>
+                          <button onClick={()=>{setEditandoNombreId(null);setNombreEditado("");}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"8px 10px",color:"#8E8E93",cursor:"pointer",fontSize:13}}>✕</button>
+                        </div>
+                      ):(<>
+                        <p onClick={()=>setMiembroSel(u)} style={{margin:0,fontWeight:700,fontSize:16,color:"#1C1C1E",display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}>{u.nombre}{puedeGestionar&&(u.rolEnObra!=="profesional"||u.uid===miId)&&<button onClick={e=>{e.stopPropagation();setEditandoNombreId(u.uid);setNombreEditado(u.nombre||"");}} style={{background:"none",border:"none",cursor:"pointer",color:"#0057FF",padding:0,display:"flex",alignItems:"center"}}><Edit2 size={13}/></button>}{u.uid===miId&&<span style={{fontSize:10,fontWeight:700,color:"#fff",background:"#1C1C1E",padding:"1px 7px",borderRadius:99}}>Vos</span>}</p>
+                        <p style={{margin:"3px 0 0",fontSize:13,color:"#8E8E93"}}>{r&&<span style={{color:colorRol,fontWeight:600}}>{r.label}</span>}{r&&" · "}{u.especialidad}{!esProf&&" · "}{!esProf&&<span style={{color:pend>0?"#FF8A3D":"#8E8E93",fontWeight:pend>0?600:400}}>{tareasTxt}</span>}</p>
+                      </>)}
                     </div>
-                    <div style={{display:"flex",gap:8}}>
-                      <button style={{flex:1,background:"#F2F2F7",borderRadius:12,padding:"14px 10px",textAlign:"center",border:"none",cursor:"pointer"}} onClick={()=>setMiembroSel(u)}><p style={{margin:0,fontSize:22,fontWeight:800,color:"#FF6B00"}}>{pend}</p><p style={{margin:0,fontSize:12,color:"#8E8E93"}}>Pendientes</p></button>
-                      <button style={{flex:1,background:"#F2F2F7",borderRadius:12,padding:"14px 10px",textAlign:"center",border:"none",cursor:"pointer"}} onClick={()=>setMiembroSel(u)}><p style={{margin:0,fontSize:22,fontWeight:800,color:"#34C759"}}>{res}</p><p style={{margin:0,fontSize:12,color:"#8E8E93"}}>Resueltas</p></button>
-                    </div>
+                    {!editando&&puedeGestionar&&miRolEnObra==="profesional"&&u.rolEnObra!=="profesional"&&u.uid!==miId&&<button onClick={()=>setConfirmarEliminarMiembro(u)} style={{background:"none",border:"none",cursor:"pointer",flexShrink:0,padding:8,display:"flex",alignItems:"center"}}><Trash2 size={17} color="#C7C7CC"/></button>}
                   </div>
                 );
               })}
