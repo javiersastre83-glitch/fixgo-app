@@ -400,6 +400,26 @@ export default function App({ session }) {
   },[usuarioReal,invitacionProcesada]);
 
   useEffect(()=>{
+    if(!usuarioReal||!obraActual?.id||typeof obraActual.id!=="string")return;
+    const mapNov=(n)=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:[]});
+    const canal=supabase.channel(`novedades-${obraActual.id}`)
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"novedades",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
+        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];if(lista.some(x=>x.id===payload.new.id))return p;return{...p,[obraActual.id]:[mapNov(payload.new),...lista]};});
+      })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"novedades",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
+        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];return{...p,[obraActual.id]:lista.map(x=>x.id===payload.new.id?{...x,...mapNov(payload.new),comentarios:x.comentarios}:x)};});
+      })
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"novedades",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
+        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];return{...p,[obraActual.id]:lista.filter(x=>x.id!==payload.old.id)};});
+      })
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"comentarios"},(payload)=>{
+        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];if(!lista.some(x=>x.id===payload.new.novedad_id))return p;return{...p,[obraActual.id]:lista.map(x=>x.id===payload.new.novedad_id?(x.comentarios.some(c=>c.ts===new Date(payload.new.created_at).getTime())?x:{...x,comentarios:[...x.comentarios,{texto:payload.new.texto,autorId:payload.new.autor_id,ts:new Date(payload.new.created_at).getTime()}]}):x)};});
+      })
+      .subscribe();
+    return()=>{supabase.removeChannel(canal);};
+  },[usuarioReal,obraActual?.id]);
+
+  useEffect(()=>{
     setPerfilForm({nombre:usuarioActivoReal.nombre,especialidad:usuarioActivo.especialidad,email:usuarioReal?.email||"demo@fixgo.app"});
   },[usuarioActivo.id,usuarioReal?.id]);
 
