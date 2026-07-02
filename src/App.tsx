@@ -1167,7 +1167,9 @@ export default function App({ session }) {
             <button style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:15,cursor:"pointer",fontWeight:700,height:48}} onClick={()=>agregarComentario(detalle.id)}><Send size={16}/></button>
           </div>
           {detalle.resuelta?(
-            <button style={{...s.btnPrincipal,background:"#636366",marginTop:20,fontSize:17,padding:"17px",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={()=>{resolver(detalle.id);setVista("lista");}}><RotateCcw size={18}/>Reabrir</button>
+            (detalle.autorId===miId||puedeGestionar)?(
+              <button style={{...s.btnPrincipal,background:"#636366",marginTop:20,fontSize:17,padding:"17px",display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={()=>{resolver(detalle.id);setVista("lista");}}><RotateCcw size={18}/>Reabrir</button>
+            ):null
           ):detalle.estadoAprobacion==="pendiente"?(
             detalle.autorId===miId?(
               <div style={{marginTop:20}}>
