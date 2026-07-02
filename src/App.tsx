@@ -1207,13 +1207,13 @@ export default function App({ session }) {
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
-          <div><p style={s.label}>📍 Sector</p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.sector===sec?"#007AFF":"#E5E5EA"}`,background:form.sector===sec?"#007AFF15":"#fff",color:form.sector===sec?"#007AFF":"#3A3A3C",fontWeight:form.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{form.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={form.sectorCustom} onChange={e=>setForm(f=>({...f,sectorCustom:e.target.value}))} autoFocus/>}</div>
           <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><p style={{margin:"-4px 0 10px",fontSize:12.5,color:"#8E8E93"}}>Tocá a alguien de tu equipo, o "+" para un oficio</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
           <button type="button" onClick={()=>setMasOpciones(o=>!o)} style={{width:"100%",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit"}}>
             <span style={{fontSize:15,fontWeight:600,color:"#1C1C1E"}}>⚙️ Más opciones</span>
-            <span style={{fontSize:13,color:"#8E8E93"}}>{masOpciones?"▲":"▼ fecha, nota, ocultar"}</span>
+            <span style={{fontSize:13,color:"#8E8E93"}}>{masOpciones?"▲":"▼ sector, fecha, nota…"}</span>
           </button>
           {masOpciones && <>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><MapPin size={14}/>Sector</span></p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.sector===sec?"#007AFF":"#E5E5EA"}`,background:form.sector===sec?"#007AFF15":"#fff",color:form.sector===sec?"#007AFF":"#3A3A3C",fontWeight:form.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{form.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={form.sectorCustom} onChange={e=>setForm(f=>({...f,sectorCustom:e.target.value}))} autoFocus/>}</div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p>
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               {[["Hoy",0],["Mañana",1],["En 1 semana",7]].map(([lbl,dias])=>{
@@ -1247,7 +1247,7 @@ export default function App({ session }) {
   // LISTA DE NOVEDADES
   // ─────────────────────────────
   return(
-    <div style={s.root}>
+    <div style={{...s.root,position:"relative"}}>
       <div style={{padding:"14px 12px 4px",flexShrink:0}}>
         <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"18px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
@@ -1314,9 +1314,7 @@ export default function App({ session }) {
           );
         })}
       </div>
-      {puedeGestionar&&novedadesFiltradas.length>0&&<div style={{padding:"12px 16px 0",background:"#fff",borderTop:"1px solid #F2F2F7",flexShrink:0}}>
-        <button style={{...s.btnPrincipal,marginBottom:0}} onClick={()=>setVista("nueva")}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Plus size={18}/>Nueva novedad</span></button>
-      </div>}
+      {puedeGestionar&&novedadesFiltradas.length>0&&<button onClick={()=>setVista("nueva")} aria-label="Nueva novedad" style={{position:"absolute",right:18,bottom:82,width:58,height:58,borderRadius:"50%",background:"#1C1C1E",border:"none",boxShadow:"0 4px 16px rgba(0,0,0,0.28)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:20}}><Plus size={26} color="#fff" strokeWidth={2.5}/></button>}
       <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
 
       {menuContextual&&<div style={s.overlay} onClick={()=>setMenuContextual(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones</p><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{resolver(menuContextual.novId);setMenuContextual(null);}}>{novedades.find(n=>n.id===menuContextual.novId)?.resuelta?"↩ Reabrir":"✅ Marcar como resuelto"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{const nov=novedades.find(n=>n.id===menuContextual.novId);if(nov){setDetalleId(nov.id);setVista("detalle");abrirEdicion(nov);}setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={15}/>Asignar a alguien del equipo</span></button><button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminar(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
