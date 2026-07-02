@@ -882,16 +882,16 @@ export default function App({ session }) {
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVistaEquipo(false)},{label:"Equipo"}]} />
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
           <div>
-            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resumen de la obra</p>
-            <div style={{display:"flex",gap:28,alignItems:"baseline",padding:"0 4px 4px"}}>
-              {[["#FF8A3D",obraPend,"Pendientes"],["#34C759",obraRes,"Resueltas"],["#1C1C1E",novedades.length,"Total"]].map(([col,val,lbl])=>(
-                <div key={lbl}><p style={{margin:0,fontSize:34,fontWeight:800,color:col,lineHeight:1}}>{val}</p><p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{lbl}</p></div>
+            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resumen de la obra</p>
+            <div style={{display:"flex",gap:10}}>
+              {[["#FF6B00",obraPend,"Pendientes"],["#34C759",obraRes,"Resueltas"],["#1C1C1E",novedades.length,"Total"]].map(([col,val,lbl])=>(
+                <div key={lbl} style={{flex:1,background:"#fff",borderRadius:14,padding:"14px 8px",textAlign:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}><p style={{margin:0,fontSize:24,fontWeight:800,color:col}}>{val}</p><p style={{margin:"2px 0 0",fontSize:11,color:"#8E8E93"}}>{lbl}</p></div>
               ))}
             </div>
           </div>
           <div>
-            <p style={{margin:"0 0 4px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Integrantes ({equipoObra.length})</p>
-            <div>
+            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Integrantes ({equipoObra.length})</p>
+            <div style={{display:"flex",flexDirection:"column",gap:11}}>
               {equipoObra.map(u=>{
                 const esProf=u.rolEnObra==="profesional";
                 const pend=esProf?obraPend:novedades.filter(n=>n.responsable===u.especialidad&&!n.resuelta).length;
@@ -901,8 +901,8 @@ export default function App({ session }) {
                 const editando=editandoNombreId===u.uid;
                 const tareasTxt=esProf?"Dueño de la obra":pend>0?`${pend} ${pend===1?"tarea pendiente":"tareas pendientes"}`:"Sin tareas asignadas";
                 return(
-                  <div key={u.id} style={{display:"flex",alignItems:"center",gap:13,padding:"14px 4px",borderBottom:"1px solid #E8E8ED"}}>
-                    <div onClick={()=>!editando&&setMiembroSel(u)} style={{width:44,height:44,borderRadius:99,background:colorPastelDe(u.uid),flexShrink:0,cursor:"pointer"}}/>
+                  <div key={u.id} style={{display:"flex",alignItems:"center",gap:13,padding:"14px 15px",background:"#fff",borderRadius:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+                    <div onClick={()=>!editando&&setMiembroSel(u)} style={{width:46,height:46,borderRadius:99,background:colorPastelDe(u.uid),flexShrink:0,cursor:"pointer"}}/>
                     <div style={{flex:1,minWidth:0}}>
                       {editando?(
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
