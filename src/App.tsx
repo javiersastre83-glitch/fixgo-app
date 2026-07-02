@@ -846,7 +846,7 @@ export default function App({ session }) {
                          <img src={nov.fotos[0]} alt="" style={{width:72,height:72,objectFit:"cover",display:"block",borderRadius:10}}/>
                          {nov.fotos.length>1&&<span style={{position:"absolute",right:4,bottom:4,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:99,lineHeight:1}}>+{nov.fotos.length-1}</span>}
                        </div>
-                      :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,borderRadius:10,marginLeft:11}}>{emojiDeOficio(nov.responsable)}</div>}
+                      :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:11}}><Camera size={26} color="#C7C7CC"/></div>}
                     <div style={{padding:"11px 12px",flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
                         <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
@@ -1126,7 +1126,7 @@ export default function App({ session }) {
                {detalle.fotos.map((f,i)=><img key={i} src={f} alt="" style={{width:"100%",height:200,objectFit:"cover",flexShrink:0,scrollSnapAlign:"start"}}/>)}
                {detalle.fotos.length>1&&<span style={{position:"absolute",right:10,bottom:10,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:12,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{detalle.fotos.length} fotos</span>}
              </div>
-            :<div style={{width:"100%",height:160,background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:46}}>{emojiDeOficio(detalle.responsable)}</div>}
+            :<div style={{width:"100%",height:160,background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center"}}><Camera size={40} color="#C7C7CC"/></div>}
           <div style={{padding:"16px"}}>
           <div style={{background:detalle.resuelta?"#34C75912":detalle.estadoAprobacion==="pendiente"?"#9333EA12":pri.color+"12",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap"}}>
             <span style={{width:11,height:11,borderRadius:99,background:detalle.resuelta?"#34C759":detalle.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0}}/>
@@ -1297,7 +1297,7 @@ export default function App({ session }) {
                      <img src={nov.fotos[0]} alt="" style={{width:72,height:72,objectFit:"cover",display:"block",borderRadius:10}}/>
                      {nov.fotos.length>1&&<span style={{position:"absolute",right:4,bottom:4,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:99,lineHeight:1}}>+{nov.fotos.length-1}</span>}
                    </div>
-                  :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,borderRadius:10,marginLeft:11}}>{emojiDeOficio(nov.responsable)}</div>}
+                  :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:11}}><Camera size={26} color="#C7C7CC"/></div>}
                 <div style={{padding:"11px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center",minHeight:94}}>
                   <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
                     <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
@@ -1305,7 +1305,7 @@ export default function App({ session }) {
                     {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                   </div>
                   <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
-                  <p style={{margin:0,fontSize:12,color:"#636366"}}>{emojiDeOficio(nov.responsable)} {nov.responsable} · 📍 {nov.sector}</p>
+                  <p style={{margin:0,fontSize:12,color:"#636366",display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}><Wrench size={12} color="#8E8E93"/><span>{nov.responsable}</span><span style={{color:"#C7C7CC",margin:"0 2px"}}>·</span><MapPin size={12} color="#8E8E93"/><span>{nov.sector}</span></p>
                   {nov.comentarios.length>0&&<span style={{marginTop:5,fontSize:11.5,color:"#8E8E93",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><MessageCircle size={12}/> {nov.comentarios.length} comentario{nov.comentarios.length!==1?"s":""}</span>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
