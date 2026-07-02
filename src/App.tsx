@@ -247,6 +247,7 @@ export default function App({ session }) {
   const [vista,            setVista]            = useState("lista");
   const [form,             setForm]             = useState(FORM_INICIAL);
   const [masOpciones,      setMasOpciones]      = useState(false);
+  const [fotoAmpliada,     setFotoAmpliada]     = useState(null);
   const [detalleId,        setDetalleId]        = useState(null);
   const [filtro,           setFiltro]           = useState("todas");
   const [filtroResp,       setFiltroResp]       = useState("todos");
@@ -284,6 +285,7 @@ export default function App({ session }) {
   const esVersionPro = false;
   const misObrasPropias = usuarioReal ? obras.filter(o=>o.propietario_id===usuarioReal.id).length : obras.length;
   const fileRef = useRef();
+  const fileRefEdit = useRef();
 
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
@@ -428,6 +430,14 @@ export default function App({ session }) {
     }
   };
   const quitarFoto=(idx)=>setForm(f=>({...f,fotos:f.fotos.filter((_,i)=>i!==idx)}));
+  const handleFotosEdit=async(e)=>{
+    const files=Array.from(e.target.files);
+    for(const f of files){
+      const comprimida=await comprimirFoto(f);
+      setFormEdit(ff=>({...ff,fotos:[...(ff.fotos||[]),comprimida]}));
+    }
+  };
+  const quitarFotoEdit=(idx)=>setFormEdit(f=>({...f,fotos:f.fotos.filter((_,i)=>i!==idx)}));
 
   const guardar=async()=>{
     if(!form.descripcion.trim()||guardando)return;
@@ -1080,6 +1090,18 @@ export default function App({ session }) {
       <div style={s.root}>
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setEditando(false);setFormEdit(null);setVista("lista");}},{label:"Novedades",onClick:()=>{setEditando(false);setFormEdit(null);setVista("lista");}},{label:"Editar"}]} />
         <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Camera size={14}/>Fotos</span></p>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              {(formEdit.fotos||[]).map((f,i)=>(
+                <div key={i} style={{position:"relative",width:80,height:80,flexShrink:0}}>
+                  <img src={f} alt="" onClick={()=>setFotoAmpliada(f)} style={{width:80,height:80,objectFit:"cover",borderRadius:12,cursor:"pointer"}}/>
+                  <button onClick={()=>quitarFotoEdit(i)} style={{position:"absolute",top:-7,right:-7,width:24,height:24,borderRadius:"50%",background:"#FF3B30",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><X size={13} color="#fff" strokeWidth={3}/></button>
+                </div>
+              ))}
+              <input ref={fileRefEdit} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotosEdit}/>
+              <button onClick={()=>fileRefEdit.current.click()} style={{width:80,height:80,flexShrink:0,borderRadius:12,border:"2px dashed #C7C7CC",background:"#F9F9FB",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",gap:3}}><Camera size={22} color="#8E8E93"/><span style={{fontSize:10,color:"#8E8E93"}}>Agregar</span></button>
+            </div>
+          </div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={14}/>Descripción</span></p><textarea style={s.textarea} rows={3} value={formEdit.descripcion} onChange={e=>setFormEdit(f=>({...f,descripcion:e.target.value}))}/></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Zap size={14}/>Prioridad</span></p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><MapPin size={14}/>Sector</span></p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.sector===sec?"#007AFF":"#E5E5EA"}`,background:formEdit.sector===sec?"#007AFF15":"#fff",color:formEdit.sector===sec?"#007AFF":"#3A3A3C",fontWeight:formEdit.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{formEdit.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={formEdit.sectorCustom} onChange={e=>setFormEdit(f=>({...f,sectorCustom:e.target.value}))}/>}</div>
@@ -1101,6 +1123,7 @@ export default function App({ session }) {
           </button>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
+        {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
       </div>
     );
   }
@@ -1116,7 +1139,7 @@ export default function App({ session }) {
         <div style={{flex:1,overflowY:"auto"}}>
           {detalle.fotos.length>0
             ?<div style={{position:"relative",width:"100%",height:200,background:"#000",display:"flex",overflowX:"auto",scrollSnapType:"x mandatory"}}>
-               {detalle.fotos.map((f,i)=><img key={i} src={f} alt="" style={{width:"100%",height:200,objectFit:"cover",flexShrink:0,scrollSnapAlign:"start"}}/>)}
+               {detalle.fotos.map((f,i)=><img key={i} src={f} alt="" onClick={()=>setFotoAmpliada(f)} style={{width:"100%",height:200,objectFit:"cover",flexShrink:0,scrollSnapAlign:"start",cursor:"pointer"}}/>)}
                {detalle.fotos.length>1&&<span style={{position:"absolute",right:10,bottom:10,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:12,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{detalle.fotos.length} fotos</span>}
              </div>
             :<div style={{width:"100%",height:160,background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center"}}><Camera size={40} color="#C7C7CC"/></div>}
@@ -1181,6 +1204,7 @@ export default function App({ session }) {
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {mostrarCambioUsuario&&<SelectorUsuario/>}
         {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
+        {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
       </div>
     );
   }
