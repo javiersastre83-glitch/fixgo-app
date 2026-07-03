@@ -27,7 +27,7 @@
 </head>
 <body>
   <header>
-    <img src="https://fixgo.ar/Fixgo_logo.png" alt="Fixgo"/>
+    <img src="https://fixgo-app-phi.vercel.app/Fixgo_logo.png" alt="Fixgo"/>
     <div>
       <h1>Fixgo</h1>
       <p>Gestión de obras simple</p>
@@ -35,7 +35,7 @@
   </header>
 
   <div class="container">
-    <p class="fecha">Última actualización: 10 de junio de 2026</p>
+    <p class="fecha">Última actualización: julio de 2026</p>
 
     <div class="card">
       <h2>1. ¿Quiénes somos?</h2>
@@ -48,37 +48,29 @@
       <p>Al usar Fixgo recopilamos los siguientes datos:</p>
       <ul>
         <li><strong>Datos de registro:</strong> nombre completo, dirección de correo electrónico y rol dentro del proyecto (Profesional, Capataz u Operario).</li>
-        <li><strong>Datos de inicio de sesión con Google:</strong> si elegís iniciar sesión con tu cuenta de Google, recibimos tu nombre, dirección de correo electrónico y foto de perfil pública asociada a esa cuenta. No accedemos a tu contraseña de Google ni a ningún otro dato de tu cuenta.</li>
         <li><strong>Datos de la obra:</strong> nombre del proyecto, dirección (opcional), novedades registradas, comentarios y fechas límite.</li>
-        <li><strong>Archivos multimedia:</strong> fotografías tomadas con la cámara del dispositivo o seleccionadas de la galería para documentar novedades de obra. Estas imágenes se almacenan en nuestros servidores seguros.</li>
+        <li><strong>Archivos multimedia:</strong> fotografías tomadas con la cámara del dispositivo para documentar novedades de obra. Estas imágenes se almacenan en nuestros servidores seguros.</li>
         <li><strong>Ubicación geográfica (opcional):</strong> si el usuario lo autoriza expresamente, obtenemos la ubicación del dispositivo únicamente para autocompletar la dirección de una obra nueva. No rastreamos la ubicación en segundo plano.</li>
         <li><strong>Datos de uso:</strong> información técnica básica sobre el uso de la app para mejorar el servicio (tipo de dispositivo, versión de sistema operativo).</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>3. Inicio de sesión con Google</h2>
-      <p>Fixgo ofrece la opción de autenticarte mediante tu cuenta de Google (Google OAuth). Al utilizarla, Google nos comparte tu nombre, correo electrónico y foto de perfil con el único fin de crear y gestionar tu cuenta en Fixgo.</p>
-      <p>No publicamos nada en tu nombre, no accedemos a tus contactos, correos ni a ningún otro servicio de Google. El uso de estos datos se rige además por la <a href="https://policies.google.com/privacy" style="color:#007AFF;">Política de Privacidad de Google</a>.</p>
-    </div>
-
-    <div class="card">
-      <h2>4. Uso de la cámara y la galería</h2>
+      <h2>3. Uso de la cámara</h2>
       <span class="badge">Permiso sensible</span>
-      <p>Fixgo solicita acceso a la cámara y a la galería de fotos del dispositivo <strong>únicamente</strong> para que los profesionales de la construcción puedan fotografiar o seleccionar imágenes de desperfectos, avances o evidencias de las novedades de obra e incluirlas en los reportes correspondientes.</p>
+      <p>Fixgo solicita acceso a la cámara del dispositivo <strong>únicamente</strong> para que los profesionales de la construcción puedan fotografiar desperfectos, avances o evidencias de las novedades de obra e incluirlas en los reportes correspondientes.</p>
       <p>La cámara <strong>no se activa en segundo plano</strong>, no se usa para vigilancia ni para ningún propósito distinto al descripto.</p>
     </div>
 
     <div class="card">
-      <h2>5. Uso de la ubicación</h2>
+      <h2>4. Uso de la ubicación</h2>
       <span class="badge">Permiso sensible</span>
       <p>El acceso a la ubicación es <strong>completamente opcional</strong>. Solo se activa cuando el usuario presiona el botón "Usar mi ubicación" al crear una nueva obra, con el único fin de autocompletar el campo de dirección.</p>
-      <p>Para convertir las coordenadas en una dirección legible, Fixgo utiliza el servicio de geocodificación <strong>Nominatim (OpenStreetMap)</strong>. Esto implica que las coordenadas se envían a dicho servicio para obtener la dirección correspondiente. No se envía ningún otro dato personal en ese proceso.</p>
       <p>Fixgo <strong>no comparte la ubicación exacta</strong> con otros usuarios ni la almacena de forma permanente.</p>
     </div>
 
     <div class="card">
-      <h2>6. Almacenamiento y seguridad</h2>
+      <h2>5. Almacenamiento y seguridad</h2>
       <p>Tus datos se almacenan en servidores seguros provistos por:</p>
       <ul>
         <li><strong>Supabase</strong> — base de datos y autenticación con cifrado SSL/TLS</li>
@@ -88,25 +80,23 @@
     </div>
 
     <div class="card">
-      <h2>7. Compartir datos con terceros</h2>
+      <h2>6. Compartir datos con terceros</h2>
       <p>Fixgo <strong>no vende ni comparte</strong> tus datos personales con terceros con fines comerciales o publicitarios.</p>
       <p>Podemos compartir información únicamente en estos casos:</p>
       <ul>
         <li>Con proveedores de infraestructura técnica (Supabase, Vercel) para el funcionamiento del servicio.</li>
-        <li>Con el servicio de geocodificación Nominatim (OpenStreetMap), únicamente las coordenadas, cuando usás la función de ubicación opcional.</li>
-        <li>Con Google, en el marco del inicio de sesión con tu cuenta de Google, si elegís esa opción.</li>
         <li>Cuando sea requerido por ley o autoridad competente.</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>8. Tus derechos</h2>
+      <h2>7. Tus derechos</h2>
       <p>Como usuario de Fixgo tenés derecho a:</p>
       <ul>
         <li><strong>Acceder</strong> a los datos personales que tenemos sobre vos.</li>
         <li><strong>Rectificar</strong> información incorrecta o desactualizada.</li>
         <li><strong>Eliminar</strong> tu cuenta y todos tus datos de nuestros servidores.</li>
-        <li><strong>Exportar</strong> tus datos en un formato legible. Esta solicitud se gestiona escribiéndonos por correo electrónico y te enviamos tus datos dentro de los plazos indicados.</li>
+        <li><strong>Exportar</strong> tus datos en un formato legible.</li>
       </ul>
       <p>Para ejercer cualquiera de estos derechos, escribinos a:</p>
       <div class="contacto-box">
@@ -117,26 +107,28 @@
     </div>
 
     <div class="card">
-      <h2>9. Eliminación de cuenta</h2>
+      <h2>8. Eliminación de cuenta</h2>
       <p>Podés eliminar tu cuenta y todos tus datos de forma <strong>inmediata y automática</strong> desde dentro de la app:</p>
       <p><strong>Perfil → Eliminar cuenta permanentemente</strong></p>
       <p>Esta acción elimina de forma irreversible tu cuenta, obras, novedades, fotografías y comentarios de nuestros servidores. No se puede deshacer.</p>
-      <p>También podés solicitarlo por email a <strong>soporte@fixgo.ar</strong> con el asunto "Eliminar cuenta" si no podés acceder a la app.</p>
+      <p>Si no tenés acceso a la app, también podés solicitarlo desde nuestra página web:</p>
+      <p><a href="https://www.fixgo.ar/delete-account" style="color:#007AFF;font-weight:700;">www.fixgo.ar/delete-account</a></p>
+      <p>O enviando un email a <strong>soporte@fixgo.ar</strong> con el asunto "Eliminar cuenta". Procesamos todas las solicitudes dentro de los 10 días hábiles.</p>
     </div>
 
     <div class="card">
-      <h2>10. Menores de edad</h2>
+      <h2>9. Menores de edad</h2>
       <p>Fixgo está diseñada para profesionales de la construcción mayores de 18 años. No recopilamos intencionalmente datos de menores de edad. Si detectamos que un usuario es menor de 18 años, eliminaremos su cuenta.</p>
     </div>
 
     <div class="card">
-      <h2>11. Cambios en esta política</h2>
+      <h2>10. Cambios en esta política</h2>
       <p>Podemos actualizar esta Política de Privacidad ocasionalmente. Cuando realicemos cambios significativos, te notificaremos por email o mediante un aviso dentro de la app.</p>
       <p>El uso continuado de Fixgo luego de los cambios implica la aceptación de la nueva política.</p>
     </div>
 
     <div class="card">
-      <h2>12. Contacto</h2>
+      <h2>11. Contacto</h2>
       <p>Para consultas sobre esta política o sobre el tratamiento de tus datos personales:</p>
       <div class="contacto-box">
         <p>Javier Esteban Sastre</p>
