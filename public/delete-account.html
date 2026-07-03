@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Eliminar cuenta – Fixgo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1C1C1E; background: #F2F2F7; }
+    header { background: #1C1C1E; padding: 32px 24px 24px; display: flex; align-items: center; gap: 14px; }
+    header img { width: 48px; height: 48px; border-radius: 12px; }
+    header h1 { color: #fff; font-size: 22px; font-weight: 800; }
+    header p { color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 2px; }
+    .container { max-width: 560px; margin: 0 auto; padding: 32px 24px 64px; }
+    .card { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+    .card h2 { font-size: 17px; font-weight: 700; color: #1C1C1E; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #F2F2F7; }
+    .card p { font-size: 15px; line-height: 1.7; color: #3A3A3C; margin-bottom: 10px; }
+    .card p:last-child { margin-bottom: 0; }
+    .alerta { background: #FF3B3010; border-left: 4px solid #FF3B30; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
+    .alerta p { color: #FF3B30; font-weight: 600; margin: 0; font-size: 14px; }
+    .opcion-rapida { background: #1C1C1E; border-radius: 14px; padding: 22px 24px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; }
+    .opcion-rapida .icono { font-size: 32px; flex-shrink: 0; }
+    .opcion-rapida h3 { color: #fff; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .opcion-rapida p { color: rgba(255,255,255,0.6); font-size: 13px; margin: 0; line-height: 1.5; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #8E8E93; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 14px 16px; border: 1.5px solid #E5E5EA; border-radius: 12px; font-size: 15px; font-family: inherit; color: #1C1C1E; background: #fff; outline: none; transition: border-color 0.2s; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #1C1C1E; }
+    .form-group textarea { resize: vertical; min-height: 90px; }
+    .btn-eliminar { width: 100%; padding: 16px; background: #FF3B30; color: #fff; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 8px; }
+    .btn-eliminar:hover { background: #D93025; }
+    .confirmacion { display: none; background: #34C75915; border-radius: 14px; padding: 24px; text-align: center; }
+    .confirmacion .check { font-size: 48px; margin-bottom: 12px; }
+    .confirmacion h3 { font-size: 18px; font-weight: 800; color: #1C1C1E; margin-bottom: 8px; }
+    .confirmacion p { font-size: 14px; color: #636366; margin: 0; line-height: 1.6; }
+    .lista-datos { background: #F2F2F7; border-radius: 12px; padding: 16px 20px; margin: 12px 0; }
+    .lista-datos li { font-size: 14px; color: #3A3A3C; line-height: 1.8; padding-left: 4px; }
+    footer { text-align: center; padding: 24px; font-size: 12px; color: #8E8E93; }
+    footer a { color: #8E8E93; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://fixgo-app-phi.vercel.app/Fixgo_logo.png" alt="Fixgo"/>
+    <div>
+      <h1>Fixgo</h1>
+      <p>Gestión de obras simple</p>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="opcion-rapida">
+      <div class="icono">📱</div>
+      <div>
+        <h3>¿Tenés la app instalada?</h3>
+        <p>La forma más rápida es desde la misma app:<br/><strong style="color:#FFB800;">Perfil → Eliminar cuenta permanentemente</strong></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Solicitar eliminación de cuenta</h2>
+      <p>Si no podés acceder a la app, completá este formulario. Procesamos todas las solicitudes dentro de los <strong>10 días hábiles</strong>.</p>
+
+      <div class="alerta">
+        <p>⚠️ Esta acción es irreversible. Se eliminarán tu cuenta, obras, novedades, fotos y comentarios de forma permanente.</p>
+      </div>
+
+      <p style="font-size:14px;color:#636366;margin-bottom:16px;">Se borrarán permanentemente:</p>
+      <ul class="lista-datos">
+        <li>Tu cuenta y datos personales</li>
+        <li>Todas tus obras y novedades</li>
+        <li>Fotos y comentarios cargados</li>
+        <li>Tu historial dentro de la plataforma</li>
+      </ul>
+
+      <form id="formEliminar" style="margin-top:20px;">
+        <div class="form-group">
+          <label>Email de tu cuenta *</label>
+          <input type="email" id="email" placeholder="tu@email.com" required/>
+        </div>
+        <div class="form-group">
+          <label>Motivo (opcional)</label>
+          <select id="motivo">
+            <option value="">Seleccioná un motivo...</option>
+            <option value="Ya no uso la app">Ya no uso la app</option>
+            <option value="Creé una cuenta por error">Creé una cuenta por error</option>
+            <option value="Preocupaciones de privacidad">Preocupaciones de privacidad</option>
+            <option value="Problemas técnicos">Problemas técnicos</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Comentario adicional (opcional)</label>
+          <textarea id="comentario" placeholder="Contanos algo más si querés..."></textarea>
+        </div>
+        <button type="submit" class="btn-eliminar">🗑️ Solicitar eliminación de mi cuenta</button>
+      </form>
+
+      <div class="confirmacion" id="confirmacion">
+        <div class="check">✅</div>
+        <h3>Solicitud recibida</h3>
+        <p>Te enviamos un email de confirmación a <strong id="emailConfirmado"></strong>.<br/><br/>Procesaremos tu solicitud dentro de los <strong>10 días hábiles</strong> y te avisaremos cuando esté hecho.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>¿Dudas antes de eliminar?</h2>
+      <p>Si tenés algún problema con la app, podemos ayudarte antes de que decidas cerrar tu cuenta.</p>
+      <p><a href="mailto:soporte@fixgo.ar" style="color:#007AFF;font-weight:600;">soporte@fixgo.ar</a> — respondemos en menos de 48hs hábiles.</p>
+    </div>
+
+  </div>
+
+  <footer>
+    © 2026 Fixgo · Javier Esteban Sastre · Córdoba, Argentina ·
+    <a href="/politica-privacidad.html">Política de Privacidad</a> ·
+    <a href="/terminos-condiciones.html">Términos y Condiciones</a>
+  </footer>
+
+  <script>
+    document.getElementById('formEliminar').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const motivo = document.getElementById('motivo').value;
+      const comentario = document.getElementById('comentario').value;
+
+      const asunto = encodeURIComponent('Solicitud de eliminación de cuenta');
+      const cuerpo = encodeURIComponent(
+        `Solicitud de eliminación de cuenta Fixgo\n\nEmail: ${email}\nMotivo: ${motivo || 'No especificado'}\nComentario: ${comentario || 'Ninguno'}\n\nFecha: ${new Date().toLocaleDateString('es-AR')}`
+      );
+
+      window.location.href = `mailto:soporte@fixgo.ar?subject=${asunto}&body=${cuerpo}`;
+
+      document.getElementById('formEliminar').style.display = 'none';
+      document.getElementById('emailConfirmado').textContent = email;
+      document.getElementById('confirmacion').style.display = 'block';
+    });
+  </script>
+</body>
+</html>
