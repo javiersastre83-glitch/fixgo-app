@@ -292,7 +292,7 @@ export default function App({ session }) {
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
   const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
-  const equipoObra   = obraActual?(obraActual.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map(m=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color:"#0057FF",rolEnObra:m.rolEnObra};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color:"#0057FF",rolEnObra:m.rolEnObra};}).filter(Boolean):[];
+  const equipoObra   = obraActual?(obraActual.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map(m=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color:"#0057FF",rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color:"#0057FF",rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null};}).filter(Boolean):[];
   const miId         = usuarioReal?.id||usuarioActivo.id;
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
   const miRolInfo    = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
@@ -382,8 +382,8 @@ export default function App({ session }) {
       const error=null;
    if(!error){
      const obrasConEquipo=await Promise.all((data||[]).map(async(obra)=>{
-       const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,nombre,especialidad").eq("obra_id",obra.id);
-       const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad}));
+       const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,nombre,especialidad,invitado_por").eq("obra_id",obra.id);
+       const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null}));
        return{...obra,equipo};
      }));
      setObras(obrasConEquipo);
@@ -982,7 +982,7 @@ export default function App({ session }) {
                         <p style={{margin:"3px 0 0",fontSize:13,color:"#8E8E93"}}>{r&&<span style={{color:colorRol,fontWeight:600}}>{r.label}</span>}{r&&" · "}{u.especialidad}{!esProf&&" · "}{!esProf&&<span style={{color:pend>0?"#FF8A3D":"#8E8E93",fontWeight:pend>0?600:400}}>{tareasTxt}</span>}</p>
                       </>)}
                     </div>
-                    {!editando&&puedeGestionar&&miRolEnObra==="profesional"&&u.rolEnObra!=="profesional"&&u.uid!==miId&&<button onClick={()=>setConfirmarEliminarMiembro(u)} style={{background:"none",border:"none",cursor:"pointer",flexShrink:0,padding:8,display:"flex",alignItems:"center"}}><Trash2 size={17} color="#C7C7CC"/></button>}
+                    {!editando&&u.uid!==miId&&u.rolEnObra!=="profesional"&&(miRolEnObra==="profesional"||(miRolEnObra==="capataz"&&u.rolEnObra==="operario"&&u.invitadoPor===miId))&&<button onClick={()=>setConfirmarEliminarMiembro(u)} style={{background:"none",border:"none",cursor:"pointer",flexShrink:0,padding:8,display:"flex",alignItems:"center"}}><Trash2 size={17} color="#C7C7CC"/></button>}
                   </div>
                 );
               })}
