@@ -855,11 +855,7 @@ export default function App({ session }) {
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setVistaEquipo(false);setMiembroSel(null);}},{label:"Equipo",onClick:()=>setMiembroSel(null)},{label:u.nombre}]} />
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
           <div style={{background:"#fff",borderRadius:18,padding:"16px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:56,height:56,borderRadius:99,background:(rolU?.color||"#0057FF")+"15",border:`2px solid ${rolU?.color||"#0057FF"}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              {esProfesional
-                ?<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={rolU?.color||"#0057FF"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21 21 3M3 21h18M3 21V8"/></svg>
-                :<HardHat size={28} color={rolU?.color||"#0057FF"}/>}
-            </div>
+            <div style={{width:56,height:56,borderRadius:99,background:colorPastelDe(u.uid),flexShrink:0}}/>
             <div style={{flex:1}}><p style={{margin:0,fontWeight:800,fontSize:18,color:"#1C1C1E"}}>{u.nombre}</p>
               <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:rolU.color,background:rolU.color+"15",padding:"2px 8px",borderRadius:99}}>{rolU.emoji} {rolU.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
               <p style={{margin:"6px 0 0",fontSize:12,color:"#8E8E93"}}>{esProfesional?"Resumen general de la obra":"Tareas asignadas a "+u.especialidad}</p>
