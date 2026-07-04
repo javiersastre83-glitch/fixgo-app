@@ -15,6 +15,7 @@ const EMOJI_OFICIO = {
 const emojiDeOficio = (oficio) => EMOJI_OFICIO[oficio] || "👷";
 const PALETA_PASTEL = ["#C9A6E8","#F5C77E","#A8C7E8","#E8A6B8","#A6D4C4","#D4C4A6","#E8C4A6","#A6C4D4","#B8D4A6","#E8B8A6","#A6B8E8","#D4A6A6"];
 const colorPastelDe = (id) => { const s=String(id||""); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))&0xffffffff; return PALETA_PASTEL[Math.abs(h)%PALETA_PASTEL.length]; };
+const colorPorIndice = (idx) => PALETA_PASTEL[idx%PALETA_PASTEL.length];
 const ROLES_SISTEMA = [
   { id:"profesional", label:"Profesional", emoji:"📐", color:"#0057FF", desc:"Arquitecto, Ingeniero o Idóneo." },
   { id:"capataz",     label:"Capataz",     emoji:"🦺",   color:"#FF6B00", desc:"Gestiona subcontratos y hace seguimiento." },
@@ -292,7 +293,7 @@ export default function App({ session }) {
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
   const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
-  const equipoObra   = obraActual?(obraActual.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map(m=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color:"#0057FF",rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color:"#0057FF",rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null};}).filter(Boolean):[];
+  const equipoObra   = obraActual?(obraActual.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map((m,idx)=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);const color=colorPorIndice(idx);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,color,colorIdx:idx};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx};}).filter(Boolean):[];
   const miId         = usuarioReal?.id||usuarioActivo.id;
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
   const miRolInfo    = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
@@ -865,7 +866,7 @@ export default function App({ session }) {
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setVistaEquipo(false);setMiembroSel(null);}},{label:"Equipo",onClick:()=>setMiembroSel(null)},{label:u.nombre}]} />
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
           <div style={{background:"#fff",borderRadius:18,padding:"16px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:56,height:56,borderRadius:99,background:colorPastelDe(u.uid),flexShrink:0}}/>
+            <div style={{width:56,height:56,borderRadius:99,background:u.color||colorPastelDe(u.uid),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:"#fff"}}>{u.nombre?u.nombre[0].toUpperCase():""}</div>
             <div style={{flex:1}}><p style={{margin:0,fontWeight:800,fontSize:18,color:"#1C1C1E"}}>{u.nombre}</p>
               <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:rolU.color,background:rolU.color+"15",padding:"2px 8px",borderRadius:99}}>{rolU.emoji} {rolU.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
               <p style={{margin:"6px 0 0",fontSize:12,color:"#8E8E93"}}>{esProfesional?"Resumen general de la obra":"Tareas asignadas a "+u.especialidad}</p>
@@ -974,7 +975,7 @@ export default function App({ session }) {
                 const tareasTxt=esProf?"Dueño de la obra":pend>0?`${pend} ${pend===1?"tarea pendiente":"tareas pendientes"}`:"Sin tareas asignadas";
                 return(
                   <div key={u.id} style={{display:"flex",alignItems:"center",gap:13,padding:"14px 15px",background:"#fff",borderRadius:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
-                    <div onClick={()=>!editando&&setMiembroSel(u)} style={{width:46,height:46,borderRadius:99,background:colorPastelDe(u.uid),flexShrink:0,cursor:"pointer"}}/>
+                    <div onClick={()=>!editando&&setMiembroSel(u)} style={{width:46,height:46,borderRadius:99,background:u.color||colorPastelDe(u.uid),flexShrink:0,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:"#fff"}}>{u.nombre?u.nombre[0].toUpperCase():""}</div>
                     <div style={{flex:1,minWidth:0}}>
                       {editando?(
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
