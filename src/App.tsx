@@ -414,7 +414,17 @@ export default function App({ session }) {
         setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];return{...p,[obraActual.id]:lista.filter(x=>x.id!==payload.old.id)};});
       })
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"comentarios"},(payload)=>{
-        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];if(!lista.some(x=>x.id===payload.new.novedad_id))return p;return{...p,[obraActual.id]:lista.map(x=>x.id===payload.new.novedad_id?(x.comentarios.some(c=>c.ts===new Date(payload.new.created_at).getTime())?x:{...x,comentarios:[...x.comentarios,{texto:payload.new.texto,autorId:payload.new.autor_id,ts:new Date(payload.new.created_at).getTime()}]}):x)};});
+        const nuevo=payload.new;
+        setNovedadesPorObra(p=>{
+          const lista=p[obraActual.id]||[];
+          if(!lista.some(x=>x.id===nuevo.novedad_id))return p;
+          return{...p,[obraActual.id]:lista.map(x=>{
+            if(x.id!==nuevo.novedad_id)return x;
+            const yaTiene=x.comentarios.some(c=>c.autorId===nuevo.autor_id&&c.texto===nuevo.texto);
+            if(yaTiene)return x;
+            return{...x,comentarios:[...x.comentarios,{texto:nuevo.texto,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
+          })};
+        });
       })
       .subscribe();
     return()=>{supabase.removeChannel(canal);};
