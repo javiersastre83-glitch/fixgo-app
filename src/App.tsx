@@ -152,39 +152,68 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
 
 const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057FF" }) => {
   const [modalOficio, setModalOficio] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
   const miembros = (equipo||[]).filter(m=>m.nombre);
   const oficioSel = (!usuarioId && value) ? value : null;
+  const oficiosFiltrados = RESPONSABLES.filter(r=>r.toLowerCase().includes(busqueda.toLowerCase()));
   return (
     <div>
-      <div style={{display:"flex",gap:9,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
+      {/* TIRA DE MIEMBROS */}
+      <div style={{display:"flex",gap:9,overflowX:"auto",paddingBottom:6,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
         {miembros.map(m=>{
           const sel = usuarioId===m.uid;
           return (
             <button type="button" key={m.uid} onClick={()=>onChange({responsable:m.especialidad||"",usuarioId:m.uid})}
-              style={{flexShrink:0,minWidth:96,background:"#fff",border:`2px solid ${sel?color:"#E5E5EA"}`,borderRadius:14,padding:"11px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
-              <div style={{fontSize:15,fontWeight:800,lineHeight:1.15,color:sel?color:"#1C1C1E",whiteSpace:"nowrap"}}>{m.nombre}</div>
-              {m.especialidad&&<div style={{fontSize:12,color:"#8E8E93",marginTop:2,whiteSpace:"nowrap"}}>{m.especialidad}</div>}
+              style={{flexShrink:0,minWidth:90,background:sel?"#F5F5F5":"#fff",border:`2px solid ${sel?"#1C1C1E":"#E5E5EA"}`,borderRadius:14,padding:"10px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
+              <div style={{fontSize:14,fontWeight:800,color:"#1C1C1E",whiteSpace:"nowrap"}}>{m.nombre}</div>
+              {m.especialidad&&<div style={{fontSize:11,color:"#8E8E93",marginTop:2,whiteSpace:"nowrap"}}>{m.especialidad}</div>}
             </button>
           );
         })}
-        <button type="button" onClick={()=>setModalOficio(true)}
-          style={{flexShrink:0,minWidth:96,background:oficioSel?color+"0D":"#fff",border:`2px dashed ${oficioSel?color:"#C7C7CC"}`,borderRadius:14,padding:"11px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
-          <div style={{fontSize:20,fontWeight:800,lineHeight:1,color:oficioSel?color:"#8E8E93"}}>＋</div>
-          <div style={{fontSize:12,color:oficioSel?color:"#8E8E93",marginTop:3,whiteSpace:"nowrap",fontWeight:oficioSel?700:400}}>{oficioSel?oficioSel:"Un oficio"}</div>
-        </button>
       </div>
+
+      {/* SEPARADOR */}
+      <div style={{display:"flex",alignItems:"center",gap:10,margin:"12px 0"}}>
+        <div style={{flex:1,height:1,background:"#F0F0F0"}}/>
+        <span style={{fontSize:11,color:"#C7C7CC",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>o un oficio genérico</span>
+        <div style={{flex:1,height:1,background:"#F0F0F0"}}/>
+      </div>
+
+      {/* BOTÓN OFICIO */}
+      <button type="button" onClick={()=>setModalOficio(true)}
+        style={{width:"100%",background:oficioSel?"#F5F5F5":"#F9F9F9",border:`1.5px ${oficioSel?"solid":"dashed"} ${oficioSel?"#1C1C1E":"#D0D0D5"}`,borderRadius:14,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:32,height:32,borderRadius:8,background:oficioSel?"#1C1C1E":"#EBEBF0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+            {oficioSel?"🔧":"🔧"}
+          </div>
+          <div style={{textAlign:"left"}}>
+            <div style={{fontSize:14,fontWeight:oficioSel?700:500,color:oficioSel?"#1C1C1E":"#8E8E93"}}>{oficioSel||"Sin oficio asignado"}</div>
+            <div style={{fontSize:11,color:"#8E8E93",marginTop:1}}>Para contratistas fuera del equipo</div>
+          </div>
+        </div>
+        <span style={{fontSize:11,fontWeight:600,color:oficioSel?"#fff":"#8E8E93",background:oficioSel?"#1C1C1E":"#EBEBF0",padding:"3px 10px",borderRadius:99}}>{oficioSel?"Cambiar":"Elegir"}</span>
+      </button>
+
+      {/* MODAL OFICIO */}
       {modalOficio && (
-        <div style={s.overlay} onClick={()=>setModalOficio(false)}>
-          <div style={{...s.modal,maxHeight:"70vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
-            <p style={{margin:"0 0 12px",fontSize:17,fontWeight:700}}>Elegí un oficio</p>
-            <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>Para una tarea de alguien que no está en tu equipo.</p>
+        <div style={s.overlay} onClick={()=>{setModalOficio(false);setBusqueda("");}}>
+          <div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <p style={{margin:"0 0 10px",fontSize:17,fontWeight:700}}>Elegí un oficio</p>
+            <input
+              style={{...s.input,marginBottom:12}}
+              placeholder="Buscar oficio..."
+              value={busqueda}
+              onChange={e=>setBusqueda(e.target.value)}
+              autoFocus
+            />
             <div style={{overflowY:"auto",flex:1,margin:"0 -20px",padding:"0 20px"}}>
-              {RESPONSABLES.map(r=>(
-                <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setModalOficio(false);}}
-                  style={{width:"100%",padding:"13px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:(oficioSel===r)?color+"0D":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(oficioSel===r)?color:"#1C1C1E",fontWeight:(oficioSel===r)?700:400,fontFamily:"inherit"}}>{r}</button>
+              {oficiosFiltrados.map(r=>(
+                <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setModalOficio(false);setBusqueda("");}}
+                  style={{width:"100%",padding:"13px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:(oficioSel===r)?"#F5F5F5":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(oficioSel===r)?"#1C1C1E":"#1C1C1E",fontWeight:(oficioSel===r)?700:400,fontFamily:"inherit"}}>{r}</button>
               ))}
+              {oficiosFiltrados.length===0&&<p style={{textAlign:"center",color:"#8E8E93",padding:"20px 0",fontSize:14}}>Sin resultados</p>}
             </div>
-            <button type="button" onClick={()=>setModalOficio(false)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:12}}>Cancelar</button>
+            <button type="button" onClick={()=>{setModalOficio(false);setBusqueda("");}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:12}}>Cancelar</button>
           </div>
         </div>
       )}
@@ -1342,7 +1371,7 @@ export default function App({ session }) {
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
-          <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><p style={{margin:"-4px 0 10px",fontSize:12.5,color:"#8E8E93"}}>Tocá a alguien de tu equipo, o "+" para un oficio</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
+          <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
           <button type="button" onClick={()=>setMasOpciones(o=>!o)} style={{width:"100%",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit"}}>
             <span style={{fontSize:15,fontWeight:600,color:"#1C1C1E"}}>⚙️ Más opciones</span>
             <span style={{fontSize:13,color:"#8E8E93"}}>{masOpciones?"▲":"▼ sector, fecha, nota…"}</span>
