@@ -805,26 +805,61 @@ export default function App({ session }) {
             const prog=novs.length>0?Math.round((res/novs.length)*100):0;
             const equipo=(obra.equipo||[]).map(m=>{const u=USUARIOS_DEMO.find(u=>u.id===m.uid);return u?{...u,rolEnObra:m.rolEnObra}:null;}).filter(Boolean);
             return(
-              <button key={obra.id} style={s.cardObra} onClick={()=>irObra(obra)}
+              <button key={obra.id} style={{...s.cardObra,padding:"22px 20px"}} onClick={()=>irObra(obra)}
                 onContextMenu={e=>{e.preventDefault();setMenuObra(obra.id);}}
                 onPointerDown={e=>{const t=setTimeout(()=>setMenuObra(obra.id),600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
                 onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuObra(obra.id),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                  <div style={{flex:1,textAlign:"left"}}>
-                    <p style={{margin:0,fontSize:17,fontWeight:700,color:"#1C1C1E"}}>{obra.nombre}</p>
-                    <p style={{margin:"3px 0 0",fontSize:13,color:"#636366",fontWeight:500}}><MapPin size={13} style={{flexShrink:0}}/> {obra.direccion||"Sin dirección"}</p>
+
+                {/* Nombre y dirección */}
+                <p style={{margin:"0 0 2px",fontSize:18,fontWeight:800,color:"#1C1C1E",textAlign:"center"}}>{obra.nombre}</p>
+                <p style={{margin:"0 0 20px",fontSize:12,color:"#8E8E93",textAlign:"center"}}>📍 {obra.direccion||"Sin dirección"}</p>
+
+                {/* Círculo de progreso */}
+                {(()=>{
+                  const colorPorPct=(p)=>{let r,g,b=0;if(p<=50){const t=p/50;r=255;g=Math.round(59+(184-59)*t);b=Math.round(48+(0-48)*t);}else{const t=(p-50)/50;r=Math.round(255+(52-255)*t);g=Math.round(184+(199-184)*t);b=Math.round(0+(89-0)*t);}return`rgb(${r},${g},${b})`;};
+                  const color=colorPorPct(prog);
+                  const radius=75; const circ=2*Math.PI*radius;
+                  const offset=circ-(prog/100)*circ;
+                  return(
+                    <div style={{position:"relative",width:180,height:180,margin:"0 auto 20px"}}>
+                      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:158,height:158,borderRadius:"50%",boxShadow:`0 0 0 6px ${color}18, 0 0 20px 8px ${color}28, 0 0 40px 12px ${color}15`}}/>
+                      <svg style={{position:"absolute",top:0,left:0}} width="180" height="180" viewBox="0 0 180 180">
+                        <g transform="rotate(-90, 90, 90)">
+                          <circle cx="90" cy="90" r={radius} fill="none" stroke="#F0F0F0" strokeWidth="14"/>
+                          <circle cx="90" cy="90" r={radius} fill="none" stroke={color} strokeWidth="22" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} opacity="0.22" style={{filter:"blur(5px)"}}/>
+                          <circle cx="90" cy="90" r={radius} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}/>
+                        </g>
+                      </svg>
+                      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
+                        <p style={{margin:0,fontSize:46,fontWeight:900,color:"#1C1C1E",lineHeight:1,letterSpacing:-2}}>{prog}%</p>
+                        <p style={{margin:"4px 0 0",fontSize:10,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.8}}>resuelto</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Stats */}
+                <div style={{display:"flex",gap:10,marginBottom:16}}>
+                  <div style={{flex:1,background:"#FFF3E8",borderRadius:14,padding:"10px 6px",textAlign:"center"}}>
+                    <p style={{margin:0,fontSize:22,fontWeight:900,color:"#FF6B00"}}>{pend}</p>
+                    <p style={{margin:"3px 0 0",fontSize:10,fontWeight:600,color:"#FF9040",textTransform:"uppercase",letterSpacing:0.3}}>Pendientes</p>
                   </div>
-                  <ChevronRight size={20} color="#C7C7CC" style={{marginLeft:8,flexShrink:0}}/>
+                  <div style={{flex:1,background:"#FFF0EE",borderRadius:14,padding:"10px 6px",textAlign:"center"}}>
+                    <p style={{margin:0,fontSize:22,fontWeight:900,color:"#FF3B30"}}>{venc}</p>
+                    <p style={{margin:"3px 0 0",fontSize:10,fontWeight:600,color:"#FF6B60",textTransform:"uppercase",letterSpacing:0.3}}>Vencidas</p>
+                  </div>
+                  <div style={{flex:1,background:"#EDFAF1",borderRadius:14,padding:"10px 6px",textAlign:"center"}}>
+                    <p style={{margin:0,fontSize:22,fontWeight:900,color:"#28A745"}}>{res}</p>
+                    <p style={{margin:"3px 0 0",fontSize:10,fontWeight:600,color:"#34C759",textTransform:"uppercase",letterSpacing:0.3}}>Resueltas</p>
+                  </div>
                 </div>
-                <div style={{display:"flex",gap:4,marginBottom:10}}>
-                  {equipo.map(u=><div key={u.id} title={`${u.nombre} · ${u.especialidad}`} style={{width:30,height:30,borderRadius:99,background:u.color+"20",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{u.avatar}</div>)}
-                </div>
-                {novs.length>0&&<div style={{marginBottom:10}}><div style={{height:6,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${prog}%`,background:"#34C759",borderRadius:99}}/></div><p style={{margin:"4px 0 0",fontSize:12,color:"#8E8E93"}}>{prog}% resuelto · {novs.length} novedad{novs.length!==1?"es":""}</p></div>}
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  <span style={{...s.chip,background:"#FF6B0015",color:"#FF6B00"}}>⏳ {pend} pendiente{pend!==1?"s":""}</span>
-                  {venc>0&&<span style={{...s.chip,background:"#FF3B3020",color:"#FF3B30",fontWeight:700}}>⚠️ {venc} vencida{venc!==1?"s":""}</span>}
-                  <span style={{...s.chip,background:"#34C75915",color:"#34C759"}}>✅ {res}</span>
-                </div>
+
+                {/* Miembros */}
+                {equipo.length>0&&<div style={{borderTop:"1px solid #F2F2F7",paddingTop:14,display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+                  <div style={{display:"flex"}}>{equipo.slice(0,5).map((u,i)=><div key={u.id||i} style={{width:26,height:26,borderRadius:"50%",border:"2px solid #fff",background:colorPorIndice(i),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#fff",marginRight:-7}}>{u.nombre?u.nombre[0].toUpperCase():""}</div>)}</div>
+                  <span style={{marginLeft:14,fontSize:13,fontWeight:700,color:"#636366"}}>{equipo.length} miembro{equipo.length!==1?"s":""}</span>
+                </div>}
+
               </button>
             );
           })}
