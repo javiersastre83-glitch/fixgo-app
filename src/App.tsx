@@ -804,29 +804,23 @@ export default function App({ session }) {
             const esDueno=usuarioReal?obra.propietario_id===usuarioReal.id:true;
             const miRolObra=esDueno?"profesional":((obra.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||"operario");
             const miEspecialidad=(obra.equipo||[]).find(m=>m.uid===miId)?.especialidad||"";
+            const colorPorPct=(p:number)=>{let r=0,g=0,b=0;if(p<=50){const t=p/50;r=255;g=Math.round(59+(184-59)*t);b=Math.round(48+(0-48)*t);}else{const t=(p-50)/50;r=Math.round(255+(52-255)*t);g=Math.round(184+(199-184)*t);b=Math.round(0+(89-0)*t);}return`rgb(${r},${g},${b})`;};
             const animId=`anim${obra.id}`.replace(/[^a-zA-Z0-9]/g,'');
 
-            // Círculo reutilizable con degradé rojo→amarillo→verde
+            // Círculo reutilizable con color sólido dinámico
             const CirculoProg=({radius,pct,size}:{radius:number,pct:number,size:number})=>{
               const circ=2*Math.PI*radius;
               const offset=circ-(pct/100)*circ;
-              const gradId=`grad${animId}${radius}`;
+              const color=colorPorPct(pct);
               const sw=size>100?14:8;
               return(
                 <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
                   <style>{`@keyframes ${animId}r{from{stroke-dashoffset:${circ}}to{stroke-dashoffset:${offset}}}`}</style>
-                  <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:size*0.88,height:size*0.88,borderRadius:"50%",boxShadow:`0 0 16px 6px rgba(52,199,89,0.22)`}}/>
+                  <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:size*0.88,height:size*0.88,borderRadius:"50%",boxShadow:`0 0 16px 6px ${color}40`}}/>
                   <svg style={{position:"absolute",top:0,left:0}} width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-                    <defs>
-                      <linearGradient id={gradId} x1="1" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#FF3B30"/>
-                        <stop offset="50%" stopColor="#FFB800"/>
-                        <stop offset="100%" stopColor="#34C759"/>
-                      </linearGradient>
-                    </defs>
                     <g transform={`rotate(-90,${size/2},${size/2})`}>
                       <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#F0F0F0" strokeWidth={sw}/>
-                      <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={`url(#${gradId})`} strokeWidth={sw} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{animation:`${animId}r 1.4s cubic-bezier(0.34,1.05,0.64,1) forwards`}}/>
+                      <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{animation:`${animId}r 1.4s cubic-bezier(0.34,1.05,0.64,1) forwards`}}/>
                     </g>
                   </svg>
                   <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
