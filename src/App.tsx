@@ -801,64 +801,80 @@ export default function App({ session }) {
             const res=novs.filter(n=>n.resuelta).length;
             const prog=novs.length>0?Math.round((res/novs.length)*100):0;
             const equipo=(obra.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map((m,idx)=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombre=m.nombre||(esDueno?usuarioActivoReal.nombre:null)||"?";return{uid:m.uid,nombre,color:colorPorIndice(idx)};});
+            const esDueno=usuarioReal?obra.propietario_id===usuarioReal.id:true;
+            const miRolObra=esDueno?"profesional":((obra.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||"operario");
+            const miEspecialidad=(obra.equipo||[]).find(m=>m.uid===miId)?.especialidad||"";
+            const colorPorPct=(p)=>{let r,g,b=0;if(p<=50){const t=p/50;r=255;g=Math.round(59+(184-59)*t);b=Math.round(48+(0-48)*t);}else{const t=(p-50)/50;r=Math.round(255+(52-255)*t);g=Math.round(184+(199-184)*t);b=Math.round(0+(89-0)*t);}return`rgb(${r},${g},${b})`;};
+            const animId=`anim${obra.id}`.replace(/[^a-zA-Z0-9]/g,'');
+
+            // Círculo reutilizable
+            const CirculoProg=({radius,pct,size}:{radius:number,pct:number,size:number})=>{
+              const circ=2*Math.PI*radius;
+              const offset=circ-(pct/100)*circ;
+              const color=colorPorPct(pct);
+              return(
+                <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
+                  <style>{`@keyframes ${animId}r{from{stroke-dashoffset:${circ}}to{stroke-dashoffset:${offset}}}`}</style>
+                  <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:size*0.88,height:size*0.88,borderRadius:"50%",boxShadow:`0 0 16px 6px ${color}28`}}/>
+                  <svg style={{position:"absolute",top:0,left:0}} width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+                    <g transform={`rotate(-90,${size/2},${size/2})`}>
+                      <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#F0F0F0" strokeWidth={size>100?14:8}/>
+                      <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth={size>100?14:8} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{animation:`${animId}r 1.4s cubic-bezier(0.34,1.05,0.64,1) forwards`}}/>
+                    </g>
+                  </svg>
+                  <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
+                    <p style={{margin:0,fontSize:size>100?42:18,fontWeight:900,color:"#1C1C1E",lineHeight:1,letterSpacing:-1}}>{pct}%</p>
+                    <p style={{margin:"2px 0 0",fontSize:size>100?9:7,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.6}}>{esDueno?"resuelto":"mis tareas"}</p>
+                  </div>
+                </div>
+              );
+            };
+
             return(
-              <button key={obra.id} style={{...s.cardObra,padding:"22px 20px"}} onClick={()=>irObra(obra)}
+              <button key={obra.id} style={{...s.cardObra,padding:"16px 18px",textAlign:"left"}} onClick={()=>irObra(obra)}
                 onContextMenu={e=>{e.preventDefault();setMenuObra(obra.id);}}
                 onPointerDown={e=>{const t=setTimeout(()=>setMenuObra(obra.id),600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
                 onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuObra(obra.id),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
 
-                {/* Nombre y dirección */}
-                <p style={{margin:"0 0 2px",fontSize:18,fontWeight:800,color:"#1C1C1E",textAlign:"center"}}>{obra.nombre}</p>
-                <p style={{margin:"0 0 20px",fontSize:12,color:"#8E8E93",textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",gap:3}}><MapPin size={12} color="#8E8E93"/>{obra.direccion||"Sin dirección"}</p>
-
-                {/* Círculo de progreso */}
-                {(()=>{
-                  const colorPorPct=(p)=>{let r,g,b=0;if(p<=50){const t=p/50;r=255;g=Math.round(59+(184-59)*t);b=Math.round(48+(0-48)*t);}else{const t=(p-50)/50;r=Math.round(255+(52-255)*t);g=Math.round(184+(199-184)*t);b=Math.round(0+(89-0)*t);}return`rgb(${r},${g},${b})`;};
-                  const color=colorPorPct(prog);
-                  const radius=75; const circ=2*Math.PI*radius;
-                  const offset=circ-(prog/100)*circ;
-                  const animId=`anim-${obra.id}`.replace(/[^a-zA-Z0-9]/g,'');
-                  return(
-                    <div style={{position:"relative",width:180,height:180,margin:"0 auto 20px"}}>
-                      <style>{`@keyframes ${animId}{from{stroke-dashoffset:${circ}}to{stroke-dashoffset:${offset}}}`}</style>
-                      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:158,height:158,borderRadius:"50%",boxShadow:`0 0 0 6px ${color}18, 0 0 20px 8px ${color}28, 0 0 40px 12px ${color}15`}}/>
-                      <svg style={{position:"absolute",top:0,left:0}} width="180" height="180" viewBox="0 0 180 180">
-                        <g transform="rotate(-90, 90, 90)">
-                          <circle cx="90" cy="90" r={radius} fill="none" stroke="#F0F0F0" strokeWidth="14"/>
-                          <circle cx="90" cy="90" r={radius} fill="none" stroke={color} strokeWidth="22" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} opacity="0.22" style={{filter:"blur(5px)"}}/>
-                          <circle cx="90" cy="90" r={radius} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{animation:`${animId} 1.4s cubic-bezier(0.34,1.05,0.64,1) forwards`}}/>
-                        </g>
-                      </svg>
-                      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
-                        <p style={{margin:0,fontSize:46,fontWeight:900,color:"#1C1C1E",lineHeight:1,letterSpacing:-2}}>{prog}%</p>
-                        <p style={{margin:"4px 0 0",fontSize:10,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.8}}>resuelto</p>
+                {esDueno?(
+                  // ── TARJETA DUEÑO ──
+                  <>
+                    <span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#1C1C1E",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3,marginBottom:12}}>⭐ Tu obra</span>
+                    <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+                      <CirculoProg radius={38} pct={prog} size={90}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <p style={{margin:"0 0 2px",fontSize:16,fontWeight:800,color:"#1C1C1E"}}>{obra.nombre}</p>
+                        <p style={{margin:"0 0 10px",fontSize:11,color:"#8E8E93",display:"flex",alignItems:"center",gap:3}}><MapPin size={11} color="#8E8E93"/>{obra.direccion||"Sin dirección"}</p>
+                        <div style={{display:"flex",gap:6}}>
+                          <div style={{flex:1,background:"#FFF3E8",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
+                          <div style={{flex:1,background:"#FFF0EE",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#FF3B30"}}>{venc}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF6B60",textTransform:"uppercase"}}>Venc.</p></div>
+                          <div style={{flex:1,background:"#EDFAF1",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#28A745"}}>{res}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#34C759",textTransform:"uppercase"}}>Res.</p></div>
+                        </div>
                       </div>
                     </div>
-                  );
-                })()}
-
-                {/* Stats */}
-                <div style={{display:"flex",gap:10,marginBottom:16}}>
-                  <div style={{flex:1,background:"#FFF3E8",borderRadius:14,padding:"10px 6px",textAlign:"center"}}>
-                    <p style={{margin:0,fontSize:22,fontWeight:900,color:"#FF6B00"}}>{pend}</p>
-                    <p style={{margin:"3px 0 0",fontSize:10,fontWeight:600,color:"#FF9040",textTransform:"uppercase",letterSpacing:0.3}}>Pendientes</p>
+                    {equipo.length>0&&<div onClick={e=>{e.stopPropagation();irObra(obra);setTimeout(()=>setVistaEquipo(true),50);}} style={{borderTop:"1px solid #F2F2F7",paddingTop:12,display:"flex",alignItems:"center",justifyContent:"center",gap:10,cursor:"pointer"}}>
+                      <div style={{display:"flex"}}>{equipo.slice(0,5).map((u,i)=><div key={u.uid||i} style={{width:24,height:24,borderRadius:"50%",border:"2px solid #fff",background:u.color||colorPorIndice(i),display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff",marginRight:-7}}>{u.nombre?u.nombre[0].toUpperCase():""}</div>)}</div>
+                      <span style={{marginLeft:12,fontSize:12,fontWeight:700,color:"#636366"}}>{equipo.length} miembro{equipo.length!==1?"s":""}</span>
+                      <span style={{fontSize:10,color:"#C7C7CC"}}>→ Mi equipo</span>
+                    </div>}
+                  </>
+                ):(
+                  // ── TARJETA MIEMBRO ──
+                  <div style={{display:"flex",alignItems:"center",gap:14}}>
+                    <CirculoProg radius={28} pct={prog} size={72}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{marginBottom:6}}>
+                        <span style={{display:"inline-flex",alignItems:"center",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3,background:miRolObra==="capataz"?"#FFF3E8":"#F0EEFF",color:miRolObra==="capataz"?"#FF6B00":"#6B4FA8"}}>{miEspecialidad||miRolObra}</span>
+                      </div>
+                      <p style={{margin:"0 0 2px",fontSize:15,fontWeight:800,color:"#1C1C1E"}}>{obra.nombre}</p>
+                      <p style={{margin:"0 0 8px",fontSize:11,color:"#8E8E93",display:"flex",alignItems:"center",gap:3}}><MapPin size={10} color="#8E8E93"/>{obra.direccion||"Sin dirección"}</p>
+                      <div style={{display:"flex",gap:6}}>
+                        <div style={{background:"#FFF3E8",borderRadius:8,padding:"5px 8px",textAlign:"center"}}><p style={{margin:0,fontSize:14,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
+                        <div style={{background:"#EDFAF1",borderRadius:8,padding:"5px 8px",textAlign:"center"}}><p style={{margin:0,fontSize:14,fontWeight:900,color:"#28A745"}}>{res}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#34C759",textTransform:"uppercase"}}>Res.</p></div>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{flex:1,background:"#FFF0EE",borderRadius:14,padding:"10px 6px",textAlign:"center"}}>
-                    <p style={{margin:0,fontSize:22,fontWeight:900,color:"#FF3B30"}}>{venc}</p>
-                    <p style={{margin:"3px 0 0",fontSize:10,fontWeight:600,color:"#FF6B60",textTransform:"uppercase",letterSpacing:0.3}}>Vencidas</p>
-                  </div>
-                  <div style={{flex:1,background:"#EDFAF1",borderRadius:14,padding:"10px 6px",textAlign:"center"}}>
-                    <p style={{margin:0,fontSize:22,fontWeight:900,color:"#28A745"}}>{res}</p>
-                    <p style={{margin:"3px 0 0",fontSize:10,fontWeight:600,color:"#34C759",textTransform:"uppercase",letterSpacing:0.3}}>Resueltas</p>
-                  </div>
-                </div>
-
-                {/* Miembros */}
-                {equipo.length>0&&<div style={{borderTop:"1px solid #F2F2F7",paddingTop:14,display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-                  <div style={{display:"flex"}}>{equipo.slice(0,5).map((u,i)=><div key={u.id||i} style={{width:26,height:26,borderRadius:"50%",border:"2px solid #fff",background:colorPorIndice(i),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#fff",marginRight:-7}}>{u.nombre?u.nombre[0].toUpperCase():""}</div>)}</div>
-                  <span style={{marginLeft:14,fontSize:13,fontWeight:700,color:"#636366"}}>{equipo.length} miembro{equipo.length!==1?"s":""}</span>
-                </div>}
-
+                )}
               </button>
             );
           })}
