@@ -780,10 +780,7 @@ export default function App({ session }) {
                 </button>
                 <p style={{margin:0,fontSize:30,fontWeight:900,color:"#fff",letterSpacing:-0.5}}>Fixgo</p>
               </div>
-              <p style={{margin:0,fontSize:14,color:"rgba(255,255,255,0.7)"}}>
-                {obras.length} obra{obras.length!==1?"s":""} · {totalPend} pendiente{totalPend!==1?"s":""}
-                {totalVenc>0&&<span style={{color:"#FFD60A",fontWeight:700}}> · ⚠️ {totalVenc} vencida{totalVenc!==1?"s":""}</span>}
-              </p>
+              <p style={{margin:0,fontSize:14,color:"rgba(255,255,255,0.5)"}}>Gestión de obras</p>
             </div>
             <div style={{background:"rgba(255,255,255,0.15)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
               <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p></div>
@@ -803,7 +800,7 @@ export default function App({ session }) {
             const venc=novs.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length;
             const res=novs.filter(n=>n.resuelta).length;
             const prog=novs.length>0?Math.round((res/novs.length)*100):0;
-            const equipo=(obra.equipo||[]).map(m=>{const u=USUARIOS_DEMO.find(u=>u.id===m.uid);return u?{...u,rolEnObra:m.rolEnObra}:null;}).filter(Boolean);
+            const equipo=(obra.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map((m,idx)=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombre=m.nombre||(esDueno?usuarioActivoReal.nombre:null)||"?";return{uid:m.uid,nombre,color:colorPorIndice(idx)};});
             return(
               <button key={obra.id} style={{...s.cardObra,padding:"22px 20px"}} onClick={()=>irObra(obra)}
                 onContextMenu={e=>{e.preventDefault();setMenuObra(obra.id);}}
@@ -812,7 +809,7 @@ export default function App({ session }) {
 
                 {/* Nombre y dirección */}
                 <p style={{margin:"0 0 2px",fontSize:18,fontWeight:800,color:"#1C1C1E",textAlign:"center"}}>{obra.nombre}</p>
-                <p style={{margin:"0 0 20px",fontSize:12,color:"#8E8E93",textAlign:"center"}}>📍 {obra.direccion||"Sin dirección"}</p>
+                <p style={{margin:"0 0 20px",fontSize:12,color:"#8E8E93",textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",gap:3}}><MapPin size={12} color="#8E8E93"/>{obra.direccion||"Sin dirección"}</p>
 
                 {/* Círculo de progreso */}
                 {(()=>{
@@ -820,14 +817,16 @@ export default function App({ session }) {
                   const color=colorPorPct(prog);
                   const radius=75; const circ=2*Math.PI*radius;
                   const offset=circ-(prog/100)*circ;
+                  const animId=`anim-${obra.id}`.replace(/[^a-zA-Z0-9]/g,'');
                   return(
                     <div style={{position:"relative",width:180,height:180,margin:"0 auto 20px"}}>
+                      <style>{`@keyframes ${animId}{from{stroke-dashoffset:${circ}}to{stroke-dashoffset:${offset}}}`}</style>
                       <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:158,height:158,borderRadius:"50%",boxShadow:`0 0 0 6px ${color}18, 0 0 20px 8px ${color}28, 0 0 40px 12px ${color}15`}}/>
                       <svg style={{position:"absolute",top:0,left:0}} width="180" height="180" viewBox="0 0 180 180">
                         <g transform="rotate(-90, 90, 90)">
                           <circle cx="90" cy="90" r={radius} fill="none" stroke="#F0F0F0" strokeWidth="14"/>
                           <circle cx="90" cy="90" r={radius} fill="none" stroke={color} strokeWidth="22" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} opacity="0.22" style={{filter:"blur(5px)"}}/>
-                          <circle cx="90" cy="90" r={radius} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}/>
+                          <circle cx="90" cy="90" r={radius} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{animation:`${animId} 1.4s cubic-bezier(0.34,1.05,0.64,1) forwards`}}/>
                         </g>
                       </svg>
                       <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
