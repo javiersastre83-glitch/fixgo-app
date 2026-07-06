@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, FileText, ClipboardList } from "lucide-react";
+import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, FileText, ClipboardList, Phone } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -289,6 +289,7 @@ export default function App({ session }) {
   const [invitarRol,       setInvitarRol]       = useState("operario");
   const [invitarEsp,       setInvitarEsp]       = useState(RESPONSABLES[0]);
   const [invitarNombre,    setInvitarNombre]    = useState("");
+  const [invitarTelefono,  setInvitarTelefono]  = useState("");
   const [linkGenerado,     setLinkGenerado]     = useState("");
   const [generandoLink,    setGenerandoLink]    = useState(false);
   const [nuevaObraForm,    setNuevaObraForm]    = useState({nombre:"",direccion:""});
@@ -305,7 +306,9 @@ export default function App({ session }) {
   const [compartidoId,     setCompartidoId]     = useState(null);
   const [modalPro,         setModalPro]         = useState(false);
   const [menuContextual,   setMenuContextual]   = useState(null);
-  const [asignacionRapida, setAsignacionRapida] = useState(null);
+  const [modalTelefono, setModalTelefono] = useState<{uid:string,nombre:string}|null>(null);
+  const [telInput, setTelInput] = useState("");
+  const guardarTelefono=async()=>{if(!modalTelefono||!obraActual)return;await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraActual.id).eq("usuario_id",modalTelefono.uid);setObras(obs=>obs.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:telInput.trim()||null}:m)}:o));setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");};
   const [asignarTareaMiembro, setAsignarTareaMiembro] = useState(null);
   const [confirmarEliminar,setConfirmarEliminar]= useState(null);
   const [menuObra,         setMenuObra]         = useState(null);
@@ -322,7 +325,7 @@ export default function App({ session }) {
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
   const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
-  const equipoObra   = obraActual?(obraActual.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map((m,idx)=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);const color=colorPorIndice(idx);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,color,colorIdx:idx};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx};}).filter(Boolean):[];
+  const equipoObra   = obraActual?(obraActual.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map((m,idx)=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);const color=colorPorIndice(idx);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx,telefono:m.telefono||null};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,color,colorIdx:idx,telefono:m.telefono||null};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx,telefono:m.telefono||null};}).filter(Boolean):[];
   const miId         = usuarioReal?.id||usuarioActivo.id;
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
   const miRolInfo    = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
@@ -412,8 +415,8 @@ export default function App({ session }) {
       const error=null;
    if(!error){
      const obrasConEquipo=await Promise.all((data||[]).map(async(obra)=>{
-       const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,nombre,especialidad,invitado_por").eq("obra_id",obra.id);
-       const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null}));
+       const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,nombre,especialidad,invitado_por,telefono").eq("obra_id",obra.id);
+       const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null}));
        return{...obra,equipo};
      }));
      setObras(obrasConEquipo);
@@ -529,7 +532,7 @@ export default function App({ session }) {
   const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
   const crearObra=async()=>{if(!nuevaObraForm.nombre.trim()||guardando)return;setGuardando(true);if(usuarioReal){const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id}).select().single();if(error){alert("Error al crear la obra: "+error.message);setGuardando(false);return;}await supabase.from("equipo_obra").insert({obra_id:data.id,usuario_id:usuarioReal.id,rol_en_obra:"profesional"});const obraConEquipo={...data,equipo:[{uid:usuarioReal.id,rolEnObra:"profesional",nombre:usuarioActivoReal.nombre,especialidad:"Profesional",avatar:"📐"}]};setObras(o=>[...o,obraConEquipo]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);setGuardando(false);mostrarToast("Obra creada con éxito");};
 
-  const abrirModalInvitar=()=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarNombre("");setLinkGenerado("");setModalInvitar(true);};
+  const abrirModalInvitar=()=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarNombre("");setInvitarTelefono("");setLinkGenerado("");setModalInvitar(true);};
   const guardarNombreIntegrante=async(uid)=>{const nuevo=nombreEditado.trim();if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){await supabase.from("equipo_obra").update({nombre:nuevo||null}).eq("obra_id",obraActual.id).eq("usuario_id",uid);}setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:o));setEditandoNombreId(null);setNombreEditado("");mostrarToast("Nombre actualizado");};
   const eliminarMiembro=async(u)=>{
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
@@ -546,13 +549,14 @@ export default function App({ session }) {
     setGenerandoLink(true);
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
     const esp=invitarRol==="operario"?invitarEsp:null;
-    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:invitarNombre.trim()||null});
+    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:invitarNombre.trim()||null,telefono:invitarTelefono.trim()||null});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
     setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
     setGenerandoLink(false);
   };
   const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las tareas que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
   const copiarLink=()=>{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};
+  const generarResumenGremio=(gremio:string)=>{const novs=novedades.filter(n=>!n.resuelta&&n.responsable===gremio);const urgentes=novs.filter(n=>n.prioridad===0);const otras=novs.filter(n=>n.prioridad!==0);let msg=`Hola! Te mando el estado de tus tareas en "${obraActual?.nombre}":\n\n`;if(urgentes.length>0){msg+=`🔴 URGENTES (${urgentes.length}):\n`;urgentes.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}${n.fechaLimite?` — límite ${formatFecha(n.fechaLimite)}`:""}\n`;});msg+="\n";}if(otras.length>0){msg+=`🟡 PENDIENTES (${otras.length}):\n`;otras.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}\n`;});}msg+=`\nTotal pendiente: ${novs.length} tarea${novs.length!==1?"s":""}`;return msg;};
   const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",responsableUsuarioId:nov.responsable_usuario_id||null,sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
   const asignarRapido=async(id,{responsable,usuarioId})=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({responsable,responsable_usuario_id:usuarioId||null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,responsable,responsable_usuario_id:usuarioId||null}:x));setAsignacionRapida(null);};
   const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;if(guardando)return;setGuardando(true);try{const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos,oculto_capataz:formEdit.ocultoCapataz,responsable_usuario_id:formEdit.responsableUsuarioId||null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,responsable_usuario_id:formEdit.responsableUsuarioId||null,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite,ocultoCapataz:formEdit.ocultoCapataz}:x));setEditando(false);setFormEdit(null);}finally{setGuardando(false);}};
@@ -952,6 +956,24 @@ export default function App({ session }) {
               <p style={{margin:"6px 0 0",fontSize:12,color:"#8E8E93"}}>{esProfesional?"Resumen general de la obra":"Tareas asignadas a "+u.especialidad}</p>
             </div>
           </div>
+          {/* TELÉFONO */}
+          {u.telefono?(
+            <div style={{background:"#fff",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
+              <Phone size={16} color="#8E8E93" style={{flexShrink:0}}/>
+              <span style={{flex:1,fontSize:15,fontWeight:600,color:"#1C1C1E"}}>{u.telefono}</span>
+              <button onClick={()=>window.open(`https://wa.me/${u.telefono.replace(/\D/g,"")}?text=${encodeURIComponent(`Hola ${u.nombre}! Te escribo por Fixgo.`)}`,"_blank")} style={{width:34,height:34,borderRadius:10,background:"#25D36615",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              </button>
+              <button onClick={()=>window.open(`tel:${u.telefono.replace(/\s/g,"")}`,"_blank")} style={{width:34,height:34,borderRadius:10,background:"#007AFF15",border:"none",cursor:"pointer",fontSize:16}}>📞</button>
+              <button onClick={()=>{setModalTelefono({uid:u.uid,nombre:u.nombre});setTelInput(u.telefono||"");}} style={{width:34,height:34,borderRadius:10,background:"#F2F2F7",border:"none",cursor:"pointer",fontSize:14}}>✏️</button>
+            </div>
+          ):(
+            puedeGestionar&&<button onClick={()=>{setModalTelefono({uid:u.uid,nombre:u.nombre});setTelInput("");}} style={{width:"100%",background:"#FFF3E8",border:"none",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontFamily:"inherit"}}>
+              <Phone size={16} color="#FF6B00" style={{flexShrink:0}}/>
+              <span style={{flex:1,fontSize:14,fontWeight:600,color:"#FF6B00",textAlign:"left"}}>Sin teléfono — Agregar para contacto rápido</span>
+              <span style={{fontSize:12,fontWeight:700,color:"#fff",background:"#FF6B00",padding:"3px 10px",borderRadius:99}}>+ Agregar</span>
+            </button>
+          )}
           <div style={{display:"flex",gap:10}}>
             {[["#FF6B00",pend.length,"Pendientes"],["#34C759",res.length,"Resueltas"],["#1C1C1E",tareasU.length,"Total"]].map(([col,val,lbl])=>(
               <div key={lbl} style={{flex:1,background:"#fff",borderRadius:14,padding:"12px",textAlign:"center"}}><p style={{margin:0,fontSize:26,fontWeight:800,color:col}}>{val}</p><p style={{margin:0,fontSize:12,color:"#8E8E93"}}>{lbl}</p></div>
@@ -1096,7 +1118,10 @@ export default function App({ session }) {
               <SelectorOficio value={invitarEsp} onChange={r=>setInvitarEsp(r)} customValue="" onCustomChange={()=>{}} color="#0057FF" />
             </div></>}
             <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Nombre o empresa <span style={{fontWeight:400}}>(opcional)</span></p>
-            <input style={{...s.input,marginBottom:16}} placeholder="Ej: Jorge, Cuadrilla 2..." value={invitarNombre} onChange={e=>setInvitarNombre(e.target.value)} maxLength={40}/>
+            <input style={{...s.input,marginBottom:12}} placeholder="Ej: Jorge, Cuadrilla 2..." value={invitarNombre} onChange={e=>setInvitarNombre(e.target.value)} maxLength={40}/>
+            <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
+            <input style={{...s.input,marginBottom:4}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
+            <p style={{margin:"0 0 16px",fontSize:11,color:"#C7C7CC"}}>Para contactarlo rápido desde Estadísticas</p>
             <button style={{...s.btnPrincipal,background:"#1C1C1E",opacity:generandoLink?0.5:1}} disabled={generandoLink} onClick={generarInvitacion}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{generandoLink?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Generando...</>:"Generar link de invitación"}</span></button>
           </>:<>
             <div style={{background:"#34C75915",borderRadius:14,padding:"14px",marginBottom:16,textAlign:"center"}}>
@@ -1146,75 +1171,121 @@ export default function App({ session }) {
       return {label:s===0?"Esta":`S-${s}`,cant};
     });
     const maxSem=Math.max(1,...semanas.map(s=>s.cant));
+    // Calcular criticidad por gremio: urgentes vencidas > urgentes > pendientes
+    const porGremioEnriquecido=porGremio.map(g=>{
+      const novsGremio=novedades.filter(n=>!n.resuelta&&(n.responsable===g.nombre||equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.especialidad===g.nombre));
+      const urgVenc=novsGremio.filter(n=>n.prioridad===0&&estadoBadge(n)?.tipo==="urgente");
+      const urgentes=novsGremio.filter(n=>n.prioridad===0);
+      const miembro=equipoObra.find(m=>m.especialidad===g.nombre);
+      return{...g,urgVenc:urgVenc.length,urgentes:urgentes.length,miembro};
+    }).sort((a,b)=>b.urgVenc-a.urgVenc||b.urgentes-a.urgentes||b.cant-a.cant);
+    // Balance semanal
+    const novsSemana=novedades.filter(n=>{const d=new Date(n.created_at||"");const hoy=new Date();const lunes=new Date(hoy);lunes.setDate(hoy.getDate()-hoy.getDay()+1);return d>=lunes;});
+    const creadasSemana=novsSemana.length;
+    const resueltasSemana=novedades.filter(n=>n.resuelta).length;
+    const saldo=resueltasSemana-creadasSemana;
     return(
       <div style={s.root}>
-        <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVistaStats(false)},{label:"Estadísticas"}]} />
+        <div style={{background:"#fff",padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #F0F0F0",flexShrink:0}}>
+          <button onClick={()=>setVistaStats(false)} style={{width:34,height:34,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}><ChevronLeft size={20} color="#1C1C1E"/></button>
+          <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E",flex:1}}>Estadísticas</p>
+        </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
-          {/* 1. ESTADO DE NOVEDADES (control general, primero) */}
-          <div style={{background:"#fff",borderRadius:16,padding:"14px 16px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:14}}>
-              <div style={{position:"relative",width:64,height:64,flexShrink:0}}>
-                <svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="#F2F2F7" strokeWidth="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="#34C759" strokeWidth="7" strokeDasharray={`${pctResuelto*1.634} 163.4`} strokeLinecap="round" strokeDashoffset="40.85" transform="rotate(-90 32 32)"/></svg>
-                <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#1C1C1E"}}>{pctResuelto}%</div>
+
+          {/* POR GREMIO */}
+          <div style={{background:"#fff",borderRadius:20,padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Por gremio</p>
+            {porGremioEnriquecido.length===0
+              ?<div style={{background:"#EDFAF1",borderRadius:14,padding:"20px",textAlign:"center"}}><p style={{fontSize:28,margin:"0 0 8px"}}>✅</p><p style={{fontSize:14,fontWeight:600,color:"#34C759"}}>Sin problemas por gremio</p></div>
+              :porGremioEnriquecido.map(g=>{
+                const tieneUrgVenc=g.urgVenc>0;
+                const tieneUrg=g.urgentes>0;
+                return(
+                  <div key={g.nombre} style={{background:"#F9F9F9",borderRadius:14,padding:"14px",marginBottom:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <div style={{width:40,height:40,borderRadius:12,background:g.miembro?.color||"#E5E5EA",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800,color:"#fff",flexShrink:0}}>
+                        {g.miembro?.nombre?.[0]?.toUpperCase()||"🔧"}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>{g.miembro?.nombre?`${g.miembro.nombre} · ${g.nombre}`:g.nombre}</p>
+                        <div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>
+                          {tieneUrgVenc&&<span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:99,background:"#FF3B3015",color:"#FF3B30"}}>● {g.urgVenc} urgente{g.urgVenc!==1?"s":""} vencida{g.urgVenc!==1?"s":""}</span>}
+                          {!tieneUrgVenc&&tieneUrg&&<span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:99,background:"#FF6B0015",color:"#FF6B00"}}>● {g.urgentes} urgente{g.urgentes!==1?"s":""}</span>}
+                          {!tieneUrgVenc&&!tieneUrg&&<span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:99,background:"#F2F2F7",color:"#8E8E93"}}>● {g.cant} pendiente{g.cant!==1?"s":""}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:8,marginTop:12}}>
+                      {g.miembro?.telefono?(
+                        <>
+                          <button onClick={()=>{const t=generarResumenGremio(g.nombre);window.open(`https://wa.me/${g.miembro.telefono.replace(/\D/g,"")}?text=${encodeURIComponent(t)}`,"_blank");}} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",background:"#25D36615",color:"#25D366",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                            WhatsApp
+                          </button>
+                          <button onClick={()=>window.open(`tel:${g.miembro.telefono.replace(/\s/g,"")}`,"_blank")} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",background:"#007AFF15",color:"#007AFF",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>📞 Llamar</button>
+                        </>
+                      ):(
+                        g.miembro&&<button onClick={()=>{setModalTelefono({uid:g.miembro.uid,nombre:g.miembro.nombre});setTelInput("");}} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",background:"#F2F2F7",color:"#8E8E93",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>+ Agregar teléfono</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* POR SECTOR */}
+          {porSector.length>0&&<div style={{background:"#fff",borderRadius:20,padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Por sector</p>
+            {porSector.map((sec,i)=>{
+              const novsS=novedades.filter(n=>!n.resuelta&&n.sector===sec.nombre);
+              const urgS=novsS.filter(n=>n.prioridad===0).length;
+              const barColor=urgS>0?"#FF3B30":novsS.some(n=>n.prioridad===1)?"#FF9500":"#C7C7CC";
+              return(
+                <button key={sec.nombre} onClick={()=>{setVistaStats(false);/* filtrar por sector */}} style={{width:"100%",border:"none",background:"none",padding:"12px 0",borderBottom:i<porSector.length-1?"1px solid #F2F2F7":"none",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    <span style={{fontSize:14,fontWeight:700,color:"#1C1C1E",flex:1}}>{sec.nombre}</span>
+                    <span style={{fontSize:13,fontWeight:800,color:"#1C1C1E"}}>{sec.cant}</span>
+                  </div>
+                  <div style={{height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${sec.cant/maxSec*100}%`,background:barColor,borderRadius:99}}/>
+                  </div>
+                  <p style={{margin:"5px 0 0",fontSize:10,color:"#C7C7CC"}}>Tocá para filtrar → {sec.nombre}</p>
+                </button>
+              );
+            })}
+          </div>}
+
+          {/* RITMO */}
+          <div style={{background:"#fff",borderRadius:20,padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Ritmo esta semana</p>
+            <div style={{display:"flex",gap:10,marginBottom:12}}>
+              <div style={{flex:1,background:"#FF3B3010",borderRadius:16,padding:"14px 12px",textAlign:"center"}}>
+                <p style={{margin:0,fontSize:32,fontWeight:900,color:"#FF3B30",lineHeight:1}}>+{creadasSemana}</p>
+                <p style={{margin:"5px 0 0",fontSize:11,fontWeight:600,color:"#FF6B60",textTransform:"uppercase",letterSpacing:0.3}}>Creadas</p>
               </div>
-              <div><p style={{margin:0,fontSize:17,fontWeight:700,color:"#1C1C1E"}}>Estado de novedades</p><p style={{margin:0,fontSize:13,color:"#8E8E93"}}>{contadores.resueltas} de {totalNovs} resueltas</p>{pctVenc>0&&<p style={{margin:"4px 0 0",fontSize:12,color:"#FF3B30",fontWeight:600}}>{pctVenc}% vencidas</p>}</div>
+              <div style={{flex:1,background:"#34C75910",borderRadius:16,padding:"14px 12px",textAlign:"center"}}>
+                <p style={{margin:0,fontSize:32,fontWeight:900,color:"#34C759",lineHeight:1}}>−{resueltasSemana}</p>
+                <p style={{margin:"5px 0 0",fontSize:11,fontWeight:600,color:"#34C759",textTransform:"uppercase",letterSpacing:0.3}}>Resueltas</p>
+              </div>
             </div>
-            <div style={{display:"flex",gap:8}}>
-              {[["Total",totalNovs,"#1C1C1E"],["Pendientes",contadores.pendientes,"#FF6B00"],["Vencidas",contadores.vencidas,"#FF3B30"],["Resueltas",contadores.resueltas,"#34C759"]].map(([lbl,val,col])=>(
-                <div key={lbl} style={{flex:1,background:"#F2F2F7",borderRadius:10,padding:"8px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:20,fontWeight:800,color:col}}>{val}</p><p style={{margin:0,fontSize:10,color:"#8E8E93"}}>{lbl}</p></div>
-              ))}
+            <div style={{background:saldo>=0?"#EDFAF1":"#FFF0EE",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+              <p style={{margin:0,fontSize:28,fontWeight:900,color:saldo>=0?"#34C759":"#FF3B30"}}>{saldo>=0?"-":"+"}  {Math.abs(saldo)}</p>
+              <div>
+                <p style={{margin:0,fontSize:13,fontWeight:700,color:saldo>=0?"#34C759":"#FF3B30"}}>{saldo>=0?"✅ Buen ritmo":"⚠️ Acumulando"}</p>
+                <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{saldo>=0?"Resolvés más de lo que aparece":"Se acumulan más de lo que se resuelven"}</p>
+              </div>
             </div>
           </div>
-          {/* 2. EVOLUCIÓN (resueltas por semana) */}
-          <div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
-            <p style={{margin:"0 0 14px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resueltas por semana</p>
-            <div style={{display:"flex",alignItems:"flex-end",gap:8,height:100}}>
-              {semanas.map((sem,i)=>(
-                <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,height:"100%",justifyContent:"flex-end"}}>
-                  <span style={{fontSize:11,fontWeight:700,color:"#1C1C1E"}}>{sem.cant}</span>
-                  <div style={{width:"100%",height:`${sem.cant/maxSem*70}px`,minHeight:sem.cant>0?6:2,background:sem.cant>0?"#34C759":"#E5E5EA",borderRadius:"4px 4px 0 0"}}/>
-                  <span style={{fontSize:10,color:"#8E8E93"}}>{sem.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* 3. POR GREMIO */}
-          {porGremio.length>0&&<div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
-            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Pendientes por gremio</p>
-            {porGremio.map(g=>(
-              <div key={g.nombre} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid #F2F2F7"}}>
-                <span style={{fontSize:14,fontWeight:600,color:"#1C1C1E",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",paddingRight:10}}>{g.nombre}</span>
-                <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-                  <div style={{width:70,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${g.cant/maxGre*100}%`,background:"#3C4A5E",borderRadius:99}}/></div>
-                  <span style={{fontSize:14,fontWeight:800,color:"#3C4A5E",width:20,textAlign:"right"}}>{g.cant}</span>
-                </div>
-              </div>
-            ))}
-          </div>}
-          {/* 4. POR SECTOR */}
-          {porSector.length>0&&<div style={{background:"#fff",borderRadius:16,padding:"16px"}}>
-            <p style={{margin:"0 0 12px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Pendientes por sector</p>
-            {porSector.map(sec=>(
-              <div key={sec.nombre} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid #F2F2F7"}}>
-                <span style={{fontSize:14,fontWeight:600,color:"#1C1C1E"}}>{sec.nombre}</span>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:70,height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}><div style={{height:"100%",width:`${sec.cant/maxSec*100}%`,background:"#3C4A5E",borderRadius:99}}/></div>
-                  <span style={{fontSize:14,fontWeight:800,color:"#3C4A5E",width:20,textAlign:"right"}}>{sec.cant}</span>
-                </div>
-              </div>
-            ))}
-          </div>}
-          {/* 5. URGENTES (al final, lleva a Urgencias) */}
+
+          {/* URGENTES */}
           {(urgentesPend.length>0||contadores.vencidas>0)&&(
             <button onClick={()=>{setVistaStats(false);setTabActiva("alertas");irInicio();}} style={{background:"#FF3B3012",borderRadius:16,padding:"16px 18px",display:"flex",alignItems:"center",gap:12,border:"none",width:"100%",textAlign:"left",cursor:"pointer"}}>
               <span style={{width:40,height:40,borderRadius:11,background:"#FF3B3018",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><AlertTriangle size={22} color="#FF3B30"/></span>
-              <div style={{flex:1}}>
-                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#FF3B30"}}>{urgentesPend.length>0?`${urgentesPend.length} urgente${urgentesPend.length!==1?"s":""} sin resolver`:`${contadores.vencidas} vencida${contadores.vencidas!==1?"s":""}`}</p>
-                <p style={{margin:"2px 0 0",fontSize:13,color:"#8E8E93"}}>Tocá para ver en Urgencias</p>
-              </div>
+              <div style={{flex:1}}><p style={{margin:0,fontSize:15,fontWeight:800,color:"#FF3B30"}}>{urgentesPend.length>0?`${urgentesPend.length} urgente${urgentesPend.length!==1?"s":""} sin resolver`:`${contadores.vencidas} vencida${contadores.vencidas!==1?"s":""}`}</p><p style={{margin:"2px 0 0",fontSize:13,color:"#8E8E93"}}>Tocá para ver en Urgencias</p></div>
               <ChevronRight size={20} color="#FF3B30" style={{flexShrink:0,opacity:0.6}}/>
             </button>
           )}
+
           {/* INFORMES PRO */}
           <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
             <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
@@ -1225,6 +1296,7 @@ export default function App({ session }) {
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
+        {modalTelefono&&<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Agregar teléfono</p><p style={{margin:"0 0 16px",fontSize:14,color:"#8E8E93"}}>Para contactar a {modalTelefono.nombre} rápido desde estadísticas.</p><input style={{...s.input,marginBottom:16}} type="tel" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} autoFocus/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>}
       </div>
     );
   }
@@ -1517,6 +1589,7 @@ export default function App({ session }) {
         </div></div>
       );})()}
       {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
+      {modalTelefono&&<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Agregar teléfono</p><p style={{margin:"0 0 16px",fontSize:14,color:"#8E8E93"}}>Para contactar a {modalTelefono.nombre} rápido desde estadísticas.</p><input style={{...s.input,marginBottom:16}} type="tel" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} autoFocus/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>}
       {mostrarCambioUsuario&&<SelectorUsuario/>}
     </div>
   );
