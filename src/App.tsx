@@ -308,8 +308,9 @@ export default function App({ session }) {
   const [menuContextual,   setMenuContextual]   = useState(null);
   const [modalTelefono, setModalTelefono] = useState<{uid:string,nombre:string}|null>(null);
   const [telInput, setTelInput] = useState("");
-  const guardarTelefono=async()=>{if(!modalTelefono||!obraActual)return;await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraActual.id).eq("usuario_id",modalTelefono.uid);setObras(obs=>obs.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:telInput.trim()||null}:m)}:o));setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");};
+  const [asignacionRapida, setAsignacionRapida] = useState(null);
   const [asignarTareaMiembro, setAsignarTareaMiembro] = useState(null);
+  const guardarTelefono=async()=>{if(!modalTelefono||!obraActual)return;await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraActual.id).eq("usuario_id",modalTelefono.uid);setObras(obs=>obs.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:telInput.trim()||null}:m)}:o));setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");};
   const [confirmarEliminar,setConfirmarEliminar]= useState(null);
   const [menuObra,         setMenuObra]         = useState(null);
   const [confirmarEliminarObra,setConfirmarEliminarObra]=useState(null);
