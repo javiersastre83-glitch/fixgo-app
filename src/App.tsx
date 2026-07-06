@@ -1217,11 +1217,18 @@ export default function App({ session }) {
       const miembro=equipoObra.find(m=>m.especialidad===g.nombre);
       return{...g,urgVenc:urgVenc.length,urgentes:urgentes.length,miembro};
     }).sort((a,b)=>b.urgVenc-a.urgVenc||b.urgentes-a.urgentes||b.cant-a.cant);
-    // Balance semanal
-    const novsSemana=novedades.filter(n=>{const d=new Date(n.created_at||"");const hoy=new Date();const lunes=new Date(hoy);lunes.setDate(hoy.getDate()-hoy.getDay()+1);return d>=lunes;});
-    const creadasSemana=novsSemana.length;
-    const resueltasSemana=novedades.filter(n=>n.resuelta).length;
-    const saldo=resueltasSemana-creadasSemana;
+    // Antigüedad promedio de pendientes → sistema de niveles (Bronce/Plata/Oro/Platino)
+    const hoyTs=Date.now();
+    const antiguedadPromedio=pendientes.length>0?pendientes.reduce((acc,n)=>{const t=n.created_at?new Date(n.created_at).getTime():hoyTs;return acc+(hoyTs-t)/864e5;},0)/pendientes.length:0;
+    const NIVELES=[
+      {id:"diamante",label:"Diamante",color:"#5AC8FA",icon:"💎",min:0,max:2,siguiente:null},
+      {id:"oro",label:"Oro",color:"#E5A400",icon:"🥇",min:2,max:4,siguiente:2},
+      {id:"plata",label:"Plata",color:"#9A9A9A",icon:"🥈",min:4,max:7,siguiente:4},
+      {id:"bronce",label:"Bronce",color:"#CD7F32",icon:"🥉",min:7,max:Infinity,siguiente:7},
+    ];
+    const nivelActual=pendientes.length===0?NIVELES[0]:NIVELES.find(n=>antiguedadPromedio>=n.min&&antiguedadPromedio<n.max)||NIVELES[3];
+    const capNivel=nivelActual.max===Infinity?nivelActual.min*2:nivelActual.max;
+    const progresoNivel=nivelActual.siguiente===null?100:Math.max(4,Math.min(100,Math.round((capNivel-antiguedadPromedio)/(capNivel-nivelActual.min)*100)));
     return(
       <div style={s.root}>
         <div style={{background:"#fff",padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #F0F0F0",flexShrink:0}}>
@@ -1278,14 +1285,15 @@ export default function App({ session }) {
               const novsS=novedades.filter(n=>!n.resuelta&&n.sector===sec.nombre);
               const urgS=novsS.filter(n=>n.prioridad===0).length;
               const barColor=urgS>0?"#FF3B30":novsS.some(n=>n.prioridad===1)?"#FF9500":"#C7C7CC";
+              const pct=pendientes.length>0?Math.round(sec.cant/pendientes.length*100):0;
               return(
                 <button key={sec.nombre} onClick={()=>{setFiltroSector(sec.nombre);setFiltro("pendientes");setVistaStats(false);setVista("lista");}} style={{width:"100%",border:"none",background:"none",padding:"12px 0",borderBottom:i<porSector.length-1?"1px solid #F2F2F7":"none",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                     <span style={{fontSize:14,fontWeight:700,color:"#1C1C1E",flex:1}}>{sec.nombre}</span>
-                    <span style={{fontSize:13,fontWeight:800,color:"#1C1C1E"}}>{sec.cant}</span>
+                    <span style={{fontSize:13,fontWeight:800,color:"#1C1C1E"}}>{sec.cant} · {pct}%</span>
                   </div>
                   <div style={{height:8,background:"#F2F2F7",borderRadius:99,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${sec.cant/maxSec*100}%`,background:barColor,borderRadius:99}}/>
+                    <div style={{height:"100%",width:`${pct}%`,background:barColor,borderRadius:99}}/>
                   </div>
                   <p style={{margin:"5px 0 0",fontSize:10,color:"#C7C7CC"}}>Tocá para filtrar → {sec.nombre}</p>
                 </button>
@@ -1293,26 +1301,26 @@ export default function App({ session }) {
             })}
           </div>}
 
-          {/* RITMO */}
-          <div style={{background:"#fff",borderRadius:20,padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Ritmo esta semana</p>
-            <div style={{display:"flex",gap:10,marginBottom:12}}>
-              <div style={{flex:1,background:"#FF3B3010",borderRadius:16,padding:"14px 12px",textAlign:"center"}}>
-                <p style={{margin:0,fontSize:32,fontWeight:900,color:"#FF3B30",lineHeight:1}}>+{creadasSemana}</p>
-                <p style={{margin:"5px 0 0",fontSize:11,fontWeight:600,color:"#FF6B60",textTransform:"uppercase",letterSpacing:0.3}}>Creadas</p>
+          {/* NIVEL DE RITMO */}
+          <div style={{background:"#fff",borderRadius:20,padding:"20px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Nivel de ritmo</p>
+            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+              <div style={{width:56,height:56,borderRadius:"50%",background:nivelActual.color+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:28}}>
+                {nivelActual.icon}
               </div>
-              <div style={{flex:1,background:"#34C75910",borderRadius:16,padding:"14px 12px",textAlign:"center"}}>
-                <p style={{margin:0,fontSize:32,fontWeight:900,color:"#34C759",lineHeight:1}}>−{resueltasSemana}</p>
-                <p style={{margin:"5px 0 0",fontSize:11,fontWeight:600,color:"#34C759",textTransform:"uppercase",letterSpacing:0.3}}>Resueltas</p>
-              </div>
-            </div>
-            <div style={{background:saldo>=0?"#EDFAF1":"#FFF0EE",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-              <p style={{margin:0,fontSize:28,fontWeight:900,color:saldo>=0?"#34C759":"#FF3B30"}}>{saldo>=0?"-":"+"}  {Math.abs(saldo)}</p>
               <div>
-                <p style={{margin:0,fontSize:13,fontWeight:700,color:saldo>=0?"#34C759":"#FF3B30"}}>{saldo>=0?"✅ Buen ritmo":"⚠️ Acumulando"}</p>
-                <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{saldo>=0?"Resolvés más de lo que aparece":"Se acumulan más de lo que se resuelven"}</p>
+                <p style={{margin:0,fontSize:18,fontWeight:900,color:nivelActual.color}}>Nivel {nivelActual.label}</p>
+                <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{pendientes.length===0?"No tenés novedades pendientes":`Tus pendientes esperan ${antiguedadPromedio<1?"menos de 1 día":antiguedadPromedio.toFixed(1)+" días"} en promedio`}</p>
               </div>
             </div>
+            <div style={{height:10,background:"#F2F2F7",borderRadius:99,overflow:"hidden",marginBottom:6}}>
+              <div style={{height:"100%",width:`${progresoNivel}%`,background:nivelActual.color,borderRadius:99}}/>
+            </div>
+            <p style={{margin:0,fontSize:11,color:"#8E8E93"}}>
+              {nivelActual.siguiente===null
+                ?"¡Estás en el nivel más alto! Seguí así 🔥"
+                :`Bajá de ${nivelActual.siguiente} días de espera para subir de nivel`}
+            </p>
           </div>
 
           {/* URGENTES */}
