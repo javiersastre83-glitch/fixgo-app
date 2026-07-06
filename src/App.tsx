@@ -281,6 +281,7 @@ export default function App({ session }) {
   const [detalleId,        setDetalleId]        = useState(null);
   const [filtro,           setFiltro]           = useState("todas");
   const [filtroResp,       setFiltroResp]       = useState("todos");
+  const [filtroSector,     setFiltroSector]      = useState("todos");
   const [filtroRespOpen,   setFiltroRespOpen]   = useState(false);
   const [busqueda,         setBusqueda]         = useState("");
   const [nuevoComentario,  setNuevoComentario]  = useState("");
@@ -574,10 +575,11 @@ export default function App({ session }) {
   const novedadesFiltradas=useMemo(()=>novedades.filter(n=>{
     const matchRol=true;
     const matchResp=filtroResp==="todos"||n.responsable===filtroResp;
+    const matchSector=filtroSector==="todos"||n.sector===filtroSector;
     const matchFiltro=filtro==="pendientes"?!n.resuelta:filtro==="resueltas"?n.resuelta:filtro==="vencidas"?!n.resuelta&&diasRestantes(n.fechaLimite)<0:true;
     const matchBusqueda=busqueda.trim()===""||n.descripcion.toLowerCase().includes(busqueda.toLowerCase())||n.responsable.toLowerCase().includes(busqueda.toLowerCase())||n.sector.toLowerCase().includes(busqueda.toLowerCase());
-    return matchRol&&matchResp&&matchFiltro&&matchBusqueda;
-  }).sort((a,b)=>{if(a.resuelta!==b.resuelta)return a.resuelta?1:-1;const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);if(da!==null&&db!==null)return da-db;return a.prioridad-b.prioridad;}),[novedades,filtro,filtroResp,busqueda]);
+    return matchRol&&matchResp&&matchSector&&matchFiltro&&matchBusqueda;
+  }).sort((a,b)=>{if(a.resuelta!==b.resuelta)return a.resuelta?1:-1;const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);if(da!==null&&db!==null)return da-db;return a.prioridad-b.prioridad;}),[novedades,filtro,filtroResp,filtroSector,busqueda]);
 
   const respConTareas=[...new Set(novedades.map(n=>n.responsable))].map(r=>({nombre:r,cant:novedades.filter(n=>n.responsable===r).length})).sort((a,b)=>b.cant-a.cant);
 
@@ -586,7 +588,7 @@ export default function App({ session }) {
 
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);};
-  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);
+  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);
     // Cargar novedades de esta obra si no están cargadas aún
     if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
@@ -1256,7 +1258,7 @@ export default function App({ session }) {
               const urgS=novsS.filter(n=>n.prioridad===0).length;
               const barColor=urgS>0?"#FF3B30":novsS.some(n=>n.prioridad===1)?"#FF9500":"#C7C7CC";
               return(
-                <button key={sec.nombre} onClick={()=>{setVistaStats(false);/* filtrar por sector */}} style={{width:"100%",border:"none",background:"none",padding:"12px 0",borderBottom:i<porSector.length-1?"1px solid #F2F2F7":"none",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
+                <button key={sec.nombre} onClick={()=>{setFiltroSector(sec.nombre);setFiltro("pendientes");setVistaStats(false);setVista("lista");}} style={{width:"100%",border:"none",background:"none",padding:"12px 0",borderBottom:i<porSector.length-1?"1px solid #F2F2F7":"none",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                     <span style={{fontSize:14,fontWeight:700,color:"#1C1C1E",flex:1}}>{sec.nombre}</span>
                     <span style={{fontSize:13,fontWeight:800,color:"#1C1C1E"}}>{sec.cant}</span>
@@ -1550,6 +1552,10 @@ export default function App({ session }) {
           ))}
         </div>
         {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"11px",marginBottom:12}}><BarChart2 size={15}/>Ver estadísticas completas<ChevronRight size={15}/></button>}
+        {filtroSector!=="todos"&&<button onClick={()=>setFiltroSector("todos")} style={{display:"flex",alignItems:"center",gap:6,background:"#0057FF12",border:"1px solid #0057FF30",borderRadius:99,padding:"7px 12px",marginBottom:12,cursor:"pointer",fontFamily:"inherit",width:"fit-content"}}>
+          <span style={{fontSize:12.5,fontWeight:700,color:"#0057FF"}}>Filtrando: {filtroSector}</span>
+          <span style={{fontSize:14,fontWeight:800,color:"#0057FF",lineHeight:1}}>✕</span>
+        </button>}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
         {novedadesFiltradas.length===0&&<div style={{textAlign:"center",padding:"50px 20px",color:"#8E8E93"}}>
