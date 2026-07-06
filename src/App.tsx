@@ -310,7 +310,7 @@ export default function App({ session }) {
   const [telInput, setTelInput] = useState("");
   const [asignacionRapida, setAsignacionRapida] = useState(null);
   const [asignarTareaMiembro, setAsignarTareaMiembro] = useState(null);
-  const guardarTelefono=async()=>{if(!modalTelefono||!obraActual)return;await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraActual.id).eq("usuario_id",modalTelefono.uid);const tel=telInput.trim()||null;setObras(obs=>obs.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:o));if(miembroSel&&miembroSel.uid===modalTelefono.uid)setMiembroSel(ms=>ms?{...ms,telefono:tel}:ms);setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");};
+  const guardarTelefono=async()=>{if(!modalTelefono||!obraActual)return;await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraActual.id).eq("usuario_id",modalTelefono.uid);const tel=telInput.trim()||null;setObras(obs=>obs.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:o));setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:oa);if(miembroSel&&miembroSel.uid===modalTelefono.uid)setMiembroSel(ms=>ms?{...ms,telefono:tel}:ms);setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");};
   const [confirmarEliminar,setConfirmarEliminar]= useState(null);
   const [menuObra,         setMenuObra]         = useState(null);
   const [confirmarEliminarObra,setConfirmarEliminarObra]=useState(null);
@@ -539,13 +539,14 @@ export default function App({ session }) {
   const crearObra=async()=>{if(!nuevaObraForm.nombre.trim()||guardando)return;setGuardando(true);if(usuarioReal){const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id}).select().single();if(error){alert("Error al crear la obra: "+error.message);setGuardando(false);return;}await supabase.from("equipo_obra").insert({obra_id:data.id,usuario_id:usuarioReal.id,rol_en_obra:"profesional"});const obraConEquipo={...data,equipo:[{uid:usuarioReal.id,rolEnObra:"profesional",nombre:usuarioActivoReal.nombre,especialidad:"Profesional",avatar:"📐"}]};setObras(o=>[...o,obraConEquipo]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);setGuardando(false);mostrarToast("Obra creada con éxito");};
 
   const abrirModalInvitar=()=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarNombre("");setInvitarTelefono("");setLinkGenerado("");setModalInvitar(true);};
-  const guardarNombreIntegrante=async(uid)=>{const nuevo=nombreEditado.trim();if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){await supabase.from("equipo_obra").update({nombre:nuevo||null}).eq("obra_id",obraActual.id).eq("usuario_id",uid);}setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:o));setEditandoNombreId(null);setNombreEditado("");mostrarToast("Nombre actualizado");};
+  const guardarNombreIntegrante=async(uid)=>{const nuevo=nombreEditado.trim();if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){await supabase.from("equipo_obra").update({nombre:nuevo||null}).eq("obra_id",obraActual.id).eq("usuario_id",uid);}setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:o));setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:oa);setEditandoNombreId(null);setNombreEditado("");mostrarToast("Nombre actualizado");};
   const eliminarMiembro=async(u)=>{
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
       await supabase.from("novedades").update({responsable_usuario_id:null}).eq("obra_id",obraActual.id).eq("responsable_usuario_id",u.uid);
       await supabase.from("equipo_obra").delete().eq("obra_id",obraActual.id).eq("usuario_id",u.uid);
     }
     setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).filter(m=>m.uid!==u.uid)}:o));
+    setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).filter(m=>m.uid!==u.uid)}:oa);
     setNovedades(n=>n.map(x=>x.responsableUsuarioId===u.uid?{...x,responsableUsuarioId:null}:x));
     setConfirmarEliminarMiembro(null);
     mostrarToast("Integrante eliminado");
