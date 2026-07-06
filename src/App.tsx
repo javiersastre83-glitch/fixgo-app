@@ -448,7 +448,11 @@ export default function App({ session }) {
         setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];if(lista.some(x=>x.id===payload.new.id))return p;return{...p,[obraActual.id]:[mapNov(payload.new),...lista]};});
       })
       .on("postgres_changes",{event:"UPDATE",schema:"public",table:"novedades",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
-        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];return{...p,[obraActual.id]:lista.map(x=>x.id===payload.new.id?{...x,...mapNov(payload.new),comentarios:x.comentarios}:x)};});
+        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];return{...p,[obraActual.id]:lista.map(x=>{
+          if(x.id!==payload.new.id)return x;
+          const fotosNuevas=(payload.new.fotos===undefined||payload.new.fotos===null)?x.fotos:payload.new.fotos;
+          return{...x,...mapNov(payload.new),fotos:fotosNuevas,comentarios:x.comentarios};
+        })};});
       })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"novedades",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
         setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];return{...p,[obraActual.id]:lista.filter(x=>x.id!==payload.old.id)};});
