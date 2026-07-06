@@ -421,15 +421,17 @@ export default function App({ session }) {
        return{...obra,equipo};
      }));
      setObras(obrasConEquipo);
-        // Cargar novedades en background sin bloquear la UI
+        // Inicializar arrays vacíos
         const novsPorObra={};
         (data||[]).forEach(obra=>{ novsPorObra[obra.id]=[]; });
         setNovedadesPorObra(novsPorObra);
-        // Cargar novedades de todas las obras en paralelo sin await
-        Promise.all((data||[]).map(async(obra)=>{
-          const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
-        }));
+        // Cargar novedades de a una con delay para no bloquear el hilo principal
+        (data||[]).forEach((obra, idx)=>{
+          setTimeout(async()=>{
+            const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
+            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+          }, idx * 300);
+        });
       }
      }finally{
        setCargandoDatos(false);
