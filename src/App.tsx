@@ -421,11 +421,9 @@ export default function App({ session }) {
        return{...obra,equipo};
      }));
      setObras(obrasConEquipo);
+        // Carga lazy: solo inicializar arrays vacíos, cargar novedades al entrar a cada obra
         const novsPorObra={};
-        await Promise.all((data||[]).map(async(obra)=>{
-          const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-          novsPorObra[obra.id]=(novs||[]).map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}));
-        }));
+        (data||[]).forEach(obra=>{ novsPorObra[obra.id]=[]; });
         setNovedadesPorObra(novsPorObra);
       }
      }finally{
@@ -580,7 +578,14 @@ export default function App({ session }) {
 
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);};
-  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);};
+  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);
+    // Cargar novedades de esta obra si no están cargadas aún
+    if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
+      supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
+        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+      });
+    }
+  };
 
   const SelectorUsuario=()=>(
     <div style={s.overlay} onClick={()=>setMostrarCambioUsuario(false)}>
