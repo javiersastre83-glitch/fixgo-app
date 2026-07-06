@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, FileText, ClipboardList, Phone } from "lucide-react";
 import { supabase } from './supabase';
 
@@ -326,7 +326,7 @@ export default function App({ session }) {
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
   const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
-  const equipoObra   = obraActual?(obraActual.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map((m,idx)=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);const color=colorPorIndice(idx);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx,telefono:m.telefono||null};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,color,colorIdx:idx,telefono:m.telefono||null};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx,telefono:m.telefono||null};}).filter(Boolean):[];
+  const equipoObra   = useMemo(()=>obraActual?(obraActual.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map((m,idx)=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);const color=colorPorIndice(idx);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx,telefono:m.telefono||null};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,color,colorIdx:idx,telefono:m.telefono||null};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx,telefono:m.telefono||null};}).filter(Boolean):[],[obraActual?.id,obraActual?.equipo,usuarioReal?.id]);
   const miId         = usuarioReal?.id||usuarioActivo.id;
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
   const miRolInfo    = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
@@ -568,17 +568,17 @@ export default function App({ session }) {
 
   const statsResponsable=RESPONSABLES.map(r=>({nombre:r,pendientes:novedades.filter(n=>n.responsable===r&&!n.resuelta).length,resueltas:novedades.filter(n=>n.responsable===r&&n.resuelta).length,urgentes:novedades.filter(n=>n.responsable===r&&!n.resuelta&&n.prioridad===0).length})).filter(r=>r.pendientes+r.resueltas>0);
 
-  const novedadesFiltradas=novedades.filter(n=>{
+  const novedadesFiltradas=useMemo(()=>novedades.filter(n=>{
     const matchRol=true;
     const matchResp=filtroResp==="todos"||n.responsable===filtroResp;
     const matchFiltro=filtro==="pendientes"?!n.resuelta:filtro==="resueltas"?n.resuelta:filtro==="vencidas"?!n.resuelta&&diasRestantes(n.fechaLimite)<0:true;
     const matchBusqueda=busqueda.trim()===""||n.descripcion.toLowerCase().includes(busqueda.toLowerCase())||n.responsable.toLowerCase().includes(busqueda.toLowerCase())||n.sector.toLowerCase().includes(busqueda.toLowerCase());
     return matchRol&&matchResp&&matchFiltro&&matchBusqueda;
-  }).sort((a,b)=>{if(a.resuelta!==b.resuelta)return a.resuelta?1:-1;const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);if(da!==null&&db!==null)return da-db;return a.prioridad-b.prioridad;});
+  }).sort((a,b)=>{if(a.resuelta!==b.resuelta)return a.resuelta?1:-1;const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);if(da!==null&&db!==null)return da-db;return a.prioridad-b.prioridad;}),[novedades,filtro,filtroResp,busqueda]);
 
   const respConTareas=[...new Set(novedades.map(n=>n.responsable))].map(r=>({nombre:r,cant:novedades.filter(n=>n.responsable===r).length})).sort((a,b)=>b.cant-a.cant);
 
-  const contadores={todas:novedades.length,pendientes:novedades.filter(n=>!n.resuelta).length,resueltas:novedades.filter(n=>n.resuelta).length,vencidas:novedades.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length};
+  const contadores=useMemo(()=>({todas:novedades.length,pendientes:novedades.filter(n=>!n.resuelta).length,resueltas:novedades.filter(n=>n.resuelta).length,vencidas:novedades.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length}),[novedades]);
   const detalle=novedades.find(n=>n.id===detalleId);
 
   // helpers de navegación
