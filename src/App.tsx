@@ -1320,7 +1320,7 @@ export default function App({ session }) {
           {/* NIVEL DE RITMO */}
           <div style={{background:"#fff",borderRadius:20,padding:"20px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Nivel de ritmo</p>
-            {pendientes.length===0?(
+            {novedades.length===0?(
               <div style={{display:"flex",alignItems:"center",gap:14}}>
                 <div style={{width:56,height:56,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:26}}>📋</div>
                 <div>
@@ -1335,7 +1335,7 @@ export default function App({ session }) {
                 </div>
                 <div>
                   <p style={{margin:0,fontSize:18,fontWeight:900,color:nivelActual.color}}>Nivel {nivelActual.label}</p>
-                  <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{`Tus pendientes esperan ${antiguedadPromedio<1?"menos de 1 día":antiguedadPromedio.toFixed(1)+" días"} en promedio`}</p>
+                  <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{pendientes.length===0?"¡No tenés nada pendiente ahora mismo!":`Tus pendientes esperan ${antiguedadPromedio<1?"menos de 1 día":antiguedadPromedio.toFixed(1)+" días"} en promedio`}</p>
                 </div>
               </div>
               <div style={{height:10,background:"#F2F2F7",borderRadius:99,overflow:"hidden",marginBottom:6}}>
