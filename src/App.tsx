@@ -318,6 +318,24 @@ export default function App({ session }) {
   const [asignacionRapida, setAsignacionRapida] = useState(null);
   const [asignarTareaMiembro, setAsignarTareaMiembro] = useState(null);
   const [invitarCallback,  setInvitarCallback]  = useState<((datos:{responsable:string,usuarioId:null})=>void)|null>(null);
+  const [invitacionesPendientes, setInvitacionesPendientes] = useState<any[]>([]);
+  const cargarInvitacionesPendientes=async()=>{
+    if(!obraActual?.id)return;
+    const{data}=await supabase.from("invitaciones").select("codigo,rol,especialidad,nombre,telefono,created_at").eq("obra_id",obraActual.id).eq("usada",false).order("created_at",{ascending:false});
+    setInvitacionesPendientes(data||[]);
+  };
+  useEffect(()=>{if(vistaEquipo&&obraActual?.id)cargarInvitacionesPendientes();},[vistaEquipo,obraActual?.id]);
+  const cancelarInvitacion=async(codigo)=>{
+    await supabase.from("invitaciones").delete().eq("codigo",codigo);
+    setInvitacionesPendientes(p=>p.filter(i=>i.codigo!==codigo));
+    mostrarToast("Invitación cancelada");
+  };
+  const reenviarInvitacion=(inv)=>{
+    const link=`https://www.fixgo.ar/?invitacion=${inv.codigo}`;
+    const rolTxt=inv.rol==="capataz"?"Capataz":(inv.especialidad||"Operario");
+    const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${link}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
+  };
   const guardarTelefono=async()=>{if(!modalTelefono||!obraActual)return;await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraActual.id).eq("usuario_id",modalTelefono.uid);const tel=telInput.trim()||null;setObras(obs=>obs.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:o));setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:oa);if(miembroSel&&miembroSel.uid===modalTelefono.uid)setMiembroSel(ms=>ms?{...ms,telefono:tel}:ms);setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");};
   const [confirmarEliminar,setConfirmarEliminar]= useState(null);
   const [menuObra,         setMenuObra]         = useState(null);
@@ -587,6 +605,7 @@ export default function App({ session }) {
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
     setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
     setGenerandoLink(false);
+    setInvitacionesPendientes(p=>[{codigo,rol:invitarRol,especialidad:esp,nombre:invitarNombre.trim()||null,telefono:invitarTelefono.trim()||null,created_at:new Date().toISOString()},...p]);
     if(invitarCallback){
       const etiqueta=invitarNombre.trim()||esp||(invitarRol==="capataz"?"Capataz":"Nuevo integrante");
       invitarCallback({responsable:etiqueta,usuarioId:null});
@@ -1160,7 +1179,23 @@ export default function App({ session }) {
               })}
             </div>
           </div>
-          <button style={{width:"100%",border:"2px dashed #C7C7CC",background:"transparent",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}} onClick={abrirModalInvitar}>
+          {invitacionesPendientes.length>0&&<div>
+            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Invitaciones pendientes ({invitacionesPendientes.length})</p>
+            <div style={{display:"flex",flexDirection:"column",gap:11}}>
+              {invitacionesPendientes.map(inv=>(
+                <div key={inv.codigo} style={{background:"#fff",borderRadius:16,padding:"12px 14px",boxShadow:"0 1px 3px rgba(0,0,0,0.06)",display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:40,height:40,borderRadius:"50%",background:"#FF950015",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:17}}>⏳</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <p style={{margin:0,fontSize:14.5,fontWeight:700,color:"#1C1C1E"}}>{inv.nombre||(inv.rol==="capataz"?"Capataz":inv.especialidad)||"Sin nombre"}</p>
+                    <p style={{margin:"1px 0 0",fontSize:12,color:"#8E8E93"}}>{inv.rol==="capataz"?"Capataz":`Operario · ${inv.especialidad}`} · Esperando que acepte</p>
+                  </div>
+                  <button onClick={()=>reenviarInvitacion(inv)} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",flexShrink:0}}><Share2 size={15} color="#1C1C1E"/></button>
+                  <button onClick={()=>cancelarInvitacion(inv.codigo)} style={{background:"none",border:"none",cursor:"pointer",padding:6,display:"flex",alignItems:"center",flexShrink:0}}><Trash2 size={16} color="#C7C7CC"/></button>
+                </div>
+              ))}
+            </div>
+          </div>}
+          <button style={{width:"100%",border:"2px dashed #C7C7CC",background:"transparent",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}} onClick={()=>abrirModalInvitar()}>
             <Plus size={22} color="#8E8E93"/><span style={{fontSize:16,fontWeight:600,color:"#8E8E93"}}>Invitar integrante</span>
           </button>
         </div>
