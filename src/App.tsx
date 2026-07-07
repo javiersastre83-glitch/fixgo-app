@@ -377,7 +377,7 @@ export default function App({ session }) {
     const codigo=localStorage.getItem("fixgo_invitacion");
     if(!codigo){setInvitacionProcesada(true);return;}
     (async()=>{
-      const{data,error}=await supabase.rpc("usar_invitacion",{codigo_input:codigo});
+      const{data,error}=await supabase.rpc("usar_invitacion",{codigo:codigo});
       localStorage.removeItem("fixgo_invitacion");
       if(error){console.error("Error al usar invitación:",error);setInvitacionProcesada(true);return;}
       if(data?.ok){
@@ -470,6 +470,21 @@ export default function App({ session }) {
             return{...x,comentarios:[...x.comentarios,{texto:nuevo.texto,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
           })};
         });
+      })
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"equipo_obra",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
+        const m=payload.new;const nuevoMiembro={uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
+        setObras(os=>os.map(o=>{if(o.id!==obraActual.id)return o;if((o.equipo||[]).some(x=>x.uid===nuevoMiembro.uid))return o;return{...o,equipo:[...(o.equipo||[]),nuevoMiembro]};}));
+        setObraActual(oa=>{if(!oa)return oa;if((oa.equipo||[]).some(x=>x.uid===nuevoMiembro.uid))return oa;return{...oa,equipo:[...(oa.equipo||[]),nuevoMiembro]};});
+      })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"equipo_obra",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
+        const m=payload.new;const actualizado={rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
+        setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:o));
+        setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:oa);
+      })
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"equipo_obra",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
+        const uidBorrado=payload.old.usuario_id;
+        setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).filter(x=>x.uid!==uidBorrado)}:o));
+        setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).filter(x=>x.uid!==uidBorrado)}:oa);
       })
       .subscribe();
     return()=>{supabase.removeChannel(canal);};
@@ -1305,23 +1320,33 @@ export default function App({ session }) {
           {/* NIVEL DE RITMO */}
           <div style={{background:"#fff",borderRadius:20,padding:"20px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Nivel de ritmo</p>
-            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
-              <div style={{width:56,height:56,borderRadius:"50%",background:nivelActual.color+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:28}}>
-                {nivelActual.icon}
+            {pendientes.length===0?(
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                <div style={{width:56,height:56,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:26}}>📋</div>
+                <div>
+                  <p style={{margin:0,fontSize:16,fontWeight:800,color:"#8E8E93"}}>Todavía sin nivel</p>
+                  <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>Cargá tu primera novedad para empezar a medir tu ritmo</p>
+                </div>
               </div>
-              <div>
-                <p style={{margin:0,fontSize:18,fontWeight:900,color:nivelActual.color}}>Nivel {nivelActual.label}</p>
-                <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{pendientes.length===0?"No tenés novedades pendientes":`Tus pendientes esperan ${antiguedadPromedio<1?"menos de 1 día":antiguedadPromedio.toFixed(1)+" días"} en promedio`}</p>
+            ):(<>
+              <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+                <div style={{width:56,height:56,borderRadius:"50%",background:nivelActual.color+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:28}}>
+                  {nivelActual.icon}
+                </div>
+                <div>
+                  <p style={{margin:0,fontSize:18,fontWeight:900,color:nivelActual.color}}>Nivel {nivelActual.label}</p>
+                  <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{`Tus pendientes esperan ${antiguedadPromedio<1?"menos de 1 día":antiguedadPromedio.toFixed(1)+" días"} en promedio`}</p>
+                </div>
               </div>
-            </div>
-            <div style={{height:10,background:"#F2F2F7",borderRadius:99,overflow:"hidden",marginBottom:6}}>
-              <div style={{height:"100%",width:`${progresoNivel}%`,background:nivelActual.color,borderRadius:99}}/>
-            </div>
-            <p style={{margin:0,fontSize:11,color:"#8E8E93"}}>
-              {nivelActual.siguiente===null
-                ?"¡Estás en el nivel más alto! Seguí así 🔥"
-                :`Bajá de ${nivelActual.siguiente} días de espera para subir de nivel`}
-            </p>
+              <div style={{height:10,background:"#F2F2F7",borderRadius:99,overflow:"hidden",marginBottom:6}}>
+                <div style={{height:"100%",width:`${progresoNivel}%`,background:nivelActual.color,borderRadius:99}}/>
+              </div>
+              <p style={{margin:0,fontSize:11,color:"#8E8E93"}}>
+                {nivelActual.siguiente===null
+                  ?"¡Estás en el nivel más alto! Seguí así 🔥"
+                  :`Bajá de ${nivelActual.siguiente} días de espera para subir de nivel`}
+              </p>
+            </>)}
           </div>
 
           {/* URGENTES */}
