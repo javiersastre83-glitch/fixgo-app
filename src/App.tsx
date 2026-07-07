@@ -150,7 +150,7 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
   );
 };
 
-const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057FF" }) => {
+const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057FF", onInvitarNuevo=null }) => {
   const [modalOficio, setModalOficio] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const miembros = (equipo||[]).filter(m=>m.nombre);
@@ -170,6 +170,11 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
             </button>
           );
         })}
+        {onInvitarNuevo&&<button type="button" onClick={onInvitarNuevo}
+          style={{flexShrink:0,minWidth:110,background:"#F9F9F9",border:"1.5px dashed #D0D0D5",borderRadius:14,padding:"10px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",justifyContent:"center"}}>
+          <div style={{fontSize:18,color:"#8E8E93",lineHeight:1}}>＋</div>
+          <div style={{fontSize:11,fontWeight:700,color:"#8E8E93",marginTop:3,whiteSpace:"nowrap"}}>Invitar integrante</div>
+        </button>}
       </div>
 
       {/* SEPARADOR */}
@@ -312,6 +317,7 @@ export default function App({ session }) {
   const [telInput, setTelInput] = useState("");
   const [asignacionRapida, setAsignacionRapida] = useState(null);
   const [asignarTareaMiembro, setAsignarTareaMiembro] = useState(null);
+  const [invitarCallback,  setInvitarCallback]  = useState<((datos:{responsable:string,usuarioId:null})=>void)|null>(null);
   const guardarTelefono=async()=>{if(!modalTelefono||!obraActual)return;await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraActual.id).eq("usuario_id",modalTelefono.uid);const tel=telInput.trim()||null;setObras(obs=>obs.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:o));setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:oa);if(miembroSel&&miembroSel.uid===modalTelefono.uid)setMiembroSel(ms=>ms?{...ms,telefono:tel}:ms);setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");};
   const [confirmarEliminar,setConfirmarEliminar]= useState(null);
   const [menuObra,         setMenuObra]         = useState(null);
@@ -559,7 +565,7 @@ export default function App({ session }) {
   const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
   const crearObra=async()=>{if(!nuevaObraForm.nombre.trim()||guardando)return;setGuardando(true);if(usuarioReal){const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id}).select().single();if(error){alert("Error al crear la obra: "+error.message);setGuardando(false);return;}await supabase.from("equipo_obra").insert({obra_id:data.id,usuario_id:usuarioReal.id,rol_en_obra:"profesional"});const obraConEquipo={...data,equipo:[{uid:usuarioReal.id,rolEnObra:"profesional",nombre:usuarioActivoReal.nombre,especialidad:"Profesional",avatar:"📐"}]};setObras(o=>[...o,obraConEquipo]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);setGuardando(false);mostrarToast("Obra creada con éxito");};
 
-  const abrirModalInvitar=()=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarNombre("");setInvitarTelefono("");setLinkGenerado("");setModalInvitar(true);};
+  const abrirModalInvitar=(callback=null)=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarNombre("");setInvitarTelefono("");setLinkGenerado("");setInvitarCallback(()=>callback);setModalInvitar(true);};
   const guardarNombreIntegrante=async(uid)=>{const nuevo=nombreEditado.trim();if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){await supabase.from("equipo_obra").update({nombre:nuevo||null}).eq("obra_id",obraActual.id).eq("usuario_id",uid);}setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:o));setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:oa);setEditandoNombreId(null);setNombreEditado("");mostrarToast("Nombre actualizado");};
   const eliminarMiembro=async(u)=>{
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
@@ -581,6 +587,10 @@ export default function App({ session }) {
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
     setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
     setGenerandoLink(false);
+    if(invitarCallback){
+      const etiqueta=invitarNombre.trim()||esp||(invitarRol==="capataz"?"Capataz":"Nuevo integrante");
+      invitarCallback({responsable:etiqueta,usuarioId:null});
+    }
   };
   const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
   const copiarLink=()=>{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};
@@ -1156,7 +1166,7 @@ export default function App({ session }) {
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
-        {modalInvitar&&<div style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+        {modalInvitar&&<div style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarCallback(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
           <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Generá un link para sumar a alguien a "{obraActual?.nombre}"</p>
           {!linkGenerado?<>
@@ -1188,7 +1198,7 @@ export default function App({ session }) {
             <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#8E8E93"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
             <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={compartirLinkWhatsapp}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Compartir por WhatsApp</span></button>
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{const rolTxt=invitarRol==="capataz"?"Capataz":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;if(navigator.share){navigator.share({title:"Invitación a Fixgo",text:msg}).catch(()=>{});}else{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Share2 size={16}/>Compartir por otro medio</span></button>
-            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);}}>Cerrar</button>
+            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarCallback(null);}}>Cerrar</button>
           </>}
         </div></div>}
       </div>
@@ -1539,7 +1549,7 @@ export default function App({ session }) {
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
-          <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
+          <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId})))} /></div>
           <button type="button" onClick={()=>setMasOpciones(o=>!o)} style={{width:"100%",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit"}}>
             <span style={{fontSize:15,fontWeight:600,color:"#1C1C1E"}}>⚙️ Más opciones</span>
             <span style={{fontSize:13,color:"#8E8E93"}}>{masOpciones?"▲":"▼ sector, fecha, nota…"}</span>
@@ -1665,7 +1675,7 @@ export default function App({ session }) {
           <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
           <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>{nov.descripcion}</p>
           <div style={{overflowY:"auto"}}>
-            <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} />
+            <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId}))} />
           </div>
           <button type="button" onClick={()=>setAsignacionRapida(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:16}}>Cancelar</button>
         </div></div>
