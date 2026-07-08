@@ -363,6 +363,9 @@ export default function App({ session }) {
     mostrarToast(valor?"Modo Pro activado (simulado)":"Modo Pro desactivado");
   };
   const misObrasPropias = usuarioReal ? obras.filter(o=>o.propietario_id===usuarioReal.id).length : obras.length;
+  const [modalFotoResolucion, setModalFotoResolucion] = useState(null);
+  const [subiendoFotoResolucion, setSubiendoFotoResolucion] = useState(false);
+  const fileRefResolucion = useRef();
   const fileRef = useRef();
   const fileRefEdit = useRef();
 
@@ -484,7 +487,7 @@ export default function App({ session }) {
 
   useEffect(()=>{
     if(!usuarioReal||!obraActual?.id||typeof obraActual.id!=="string")return;
-    const mapNov=(n)=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:[]});
+    const mapNov=(n)=>({...n,fotos:n.fotos||[],fotoResolucion:n.foto_resolucion||null,ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:[]});
     const canal=supabase.channel(`novedades-${obraActual.id}`)
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"novedades",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
         setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];if(lista.some(x=>x.id===payload.new.id))return p;return{...p,[obraActual.id]:[mapNov(payload.new),...lista]};});
@@ -555,6 +558,43 @@ export default function App({ session }) {
     };
     reader.readAsDataURL(file);
   });
+  const comprimirFotoBlob=(file)=>new Promise((resolve)=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=1280;
+        let{width,height}=img;
+        if(width>height&&width>MAX){height=Math.round(height*MAX/width);width=MAX;}
+        else if(height>MAX){width=Math.round(width*MAX/height);height=MAX;}
+        const canvas=document.createElement("canvas");
+        canvas.width=width;canvas.height=height;
+        const ctx=canvas.getContext("2d");
+        ctx.drawImage(img,0,0,width,height);
+        canvas.toBlob(blob=>resolve(blob),"image/jpeg",0.7);
+      };
+      img.onerror=()=>resolve(null);
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  const confirmarResolucionConFoto=async(id,file)=>{
+    setSubiendoFotoResolucion(true);
+    try{
+      const blob=await comprimirFotoBlob(file);
+      if(!blob)throw new Error("No se pudo procesar la foto");
+      const nombreArchivo=`${obraActual.id}/${id}-${Date.now()}.jpg`;
+      const{error:errorSubida}=await supabase.storage.from("fotos-resolucion").upload(nombreArchivo,blob,{contentType:"image/jpeg"});
+      if(errorSubida)throw errorSubida;
+      const{data:urlData}=supabase.storage.from("fotos-resolucion").getPublicUrl(nombreArchivo);
+      const url=urlData.publicUrl;
+      if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,foto_resolucion:url}).eq("id",id);}
+      setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,fotoResolucion:url}:x));
+      mostrarToast("Novedad resuelta con foto");
+    }catch(e){alert("No se pudo subir la foto: "+(e.message||"error desconocido")+". Se marcó como resuelta igual, sin foto.");resolver(id);}
+    setSubiendoFotoResolucion(false);
+    setModalFotoResolucion(null);
+  };
   const handleFotos=async(e)=>{
     const files=Array.from(e.target.files);
     for(const f of files){
@@ -678,6 +718,17 @@ export default function App({ session }) {
       });
     }
   };
+
+  const modalFotoResolucionJSX = modalFotoResolucion&&<div style={s.overlay} onClick={()=>{if(!subiendoFotoResolucion)setModalFotoResolucion(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+    <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>¿Cómo quedó resuelto?</p>
+    <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Sacale una foto del resultado (opcional). Ayuda a mostrar el avance real.</p>
+    <input ref={fileRefResolucion} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)confirmarResolucionConFoto(modalFotoResolucion,f);}}/>
+    <button disabled={subiendoFotoResolucion} onClick={()=>fileRefResolucion.current.click()} style={{...s.btnPrincipal,background:"#34C759",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>
+      <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{subiendoFotoResolucion?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Subiendo foto...</>:<><Camera size={16}/>Sacar foto y confirmar</>}</span>
+    </button>
+    <button disabled={subiendoFotoResolucion} onClick={()=>{resolver(modalFotoResolucion);setModalFotoResolucion(null);}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>Confirmar sin foto</button>
+    <button disabled={subiendoFotoResolucion} onClick={()=>setModalFotoResolucion(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",opacity:subiendoFotoResolucion?0.6:1}}>Cancelar</button>
+  </div></div>;
 
   const modalInvitarJSX = modalInvitar&&<div style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarCallback(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
@@ -1510,6 +1561,10 @@ export default function App({ session }) {
           </div>}
           <div style={{background:"#fff",borderRadius:detalle.fotos.length>0?"20px":"0 0 20px 20px",padding:"18px 18px 16px",marginBottom:12}}>
           <p style={{fontSize:21,fontWeight:800,color:"#1C1C1E",marginBottom:16,lineHeight:1.25}}>{detalle.descripcion}</p>
+          {detalle.fotoResolucion&&<div style={{marginBottom:16}}>
+            <p style={{margin:"0 0 8px",fontSize:12,fontWeight:700,color:"#34C759",textTransform:"uppercase",letterSpacing:0.5}}>✅ Foto del resultado</p>
+            <img src={detalle.fotoResolucion} alt="Resultado" onClick={()=>setFotoAmpliada(detalle.fotoResolucion)} style={{width:"100%",maxHeight:220,objectFit:"cover",borderRadius:14,cursor:"pointer",border:"2px solid #34C75930"}}/>
+          </div>}
           <div style={{background:"#F9F9F9",borderRadius:14,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
             <div style={{width:36,height:36,borderRadius:"50%",background:colorResp,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:"#fff",flexShrink:0}}>
               {miembroDetalle?miembroDetalle.nombre?.[0].toUpperCase():<Wrench size={16} color="#fff"/>}
@@ -1558,7 +1613,7 @@ export default function App({ session }) {
               </div>
             ):<div style={{background:"#A855F712",borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}}><Clock size={16} color="#9333EA"/><span style={{fontSize:14,fontWeight:700,color:"#9333EA"}}>Esperando aprobación</span></div>
           ):(detalle.autorId===miId||puedeGestionar)?(
-            <button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>{resolver(detalle.id);setVista("lista");}}><CheckCircle size={18}/>Marcar como resuelto</button>
+            <button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>{if(detalle.resuelta){resolver(detalle.id);setVista("lista");}else{setModalFotoResolucion(detalle.id);}}}><CheckCircle size={18}/>Marcar como resuelto</button>
           ):(
             <button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>{enviarAprobacion(detalle.id);setVista("lista");}}><CheckCircle size={18}/>Finalizado — Enviar a aprobación</button>
           )}
@@ -1574,6 +1629,7 @@ export default function App({ session }) {
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
         {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
+        {modalFotoResolucionJSX}
       </div>
     );
   }
