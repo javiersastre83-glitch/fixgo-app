@@ -294,6 +294,7 @@ export default function App({ session }) {
   const [filtroResp,       setFiltroResp]       = useState("todos");
   const [filtroSector,     setFiltroSector]      = useState("todos");
   const [orden,            setOrden]             = useState("urgencia");
+  const [ordenDesc,        setOrdenDesc]         = useState(false);
   const [filtroRespOpen,   setFiltroRespOpen]   = useState(false);
   const [busqueda,         setBusqueda]         = useState("");
   const [nuevoComentario,  setNuevoComentario]  = useState("");
@@ -701,21 +702,22 @@ export default function App({ session }) {
     return matchRol&&matchResp&&matchSector&&matchFiltro&&matchBusqueda;
   }).sort((a,b)=>{
     if(a.resuelta!==b.resuelta)return a.resuelta?1:-1;
+    let resultado;
     if(orden==="fecha"){
       const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);
-      if(da===null&&db===null)return 0;
-      if(da===null)return 1;
-      if(db===null)return -1;
-      return da-db;
+      if(da===null&&db===null)resultado=0;
+      else if(da===null)resultado=1;
+      else if(db===null)resultado=-1;
+      else resultado=da-db;
+    }else if(orden==="sector"){
+      resultado=(a.sector||"").localeCompare(b.sector||"");
+    }else{
+      // orden==="urgencia" (default)
+      const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);
+      resultado=(da!==null&&db!==null)?da-db:a.prioridad-b.prioridad;
     }
-    if(orden==="sector"){
-      return (a.sector||"").localeCompare(b.sector||"");
-    }
-    // orden==="urgencia" (default)
-    const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);
-    if(da!==null&&db!==null)return da-db;
-    return a.prioridad-b.prioridad;
-  }),[novedades,filtro,filtroResp,filtroSector,busqueda,orden]);
+    return ordenDesc?-resultado:resultado;
+  }),[novedades,filtro,filtroResp,filtroSector,busqueda,orden,ordenDesc]);
 
   const respConTareas=[...new Set(novedades.map(n=>n.responsable))].map(r=>({nombre:r,cant:novedades.filter(n=>n.responsable===r).length})).sort((a,b)=>b.cant-a.cant);
 
@@ -724,7 +726,7 @@ export default function App({ session }) {
 
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);};
-  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setOrden("urgencia");setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);
+  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setOrden("urgencia");setOrdenDesc(false);setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);
     // Cargar novedades de esta obra si no están cargadas aún
     if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
@@ -1736,6 +1738,9 @@ export default function App({ session }) {
           {[["urgencia","Urgencia"],["fecha","Fecha"],["sector","Sector"]].map(([key,lbl])=>(
             <button key={key} onClick={()=>setOrden(key)} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${orden===key?"#0057FF":"#E5E5EA"}`,background:orden===key?"#0057FF12":"#fff",color:orden===key?"#0057FF":"#8E8E93",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
           ))}
+          <button onClick={()=>setOrdenDesc(d=>!d)} title={ordenDesc?"Descendente":"Ascendente"} style={{marginLeft:"auto",flexShrink:0,width:28,height:28,borderRadius:99,border:"1.5px solid #E5E5EA",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#0057FF",fontSize:14,fontWeight:900}}>
+            {ordenDesc?"↓":"↑"}
+          </button>
         </div>
         {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"11px",marginBottom:12}}><BarChart2 size={15}/>Ver estadísticas completas<ChevronRight size={15}/></button>}
         {filtroSector!=="todos"&&<button onClick={()=>setFiltroSector("todos")} style={{display:"flex",alignItems:"center",gap:6,background:"#0057FF12",border:"1px solid #0057FF30",borderRadius:99,padding:"7px 12px",marginBottom:12,cursor:"pointer",fontFamily:"inherit",width:"fit-content"}}>
