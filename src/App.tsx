@@ -578,8 +578,17 @@ export default function App({ session }) {
     };
     reader.readAsDataURL(file);
   });
+  const confirmarSinFoto=(id)=>{
+    const nov=novedades.find(n=>n.id===id);
+    const esDirecta=nov&&(nov.autorId===miId||puedeGestionar);
+    if(esDirecta)resolver(id);else enviarAprobacion(id);
+    setModalFotoResolucion(null);
+    setVista("lista");
+  };
   const confirmarResolucionConFoto=async(id,file)=>{
     setSubiendoFotoResolucion(true);
+    const nov=novedades.find(n=>n.id===id);
+    const esDirecta=nov&&(nov.autorId===miId||puedeGestionar);
     try{
       const blob=await comprimirFotoBlob(file);
       if(!blob)throw new Error("No se pudo procesar la foto");
@@ -588,10 +597,13 @@ export default function App({ session }) {
       if(errorSubida)throw errorSubida;
       const{data:urlData}=supabase.storage.from("fotos-resolucion").getPublicUrl(nombreArchivo);
       const url=urlData.publicUrl;
-      if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,foto_resolucion:url}).eq("id",id);}
-      setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,fotoResolucion:url}:x));
-      mostrarToast("Novedad resuelta con foto");
-    }catch(e){alert("No se pudo subir la foto: "+(e.message||"error desconocido")+". Se marcó como resuelta igual, sin foto.");resolver(id);}
+      const cambios=esDirecta?{resuelta:true,estado_aprobacion:null,foto_resolucion:url}:{estado_aprobacion:"pendiente",foto_resolucion:url};
+      if(usuarioReal&&typeof id==="string"){const{error:errorUpdate}=await supabase.from("novedades").update(cambios).eq("id",id);if(errorUpdate)throw errorUpdate;}
+      const cambiosLocal=esDirecta?{resuelta:true,estadoAprobacion:null,fotoResolucion:url}:{estadoAprobacion:"pendiente",fotoResolucion:url};
+      setNovedades(n=>n.map(x=>x.id===id?{...x,...cambiosLocal}:x));
+      mostrarToast(esDirecta?"Novedad resuelta con foto":"Enviado a aprobación con foto");
+      setVista("lista");
+    }catch(e){alert("No se pudo subir la foto: "+(e.message||"error desconocido")+". Se confirmó igual, sin foto.");confirmarSinFoto(id);}
     setSubiendoFotoResolucion(false);
     setModalFotoResolucion(null);
   };
@@ -726,7 +738,7 @@ export default function App({ session }) {
     <button disabled={subiendoFotoResolucion} onClick={()=>fileRefResolucion.current.click()} style={{...s.btnPrincipal,background:"#34C759",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>
       <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{subiendoFotoResolucion?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Subiendo foto...</>:<><Camera size={16}/>Sacar foto y confirmar</>}</span>
     </button>
-    <button disabled={subiendoFotoResolucion} onClick={()=>{resolver(modalFotoResolucion);setModalFotoResolucion(null);}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>Confirmar sin foto</button>
+    <button disabled={subiendoFotoResolucion} onClick={()=>confirmarSinFoto(modalFotoResolucion)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>Confirmar sin foto</button>
     <button disabled={subiendoFotoResolucion} onClick={()=>setModalFotoResolucion(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",opacity:subiendoFotoResolucion?0.6:1}}>Cancelar</button>
   </div></div>;
 
@@ -1615,7 +1627,7 @@ export default function App({ session }) {
           ):(detalle.autorId===miId||puedeGestionar)?(
             <button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>{if(detalle.resuelta){resolver(detalle.id);setVista("lista");}else{setModalFotoResolucion(detalle.id);}}}><CheckCircle size={18}/>Marcar como resuelto</button>
           ):(
-            <button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>{enviarAprobacion(detalle.id);setVista("lista");}}><CheckCircle size={18}/>Finalizado — Enviar a aprobación</button>
+            <button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>setModalFotoResolucion(detalle.id)}><CheckCircle size={18}/>Finalizado — Enviar a aprobación</button>
           )}
           <div style={{display:"flex",gap:8}}>
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1,fontSize:13,padding:"12px 4px"}} onClick={()=>abrirEdicion(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><Edit2 size={14}/>Editar</span></button>
