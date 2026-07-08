@@ -350,7 +350,18 @@ export default function App({ session }) {
   const [editando,         setEditando]         = useState(false);
   const [formEdit,         setFormEdit]         = useState(null);
   const [perfilForm,       setPerfilForm]       = useState({nombre:"",especialidad:"",email:""});
-  const esVersionPro = false;
+  const [esProReal,        setEsProReal]        = useState(false);
+  const esVersionPro = esProReal;
+  useEffect(()=>{
+    if(!usuarioReal){setEsProReal(false);return;}
+    supabase.from("usuarios").select("es_pro").eq("id",usuarioReal.id).single().then(({data})=>{setEsProReal(!!data?.es_pro);});
+  },[usuarioReal?.id]);
+  const simularPro=async(valor)=>{
+    if(!usuarioReal)return;
+    setEsProReal(valor);
+    await supabase.from("usuarios").update({es_pro:valor}).eq("id",usuarioReal.id);
+    mostrarToast(valor?"Modo Pro activado (simulado)":"Modo Pro desactivado");
+  };
   const misObrasPropias = usuarioReal ? obras.filter(o=>o.propietario_id===usuarioReal.id).length : obras.length;
   const fileRef = useRef();
   const fileRefEdit = useRef();
@@ -786,6 +797,17 @@ export default function App({ session }) {
               <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#C7C7CC",flexShrink:0}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Google</span>
             </div>
             <button style={{...s.btnPrincipal,background:"#34C759",marginTop:0}} onClick={async()=>{setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));if(usuarioReal)await supabase.auth.updateUser({data:{full_name:perfilForm.nombre}});alert("✅ Cambios guardados");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar cambios</span></button>
+          </div>
+          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,padding:"16px",flexShrink:0,border:"1.5px dashed #FFB800"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+              <div style={{flex:1}}>
+                <p style={{margin:0,fontSize:15,fontWeight:700,color:modoOscuro?"#fff":"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>✨ Modo Pro (prueba)</p>
+                <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>Solo para testear, no cobra nada real</p>
+              </div>
+              <button onClick={()=>simularPro(!esProReal)} style={{flexShrink:0,width:50,height:30,borderRadius:99,border:"none",cursor:"pointer",background:esProReal?"#FFB800":"#C7C7CC",position:"relative",transition:"background 0.2s"}}>
+                <span style={{position:"absolute",top:3,left:esProReal?23:3,width:24,height:24,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
+              </button>
+            </div>
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
