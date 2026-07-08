@@ -277,6 +277,7 @@ const Header = ({ migas=[], accionDerecha=null, dark=false }) => {
 export default function App({ session }) {
   const usuarioReal = session?.user||null;
   const [guardando,        setGuardando]        = useState(false);
+  const guardandoRef = useRef(false);
   const [toast,            setToast]            = useState("");
   const [usuarioActivo,    setUsuarioActivo]    = useState(USUARIOS_DEMO[0]);
   const [vistaRaiz,        setVistaRaiz]        = useState("inicio");
@@ -625,7 +626,8 @@ export default function App({ session }) {
   const quitarFotoEdit=(idx)=>setFormEdit(f=>({...f,fotos:f.fotos.filter((_,i)=>i!==idx)}));
 
   const guardar=async()=>{
-    if(!form.descripcion.trim()||guardando)return;
+    if(!form.descripcion.trim()||guardandoRef.current)return;
+    guardandoRef.current=true;
     setGuardando(true);
     const resp=form.responsable==="Otro"&&form.responsableCustom.trim()?form.responsableCustom.trim():form.responsable;
     const sect=form.sector==="Otro"&&form.sectorCustom.trim()?form.sectorCustom.trim():form.sector;
@@ -639,7 +641,7 @@ export default function App({ session }) {
     } else {
       setNovedades(n=>[{id:Date.now(),fotos:form.fotos,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fechaLimite:form.fechaLimite,resuelta:false,fecha:new Date().toISOString().slice(0,10),comentarios:form.comentario.trim()?[{texto:form.comentario.trim(),autorId:usuarioActivo.id,ts:Date.now()}]:[]},...n]);
     }
-    setForm(FORM_INICIAL);setVista("lista");setGuardando(false);mostrarToast("Tarea creada con éxito");
+    setForm(FORM_INICIAL);setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast("Tarea creada con éxito");
   };
 
   const resolver=async(id)=>{const actual=novedades.find(x=>x.id===id);const nuevoEstado=!actual?.resuelta;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:nuevoEstado,estado_aprobacion:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null}:x));};
