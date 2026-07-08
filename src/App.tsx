@@ -82,6 +82,8 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
         <span style={{color:"#8E8E93",fontSize:13}}>{abierto?"▲":"▼"}</span>
       </button>
       {abierto && (
+        <>
+        <div style={{position:"fixed",inset:0,zIndex:49}} onClick={()=>{setAbierto(false);setBusqueda("");}}/>
         <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",borderRadius:14,border:"1.5px solid #E5E5EA",boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50,maxHeight:280,display:"flex",flexDirection:"column",overflow:"hidden"}}>
           <div style={{padding:"10px",borderBottom:"1px solid #F2F2F7"}}>
             <input autoFocus value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar oficio..."
@@ -97,6 +99,7 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
             ))}
           </div>
         </div>
+        </>
       )}
       {value==="Otro" && (
         <input style={{width:"100%",padding:"13px 14px",borderRadius:14,border:"1.5px solid #E5E5EA",fontSize:16,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginTop:10}}
@@ -122,6 +125,8 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
         <span style={{color:"#8E8E93",fontSize:13}}>{abierto?"▲":"▼"}</span>
       </button>
       {abierto && (
+        <>
+        <div style={{position:"fixed",inset:0,zIndex:49}} onClick={()=>{setAbierto(false);setBusqueda("");}}/>
         <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",borderRadius:14,border:"1.5px solid #E5E5EA",boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50,maxHeight:320,display:"flex",flexDirection:"column",overflow:"hidden"}}>
           <div style={{padding:"10px",borderBottom:"1px solid #F2F2F7"}}>
             <input autoFocus value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar persona u oficio..."
@@ -145,6 +150,7 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
             {miembrosFiltrados.length===0 && oficiosFiltrados.length===0 && <p style={{padding:"14px",margin:0,fontSize:14,color:"#8E8E93",textAlign:"center"}}>Sin resultados</p>}
           </div>
         </div>
+        </>
       )}
     </div>
   );
