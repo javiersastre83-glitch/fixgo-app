@@ -1140,6 +1140,10 @@ export default function App({ session }) {
               <div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
                 <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>Asignar novedad a {asignarTareaMiembro.nombre}</p>
                 <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>Tareas pendientes sin responsable asignado</p>
+                <button style={{width:"100%",background:"#1C1C1E",color:"#fff",border:"none",borderRadius:14,padding:"12px 14px",marginBottom:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,fontWeight:700}}
+                  onClick={()=>{const m=asignarTareaMiembro;setForm(f=>({...FORM_INICIAL,responsable:m.especialidad||RESPONSABLES[0],responsableUsuarioId:m.uid}));setAsignarTareaMiembro(null);setMiembroSel(null);setVistaEquipo(false);setVista("nueva");}}>
+                  <Plus size={16}/>Cargar novedad nueva para {asignarTareaMiembro.nombre}
+                </button>
                 <div style={{overflowY:"auto",flex:1,margin:"0 -20px",padding:"0 20px"}}>
                   {sinAsignar.length===0
                     ?<p style={{textAlign:"center",color:"#8E8E93",fontSize:14,padding:"20px 0"}}>Todas las novedades ya tienen un responsable asignado.</p>
