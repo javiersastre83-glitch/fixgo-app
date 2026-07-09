@@ -354,14 +354,6 @@ export default function App({ session }) {
     const{data:invsEmp}=await supabase.from("invitaciones_empresa").select("codigo,usada,created_at").eq("empresa_id",emp.id).eq("usada",false);
     setInvitacionesEmpresaPendientes(invsEmp||[]);
   };
-  useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarEmpresa();},[usuarioReal,invitacionProcesada]);
-  useEffect(()=>{
-    if(!usuarioReal||!invitacionProcesada)return;
-    (async()=>{
-      const{data}=await supabase.from("empresa_miembros").select("empresa_id,empresas(nombre)").eq("usuario_id",usuarioReal.id);
-      setMisEmpresasComoMiembro(data||[]);
-    })();
-  },[usuarioReal,invitacionProcesada]);
   const compartirObraConEmpresa=async(obraId,empresaId)=>{
     const{error}=await supabase.from("obras").update({empresa_id:empresaId}).eq("id",obraId);
     if(error){alert("No se pudo actualizar: "+error.message);return;}
@@ -486,6 +478,15 @@ export default function App({ session }) {
       setInvitacionProcesada(true);
     })();
   },[usuarioReal]);
+
+  useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarEmpresa();},[usuarioReal,invitacionProcesada]);
+  useEffect(()=>{
+    if(!usuarioReal||!invitacionProcesada)return;
+    (async()=>{
+      const{data}=await supabase.from("empresa_miembros").select("empresa_id,empresas(nombre)").eq("usuario_id",usuarioReal.id);
+      setMisEmpresasComoMiembro(data||[]);
+    })();
+  },[usuarioReal,invitacionProcesada]);
 
   // ── Procesar invitación de EMPRESA una vez logueado ──
   useEffect(()=>{
