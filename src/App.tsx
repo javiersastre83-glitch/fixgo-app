@@ -497,7 +497,7 @@ export default function App({ session }) {
       const{data,error}=await supabase.rpc("usar_invitacion_empresa",{codigo:codigoEmp});
       localStorage.removeItem("fixgo_invitacion_empresa");
       if(error){console.error("Error al usar invitación de empresa:",error);return;}
-      if(data?.ok){setToast("¡Te uniste al equipo de arquitectos!");setTimeout(()=>setToast(""),2500);window.history.replaceState({},"","https://www.fixgo.ar/");}
+      if(data?.ok){setToast("¡Te uniste al equipo de profesionales!");setTimeout(()=>setToast(""),2500);window.history.replaceState({},"","https://www.fixgo.ar/");}
       else if(data?.motivo==="ya_usada"){setToast("Este link de invitación ya fue usado");setTimeout(()=>setToast(""),2500);}
       else if(data?.motivo==="no_existe"){setToast("El link de invitación no es válido");setTimeout(()=>setToast(""),2500);}
     })();
@@ -1104,17 +1104,17 @@ export default function App({ session }) {
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
           {!empresaPropia?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-              <p style={{fontSize:38,margin:"0 0 10px"}}>👥</p>
+              <p style={{fontSize:38,margin:"0 0 10px"}}>🧭</p>
               <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>Todavía no armaste tu equipo de profesionales</p>
-              <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Creá tu empresa para invitar arquitectos y ver todas sus obras desde un solo lugar.</p>
+              <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Sabé al instante quién está al día y quién necesita ayuda.</p>
               <button onClick={()=>setModalCrearEmpresa(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Crear mi equipo de profesionales</button>
             </div>
           ):miembrosEmpresa.length===0?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-              <p style={{fontSize:38,margin:"0 0 10px"}}>👥</p>
-              <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>{empresaPropia.nombre} todavía no tiene arquitectos</p>
+              <p style={{fontSize:38,margin:"0 0 10px"}}>🧭</p>
+              <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>{empresaPropia.nombre} todavía no tiene profesionales</p>
               <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Invitá a los profesionales de tu equipo para verlos acá.</p>
-              <button onClick={()=>setModalInvitarArq(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Invitar arquitecto</button>
+              <button onClick={()=>setModalInvitarArq(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Invitar profesional</button>
             </div>
           ):(
             <>
@@ -1128,7 +1128,7 @@ export default function App({ session }) {
                 const pend=todasNovs.filter(n=>!n.resuelta).length;
                 const venc=todasNovs.filter(n=>!n.resuelta&&diasRestantes(n.fecha_limite)<0).length;
                 const res=todasNovs.filter(n=>n.resuelta).length;
-                const nombre=m.usuarios?.nombre||m.usuarios?.email||"Arquitecto";
+                const nombre=m.usuarios?.nombre||m.usuarios?.email||"Profesional";
                 return(
                   <div key={m.usuario_id} style={{background:"#fff",borderRadius:18,padding:"16px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
                     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
@@ -1265,7 +1265,7 @@ export default function App({ session }) {
         {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
         {modalCrearEmpresa&&<div style={s.overlay} onClick={()=>setModalCrearEmpresa(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Crear tu equipo de profesionales</p>
-          <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Así vas a poder invitar arquitectos y ver todas sus obras.</p>
+          <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Así vas a poder invitar profesionales y ver todas sus obras.</p>
           <input style={s.input} placeholder="Nombre de tu equipo/estudio" value={nombreEmpresaInput} onChange={e=>setNombreEmpresaInput(e.target.value)} maxLength={40} autoFocus/>
           <div style={{display:"flex",gap:10,marginTop:20}}>
             <button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalCrearEmpresa(false)}>Cancelar</button>
@@ -1273,7 +1273,7 @@ export default function App({ session }) {
           </div>
         </div></div>}
         {modalInvitarArq&&<div style={s.overlay} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
-          <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar arquitecto</p>
+          <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar profesional</p>
           <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Generá un link para sumarlo a "{empresaPropia?.nombre}"</p>
           {!linkEmpresaGenerado?(
             <button style={{...s.btnPrincipal,background:"#2E3A4B",opacity:generandoLinkEmpresa?0.5:1}} disabled={generandoLinkEmpresa} onClick={generarInvitacionEmpresa}>
@@ -1284,7 +1284,7 @@ export default function App({ session }) {
               <p style={{margin:"0 0 6px",fontSize:14,fontWeight:700,color:"#34C759"}}>✅ Link generado</p>
               <p style={{margin:0,fontSize:12,color:"#636366",wordBreak:"break-all"}}>{linkEmpresaGenerado}</p>
             </div>
-            <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={()=>{const msg=`Te invito a sumarte a mi equipo de arquitectos en Fixgo 👷\n\n${linkEmpresaGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");}}>Compartir por WhatsApp</button>
+            <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={()=>{const msg=`Te invito a sumarte a mi equipo de profesionales en Fixgo 👷\n\n${linkEmpresaGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");}}>Compartir por WhatsApp</button>
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}>Cerrar</button>
           </>)}
         </div></div>}
