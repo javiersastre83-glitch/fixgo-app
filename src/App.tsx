@@ -1096,18 +1096,18 @@ export default function App({ session }) {
             </div>
           </div>
         </div>
-        {esVersionPro&&<div style={{padding:"10px 16px 0",flexShrink:0,display:"flex",gap:8}}>
+        {esVersionPro&&<div style={{padding:"10px 16px 14px",flexShrink:0,display:"flex",gap:8}}>
           <button onClick={()=>setVistaHome("tuyas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tuyas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tuyas"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer"}}>Tus obras</button>
-          <button onClick={()=>setVistaHome("director")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>🧭 Modo Director</button>
+          <button onClick={()=>setVistaHome("director")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>Modo Director</button>
         </div>}
         {vistaHome==="director"?(
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
           {!empresaPropia?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-              <p style={{fontSize:38,margin:"0 0 10px"}}>🧭</p>
+              <p style={{fontSize:38,margin:"0 0 10px"}}>👥</p>
               <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>Todavía no armaste tu equipo de profesionales</p>
               <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Creá tu empresa para invitar arquitectos y ver todas sus obras desde un solo lugar.</p>
-              <button onClick={()=>setModalCrearEmpresa(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Crear mi empresa</button>
+              <button onClick={()=>setModalCrearEmpresa(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Crear mi equipo de profesionales</button>
             </div>
           ):miembrosEmpresa.length===0?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
@@ -1264,9 +1264,9 @@ export default function App({ session }) {
 
         {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
         {modalCrearEmpresa&&<div style={s.overlay} onClick={()=>setModalCrearEmpresa(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
-          <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Crear tu empresa</p>
+          <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Crear tu equipo de profesionales</p>
           <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Así vas a poder invitar arquitectos y ver todas sus obras.</p>
-          <input style={s.input} placeholder="Nombre de tu empresa/estudio" value={nombreEmpresaInput} onChange={e=>setNombreEmpresaInput(e.target.value)} maxLength={40} autoFocus/>
+          <input style={s.input} placeholder="Nombre de tu equipo/estudio" value={nombreEmpresaInput} onChange={e=>setNombreEmpresaInput(e.target.value)} maxLength={40} autoFocus/>
           <div style={{display:"flex",gap:10,marginTop:20}}>
             <button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalCrearEmpresa(false)}>Cancelar</button>
             <button style={{...s.btnPrincipal,flex:1,opacity:nombreEmpresaInput.trim()?1:0.4,background:"#2E3A4B"}} disabled={!nombreEmpresaInput.trim()} onClick={crearEmpresa}>Crear</button>
@@ -1295,7 +1295,7 @@ export default function App({ session }) {
                 ))}
               </div>
               <button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
-        {menuObra&&<div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p>{misEmpresasComoMiembro.length>0&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setModalCompartirObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}>🧭 Compartir con empresa</span></button>}<button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar obra</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuObra(null)}>Cancelar</button></div></div>}
+        {menuObra&&<div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p>{misEmpresasComoMiembro.length>0&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setModalCompartirObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}>Compartir con equipo</span></button>}<button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar obra</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuObra(null)}>Cancelar</button></div></div>}
         {modalCompartirObra&&(()=>{const obraSel=obras.find(o=>o.id===modalCompartirObra);return(
           <div style={s.overlay} onClick={()=>setModalCompartirObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
             <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>Compartir "{obraSel?.nombre}"</p>
