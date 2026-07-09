@@ -1736,11 +1736,10 @@ export default function App({ session }) {
         <div style={{display:"flex",alignItems:"center",gap:6,paddingBottom:12}}>
           <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:700,color:"#8E8E93",flexShrink:0}}><ArrowUpDown size={12}/>Ordenar:</span>
           {[["urgencia","Urgencia"],["fecha","Fecha"],["sector","Sector"]].map(([key,lbl])=>(
-            <button key={key} onClick={()=>setOrden(key)} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${orden===key?"#0057FF":"#E5E5EA"}`,background:orden===key?"#0057FF12":"#fff",color:orden===key?"#0057FF":"#8E8E93",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>
+            <button key={key} onClick={()=>{if(orden===key)setOrdenDesc(d=>!d);else{setOrden(key);setOrdenDesc(false);}}} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${orden===key?"#0057FF":"#E5E5EA"}`,background:orden===key?"#0057FF12":"#fff",color:orden===key?"#0057FF":"#8E8E93",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+              {lbl}{orden===key&&<span style={{fontSize:13,fontWeight:900}}>{ordenDesc?"▼":"▲"}</span>}
+            </button>
           ))}
-          <button onClick={()=>setOrdenDesc(d=>!d)} title={ordenDesc?"Descendente":"Ascendente"} style={{marginLeft:"auto",flexShrink:0,width:28,height:28,borderRadius:99,border:"1.5px solid #E5E5EA",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#0057FF",fontSize:14,fontWeight:900}}>
-            {ordenDesc?"↓":"↑"}
-          </button>
         </div>
         {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"11px",marginBottom:12}}><BarChart2 size={15}/>Ver estadísticas completas<ChevronRight size={15}/></button>}
         {filtroSector!=="todos"&&<button onClick={()=>setFiltroSector("todos")} style={{display:"flex",alignItems:"center",gap:6,background:"#0057FF12",border:"1px solid #0057FF30",borderRadius:99,padding:"7px 12px",marginBottom:12,cursor:"pointer",fontFamily:"inherit",width:"fit-content"}}>
