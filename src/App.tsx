@@ -562,53 +562,63 @@ export default function App({ session }) {
   },[usuarioReal,invitacionProcesada]);
 
   useEffect(()=>{
-    if(!usuarioReal||!obraActual?.id||typeof obraActual.id!=="string")return;
+    if(!usuarioReal)return;
     const mapNov=(n)=>({...n,fotos:n.fotos||[],fotoResolucion:n.foto_resolucion||null,ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:[]});
-    const canal=supabase.channel(`novedades-${obraActual.id}`)
-      .on("postgres_changes",{event:"INSERT",schema:"public",table:"novedades",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
-        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];if(lista.some(x=>x.id===payload.new.id))return p;return{...p,[obraActual.id]:[mapNov(payload.new),...lista]};});
+    const canal=supabase.channel(`fixgo-realtime-${usuarioReal.id}`)
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"novedades"},(payload)=>{
+        const obraId=payload.new.obra_id;
+        setNovedadesPorObra(p=>{const lista=p[obraId]||[];if(lista.some(x=>x.id===payload.new.id))return p;return{...p,[obraId]:[mapNov(payload.new),...lista]};});
       })
-      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"novedades",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
-        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];return{...p,[obraActual.id]:lista.map(x=>{
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"novedades"},(payload)=>{
+        const obraId=payload.new.obra_id;
+        setNovedadesPorObra(p=>{const lista=p[obraId];if(!lista)return p;return{...p,[obraId]:lista.map(x=>{
           if(x.id!==payload.new.id)return x;
           const fotosNuevas=(payload.new.fotos===undefined||payload.new.fotos===null)?x.fotos:payload.new.fotos;
           return{...x,...mapNov(payload.new),fotos:fotosNuevas,comentarios:x.comentarios};
         })};});
       })
-      .on("postgres_changes",{event:"DELETE",schema:"public",table:"novedades",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
-        setNovedadesPorObra(p=>{const lista=p[obraActual.id]||[];return{...p,[obraActual.id]:lista.filter(x=>x.id!==payload.old.id)};});
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"novedades"},(payload)=>{
+        const obraId=payload.old.obra_id;
+        setNovedadesPorObra(p=>{const lista=p[obraId];if(!lista)return p;return{...p,[obraId]:lista.filter(x=>x.id!==payload.old.id)};});
       })
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"comentarios"},(payload)=>{
         const nuevo=payload.new;
         setNovedadesPorObra(p=>{
-          const lista=p[obraActual.id]||[];
-          if(!lista.some(x=>x.id===nuevo.novedad_id))return p;
-          return{...p,[obraActual.id]:lista.map(x=>{
-            if(x.id!==nuevo.novedad_id)return x;
-            const yaTiene=x.comentarios.some(c=>c.autorId===nuevo.autor_id&&c.texto===nuevo.texto);
-            if(yaTiene)return x;
-            return{...x,comentarios:[...x.comentarios,{texto:nuevo.texto,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
-          })};
+          let cambio=false;
+          const next={...p};
+          for(const obraId of Object.keys(p)){
+            const lista=p[obraId];
+            const idx=lista.findIndex(x=>x.id===nuevo.novedad_id);
+            if(idx===-1)continue;
+            const nov=lista[idx];
+            const yaTiene=nov.comentarios.some(c=>c.autorId===nuevo.autor_id&&c.texto===nuevo.texto);
+            if(yaTiene)continue;
+            const novActualizada={...nov,comentarios:[...nov.comentarios,{texto:nuevo.texto,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
+            next[obraId]=lista.map((x,i)=>i===idx?novActualizada:x);
+            cambio=true;
+            break;
+          }
+          return cambio?next:p;
         });
       })
-      .on("postgres_changes",{event:"INSERT",schema:"public",table:"equipo_obra",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
-        const m=payload.new;const nuevoMiembro={uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
-        setObras(os=>os.map(o=>{if(o.id!==obraActual.id)return o;if((o.equipo||[]).some(x=>x.uid===nuevoMiembro.uid))return o;return{...o,equipo:[...(o.equipo||[]),nuevoMiembro]};}));
-        setObraActual(oa=>{if(!oa)return oa;if((oa.equipo||[]).some(x=>x.uid===nuevoMiembro.uid))return oa;return{...oa,equipo:[...(oa.equipo||[]),nuevoMiembro]};});
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"equipo_obra"},(payload)=>{
+        const m=payload.new;const obraId=m.obra_id;const nuevoMiembro={uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
+        setObras(os=>os.map(o=>{if(o.id!==obraId)return o;if((o.equipo||[]).some(x=>x.uid===nuevoMiembro.uid))return o;return{...o,equipo:[...(o.equipo||[]),nuevoMiembro]};}));
+        setObraActual(oa=>{if(!oa||oa.id!==obraId)return oa;if((oa.equipo||[]).some(x=>x.uid===nuevoMiembro.uid))return oa;return{...oa,equipo:[...(oa.equipo||[]),nuevoMiembro]};});
       })
-      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"equipo_obra",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
-        const m=payload.new;const actualizado={rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
-        setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:o));
-        setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:oa);
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"equipo_obra"},(payload)=>{
+        const m=payload.new;const obraId=m.obra_id;const actualizado={rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
+        setObras(os=>os.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:o));
+        setObraActual(oa=>(oa&&oa.id===obraId)?{...oa,equipo:(oa.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:oa);
       })
-      .on("postgres_changes",{event:"DELETE",schema:"public",table:"equipo_obra",filter:`obra_id=eq.${obraActual.id}`},(payload)=>{
-        const uidBorrado=payload.old.usuario_id;
-        setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).filter(x=>x.uid!==uidBorrado)}:o));
-        setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).filter(x=>x.uid!==uidBorrado)}:oa);
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"equipo_obra"},(payload)=>{
+        const obraId=payload.old.obra_id;const uidBorrado=payload.old.usuario_id;
+        setObras(os=>os.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).filter(x=>x.uid!==uidBorrado)}:o));
+        setObraActual(oa=>(oa&&oa.id===obraId)?{...oa,equipo:(oa.equipo||[]).filter(x=>x.uid!==uidBorrado)}:oa);
       })
       .subscribe();
     return()=>{supabase.removeChannel(canal);};
-  },[usuarioReal,obraActual?.id]);
+  },[usuarioReal?.id]);
 
   useEffect(()=>{
     setPerfilForm({nombre:usuarioActivoReal.nombre,especialidad:usuarioActivo.especialidad,email:usuarioReal?.email||"demo@fixgo.app"});
