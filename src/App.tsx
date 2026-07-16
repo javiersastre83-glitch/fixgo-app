@@ -770,6 +770,15 @@ export default function App({ session }) {
   const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
   const crearEmpresa=async()=>{
     if(!usuarioReal||!nombreEmpresaInput.trim())return;
+    if(empresaPropia){
+      const{error}=await supabase.from("empresas").update({nombre:nombreEmpresaInput.trim()}).eq("id",empresaPropia.id);
+      if(error){alert("No se pudo renombrar: "+error.message);return;}
+      setEmpresaPropia(e=>({...e,nombre:nombreEmpresaInput.trim()}));
+      setModalCrearEmpresa(false);
+      setNombreEmpresaInput("");
+      mostrarToast("Nombre actualizado");
+      return;
+    }
     const{data,error}=await supabase.from("empresas").insert({nombre:nombreEmpresaInput.trim(),director_id:usuarioReal.id}).select().single();
     if(error){alert("No se pudo crear la empresa: "+error.message);return;}
     setEmpresaPropia(data);
@@ -994,6 +1003,20 @@ export default function App({ session }) {
               </button>
             </div>
           </div>
+          {esProReal&&<div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,padding:"16px",flexShrink:0}}>
+            <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Modo Director</p>
+            {empresaPropia?(
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                <div>
+                  <p style={{margin:"4px 0 0",fontSize:15,fontWeight:700,color:modoOscuro?"#fff":"#1C1C1E"}}>{empresaPropia.nombre}</p>
+                  <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{miembrosEmpresa.length} profesional{miembrosEmpresa.length!==1?"es":""} en el equipo</p>
+                </div>
+                <button onClick={()=>{setNombreEmpresaInput(empresaPropia.nombre);setModalCrearEmpresa(true);}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"8px 10px",cursor:"pointer",display:"flex",alignItems:"center",flexShrink:0}}><Edit2 size={15} color="#1C1C1E"/></button>
+              </div>
+            ):(
+              <button onClick={()=>{setNombreEmpresaInput("");setModalCrearEmpresa(true);}} style={{...s.btnPrincipal,background:"#2E3A4B",marginTop:4}}>Crear mi equipo de profesionales</button>
+            )}
+          </div>}
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
               <LogOut size={20} color="#8E8E93"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Cerrar sesión</p><ChevronRight size={16} color="#C7C7CC"/>
@@ -1298,12 +1321,12 @@ export default function App({ session }) {
 
         {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
         {modalCrearEmpresa&&<div style={s.overlay} onClick={()=>setModalCrearEmpresa(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
-          <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Crear tu equipo de profesionales</p>
-          <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Así vas a poder invitar profesionales y ver todas sus obras.</p>
+          <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>{empresaPropia?"Renombrar tu equipo":"Crear tu equipo de profesionales"}</p>
+          <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>{empresaPropia?"Este nombre lo ven los profesionales que invites.":"Así vas a poder invitar profesionales y ver todas sus obras."}</p>
           <input style={s.input} placeholder="Nombre de tu equipo/estudio" value={nombreEmpresaInput} onChange={e=>setNombreEmpresaInput(e.target.value)} maxLength={40} autoFocus/>
           <div style={{display:"flex",gap:10,marginTop:20}}>
             <button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalCrearEmpresa(false)}>Cancelar</button>
-            <button style={{...s.btnPrincipal,flex:1,opacity:nombreEmpresaInput.trim()?1:0.4,background:"#2E3A4B"}} disabled={!nombreEmpresaInput.trim()} onClick={crearEmpresa}>Crear</button>
+            <button style={{...s.btnPrincipal,flex:1,opacity:nombreEmpresaInput.trim()?1:0.4,background:"#2E3A4B"}} disabled={!nombreEmpresaInput.trim()} onClick={crearEmpresa}>{empresaPropia?"Guardar":"Crear"}</button>
           </div>
         </div></div>}
         {modalInvitarArq&&<div style={s.overlay} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
