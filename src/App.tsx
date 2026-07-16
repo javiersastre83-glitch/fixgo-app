@@ -283,6 +283,7 @@ export default function App({ session }) {
   const [vistaRaiz,        setVistaRaiz]        = useState("inicio");
   const [obraActual,       setObraActual]       = useState(null);
   const [obras,            setObras]            = useState(OBRAS_DEMO);
+  const [avisoObraEliminada, setAvisoObraEliminada] = useState<string|null>(null);
   const [cargandoDatos,    setCargandoDatos]    = useState(true);
   const [novedadesPorObra, setNovedadesPorObra] = useState({1:NOVEDADES_DEMO,2:[]});
   const [vista,            setVista]            = useState("lista");
@@ -531,6 +532,17 @@ export default function App({ session }) {
        return{...obra,equipo};
      }));
      setObras(obrasConEquipo);
+        // ── Detectar si alguna obra en la que participaba desapareció (eliminada u obra donde lo sacaron) ──
+        try{
+          const cacheRaw=localStorage.getItem("fixgo_obras_cache");
+          const cachePrev=cacheRaw?JSON.parse(cacheRaw):null;
+          if(cachePrev&&Array.isArray(cachePrev)){
+            const idsActuales=new Set(obrasConEquipo.map(o=>o.id));
+            const desaparecidas=cachePrev.filter(o=>!idsActuales.has(o.id)&&o.propietarioId!==usuarioReal.id);
+            if(desaparecidas.length>0)setAvisoObraEliminada(desaparecidas[0].nombre||"una obra");
+          }
+          localStorage.setItem("fixgo_obras_cache",JSON.stringify(obrasConEquipo.map(o=>({id:o.id,nombre:o.nombre,propietarioId:o.propietario_id}))));
+        }catch(e){}
         // Inicializar arrays vacíos
         const novsPorObra={};
         (data||[]).forEach(obra=>{ novsPorObra[obra.id]=[]; });
@@ -711,7 +723,7 @@ export default function App({ session }) {
   const enviarAprobacion=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({estado_aprobacion:"pendiente"}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,estadoAprobacion:"pendiente"}:x));};
   const aprobar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null}:x));};
   const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null}:x));};
-  const eliminar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").delete().eq("id",id);}setNovedades(n=>n.filter(x=>x.id!==id));setVista("lista");};
+  const eliminar=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").delete().eq("id",id);if(error){alert("No se pudo eliminar: "+error.message);return;}}setNovedades(n=>n.filter(x=>x.id!==id));setVista("lista");};
   const agregarComentario=async(id)=>{if(!nuevoComentario.trim()||guardando)return;const texto=nuevoComentario.trim();setGuardando(true);if(usuarioReal&&typeof id==="string"){await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});}setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId:usuarioReal?.id||usuarioActivo.id,ts:Date.now()}]}:x));setNuevoComentario("");setGuardando(false);mostrarToast("Comentario agregado");};
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").delete().eq("obra_id",id);await supabase.from("obras").delete().eq("id",id);}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
   const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
@@ -831,6 +843,15 @@ export default function App({ session }) {
     </button>
     <button disabled={subiendoFotoResolucion} onClick={()=>confirmarSinFoto(modalFotoResolucion)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>Confirmar sin foto</button>
     <button disabled={subiendoFotoResolucion} onClick={()=>setModalFotoResolucion(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",opacity:subiendoFotoResolucion?0.6:1}}>Cancelar</button>
+  </div></div>;
+
+  const avisoObraEliminadaJSX = avisoObraEliminada&&<div style={s.overlay} onClick={()=>setAvisoObraEliminada(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+    <div style={{textAlign:"center",marginBottom:20}}>
+      <span style={{fontSize:44}}>👋</span>
+      <p style={{margin:"12px 0 8px",fontSize:18,fontWeight:800}}>Ya no formás parte de "{avisoObraEliminada}"</p>
+      <p style={{margin:0,fontSize:14,color:"#8E8E93"}}>El profesional eliminó esa obra o te quitó del equipo. No es un error de la app — no hace falta que hagas nada.</p>
+    </div>
+    <button style={s.btnPrincipal} onClick={()=>setAvisoObraEliminada(null)}>Entendido</button>
   </div></div>;
 
   const modalInvitarJSX = modalInvitar&&<div style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarCallback(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
@@ -1182,7 +1203,7 @@ export default function App({ session }) {
             const animId=`anim${obra.id}`.replace(/[^a-zA-Z0-9]/g,'');
 
             // Círculo reutilizable con color sólido dinámico
-            const CirculoProg=({radius,pct,size}:{radius:number,pct:number,size:number})=>{
+            const CirculoProg=({radius,pct,size,labelOutside,label}:{radius:number,pct:number,size:number,labelOutside?:boolean,label?:string})=>{
               const circ=2*Math.PI*radius;
               const offset=circ-(pct/100)*circ;
               const color=colorPorPct(pct);
@@ -1199,7 +1220,7 @@ export default function App({ session }) {
                   </svg>
                   <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
                     <p style={{margin:0,fontSize:size>100?42:18,fontWeight:900,color:"#1C1C1E",lineHeight:1,letterSpacing:-1}}>{pct}%</p>
-                    <p style={{margin:"2px 0 0",fontSize:size>100?9:7,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.6}}>{esDueno?"resuelto":"mis novedades"}</p>
+                    {!labelOutside&&<p style={{margin:"2px 0 0",fontSize:size>100?9:7,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.6}}>{esDueno?"resuelto":"mis novedades"}</p>}
                   </div>
                 </div>
               );
@@ -1236,7 +1257,10 @@ export default function App({ session }) {
                 ):(
                   // ── TARJETA MIEMBRO ──
                   <div style={{display:"flex",alignItems:"center",gap:14}}>
-                    <CirculoProg radius={28} pct={prog} size={72}/>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0}}>
+                    <CirculoProg radius={28} pct={prog} size={72} labelOutside/>
+                    <p style={{margin:0,fontSize:9,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.4,whiteSpace:"nowrap"}}>Mis novedades</p>
+                  </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{marginBottom:6}}>
                         <span style={{display:"inline-flex",alignItems:"center",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3,background:miRolObra==="capataz"?"#FFF3E8":"#F0EEFF",color:miRolObra==="capataz"?"#FF6B00":"#6B4FA8"}}>{miEspecialidad||miRolObra}</span>
@@ -1510,6 +1534,7 @@ export default function App({ session }) {
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
         {modalInvitarJSX}
+        {avisoObraEliminadaJSX}
       </div>
     );
   }
@@ -1787,6 +1812,14 @@ export default function App({ session }) {
               <p style={{margin:"1px 0 0",fontSize:15,fontWeight:700,color:"#1C1C1E"}}>{miembroDetalle?miembroDetalle.nombre:detalle.responsable}</p>
               {miembroDetalle?.especialidad&&<p style={{margin:0,fontSize:12,color:"#8E8E93"}}>{miembroDetalle.especialidad}</p>}
             </div>
+            {miembroDetalle?.telefono&&<>
+              <button onClick={()=>window.open(`https://wa.me/${miembroDetalle.telefono.replace(/\D/g,"")}?text=${encodeURIComponent(`Hola ${miembroDetalle.nombre}! Te escribo por Fixgo, sobre "${detalle.descripcion}".`)}`,"_blank")} style={{width:34,height:34,borderRadius:10,background:"#25D36615",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              </button>
+              <button onClick={()=>window.open(`tel:${miembroDetalle.telefono.replace(/\D/g,"")}`,"_self")} style={{width:34,height:34,borderRadius:10,background:"#0057FF15",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Phone size={16} color="#0057FF"/>
+              </button>
+            </>}
           </div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {detalle.sector&&<span style={{display:"flex",alignItems:"center",gap:5,background:"#F2F2F7",borderRadius:99,padding:"5px 10px",fontSize:12,fontWeight:600,color:"#636366"}}><MapPin size={11} color="#8E8E93"/>{detalle.sector}</span>}
@@ -1831,12 +1864,12 @@ export default function App({ session }) {
             <button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>setModalFotoResolucion(detalle.id)}><CheckCircle size={18}/>Finalizado — Enviar a aprobación</button>
           )}
           <div style={{display:"flex",gap:8}}>
-            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1,fontSize:13,padding:"12px 4px"}} onClick={()=>abrirEdicion(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><Edit2 size={14}/>Editar</span></button>
+            {(detalle.autorId===miId||puedeGestionar)&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1,fontSize:13,padding:"12px 4px"}} onClick={()=>abrirEdicion(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><Edit2 size={14}/>Editar</span></button>}
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1,fontSize:13,padding:"12px 4px"}} onClick={()=>compartir(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>{compartidoId===detalle.id?"✓ Copiado":<><Share2 size={14}/>Compartir</>}</span></button>
             <button style={{...s.btnPrincipal,background:"#25D36615",border:"1.5px solid #25D36630",flex:1,fontSize:13,padding:"12px 4px"}} onClick={()=>{const t=generarResumen(detalle,obraActual?.nombre||"Obra");window.open(`https://wa.me/?text=${encodeURIComponent(t)}`,"_blank");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span style={{color:"#25D366",fontWeight:700}}>WhatsApp</span></span></button>
           </div>
           </div>
-          <button style={{width:"100%",background:"#fff",border:"none",borderRadius:14,padding:"14px",display:"flex",alignItems:"center",justifyContent:"center",gap:6,color:"#FF3B30",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={()=>setConfirmarEliminar(detalle.id)}><Trash2 size={15}/>Borrar novedad</button>
+          {(detalle.autorId===miId||puedeGestionar)&&<button style={{width:"100%",background:"#fff",border:"none",borderRadius:14,padding:"14px",display:"flex",alignItems:"center",justifyContent:"center",gap:6,color:"#FF3B30",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={()=>setConfirmarEliminar(detalle.id)}><Trash2 size={15}/>Borrar novedad</button>}
           </div>
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
@@ -1895,6 +1928,7 @@ export default function App({ session }) {
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalInvitarJSX}
+        {avisoObraEliminadaJSX}
       </div>
     );
   }
@@ -1985,9 +2019,9 @@ export default function App({ session }) {
       {puedeGestionar&&novedadesFiltradas.length>0&&<button onClick={()=>setVista("nueva")} aria-label="Nueva novedad" style={{position:"absolute",right:18,bottom:82,width:58,height:58,borderRadius:"50%",background:"#1C1C1E",border:"none",boxShadow:"0 4px 16px rgba(0,0,0,0.28)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:20}}><Plus size={26} color="#fff" strokeWidth={2.5}/></button>}
       <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
 
-      {menuContextual&&<div style={s.overlay} onClick={()=>setMenuContextual(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones</p>{(()=>{const nov=novedades.find(n=>n.id===menuContextual.novId);const puedeReabrirOResolver=nov&&(!nov.resuelta||nov.autorId===miId||puedeGestionar);const puedeEliminar=nov&&(nov.autorId===miId||puedeGestionar);return(<>
+      {menuContextual&&<div style={s.overlay} onClick={()=>setMenuContextual(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones</p>{(()=>{const nov=novedades.find(n=>n.id===menuContextual.novId);const puedeReabrirOResolver=nov&&(!nov.resuelta||nov.autorId===miId||puedeGestionar);const puedeEliminar=nov&&(nov.autorId===miId||puedeGestionar);const puedeAsignar=nov&&(nov.autorId===miId||puedeGestionar);return(<>
         {puedeReabrirOResolver&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{resolver(menuContextual.novId);setMenuContextual(null);}}>{nov?.resuelta?"↩ Reabrir":"✅ Marcar como resuelto"}</button>}
-        <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setAsignacionRapida(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={15}/>Asignar a alguien del equipo</span></button>
+        {puedeAsignar&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setAsignacionRapida(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={15}/>Asignar a alguien del equipo</span></button>}
         {puedeEliminar&&<button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminar(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar</span></button>}
       </>);})()}<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
       {asignacionRapida&&(()=>{const nov=novedades.find(n=>n.id===asignacionRapida);if(!nov)return null;return(
@@ -2003,6 +2037,7 @@ export default function App({ session }) {
       {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
       {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#8E8E93"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
       {modalInvitarJSX}
+        {avisoObraEliminadaJSX}
     </div>
   );
 }
