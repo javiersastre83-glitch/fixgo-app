@@ -849,7 +849,7 @@ export default function App({ session }) {
     <div style={{textAlign:"center",marginBottom:20}}>
       <span style={{fontSize:44}}>👋</span>
       <p style={{margin:"12px 0 8px",fontSize:18,fontWeight:800}}>Ya no formás parte de "{avisoObraEliminada}"</p>
-      <p style={{margin:0,fontSize:14,color:"#8E8E93"}}>El profesional eliminó esa obra o te quitó del equipo. No es un error de la app — no hace falta que hagas nada.</p>
+      <p style={{margin:0,fontSize:14,color:"#8E8E93"}}>El administrador eliminó esa obra o te quitó del equipo.</p>
     </div>
     <button style={s.btnPrincipal} onClick={()=>setAvisoObraEliminada(null)}>Entendido</button>
   </div></div>;
