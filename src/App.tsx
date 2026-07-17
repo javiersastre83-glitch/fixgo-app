@@ -2021,7 +2021,14 @@ export default function App({ session }) {
 
           {/* INFORME INTERNO */}
           {esVersionPro?(
-            <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"13px"}}><ClipboardList size={15}/>Generar informe<ChevronRight size={15}/></button>
+            <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left"}}>
+              <div style={{width:44,height:44,borderRadius:14,background:"#0057FF15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><ClipboardList size={20} color="#0057FF"/></div>
+              <div style={{flex:1}}>
+                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>Generar informe</p>
+                <p style={{margin:"1px 0 0",fontSize:12,color:"#8E8E93"}}>Resumen del período con gráficos y fotos</p>
+              </div>
+              <ChevronRight size={18} color="#C7C7CC"/>
+            </button>
           ):(
             <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
               <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
