@@ -1320,7 +1320,7 @@ export default function App({ session }) {
             <p style={{margin:"0 0 14px",fontSize:12,color:"#8E8E93"}}>Aparece en los informes que generás. Es opcional.</p>
             <p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Nombre del estudio</p>
             <div style={{display:"flex",gap:8,marginBottom:16}}>
-              <input style={{...s.input,flex:1,background:modoOscuro?"#3A3A3C":"#F2F2F7",color:modoOscuro?"#fff":"#1C1C1E",border:"none"}} value={nombreEstudioInput} onChange={e=>setNombreEstudioInput(e.target.value)} placeholder="Ej: Estudio Sastre" maxLength={40}/>
+              <input style={{...s.input,flex:1,background:modoOscuro?"#3A3A3C":"#F2F2F7",color:modoOscuro?"#fff":"#1C1C1E",border:"none"}} value={nombreEstudioInput} onChange={e=>setNombreEstudioInput(e.target.value)} placeholder="Completar con el nombre de tu estudio" maxLength={40}/>
               {nombreEstudioInput!==nombreEstudio&&<button onClick={guardarNombreEstudio} style={{background:"#0057FF",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontWeight:700,cursor:"pointer",fontSize:13,flexShrink:0}}>Guardar</button>}
             </div>
             <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Logo</p>
@@ -1344,20 +1344,6 @@ export default function App({ session }) {
               </button>
             </div>
           </div>
-          {esProReal&&<div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,padding:"16px",flexShrink:0}}>
-            <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Modo Director</p>
-            {empresaPropia?(
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-                <div>
-                  <p style={{margin:"4px 0 0",fontSize:15,fontWeight:700,color:modoOscuro?"#fff":"#1C1C1E"}}>{empresaPropia.nombre}</p>
-                  <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{miembrosEmpresa.length} profesional{miembrosEmpresa.length!==1?"es":""} en el equipo</p>
-                </div>
-                <button onClick={()=>{setNombreEmpresaInput(empresaPropia.nombre);setModalCrearEmpresa(true);}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"8px 10px",cursor:"pointer",display:"flex",alignItems:"center",flexShrink:0}}><Edit2 size={15} color="#1C1C1E"/></button>
-              </div>
-            ):(
-              <button onClick={()=>{setNombreEmpresaInput("");setModalCrearEmpresa(true);}} style={{...s.btnPrincipal,background:"#2E3A4B",marginTop:4}}>Crear mi equipo de profesionales</button>
-            )}
-          </div>}
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
               <LogOut size={20} color="#8E8E93"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Cerrar sesión</p><ChevronRight size={16} color="#C7C7CC"/>
@@ -1513,9 +1499,10 @@ export default function App({ session }) {
             </div>
           ):(
             <>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>{empresaPropia.nombre}</p>
-                <button onClick={()=>setModalInvitarArq(true)} style={{background:"#2E3A4B",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ Invitar</button>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E",flex:1}}>{empresaPropia.nombre}</p>
+                <button onClick={()=>{setNombreEmpresaInput(empresaPropia.nombre);setModalCrearEmpresa(true);}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"7px 8px",cursor:"pointer",display:"flex",alignItems:"center",flexShrink:0}}><Edit2 size={14} color="#1C1C1E"/></button>
+                <button onClick={()=>setModalInvitarArq(true)} style={{background:"#2E3A4B",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Invitar</button>
               </div>
               {miembrosEmpresa.map(m=>{
                 const obrasDeEste=obrasEmpresa.filter(o=>o.propietario_id===m.usuario_id);
