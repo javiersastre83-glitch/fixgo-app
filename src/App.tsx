@@ -324,6 +324,7 @@ export default function App({ session }) {
   const [rangoPersonalizado, setRangoPersonalizado] = useState({desde:"",hasta:""});
   const [reporteData,      setReporteData]      = useState<any>(null);
   const [vistaReporte,     setVistaReporte]      = useState(false);
+  const [generandoReporte, setGenerandoReporte]  = useState(false);
   const generarReporte=(desde,hasta)=>{
     const desdeMs=desde.getTime(),hastaMs=hasta.getTime();
     const duracionMs=hastaMs-desdeMs;
@@ -409,6 +410,7 @@ export default function App({ session }) {
     });
     setModalPeriodoReporte(false);
     setVistaReporte(true);
+    setGenerandoReporte(false);
   };
   const elegirPeriodo=(tipo)=>{
     const hoy=new Date();hoy.setHours(23,59,59,999);
@@ -419,10 +421,12 @@ export default function App({ session }) {
     else if(tipo==="inicio"){desde=obraActual?.created_at?new Date(obraActual.created_at):new Date(2020,0,1);desde.setHours(0,0,0,0);}
     else if(tipo==="personalizado"){
       if(!rangoPersonalizado.desde||!rangoPersonalizado.hasta){alert("Elegí las dos fechas");return;}
-      generarReporte(new Date(rangoPersonalizado.desde+"T00:00:00"),new Date(rangoPersonalizado.hasta+"T23:59:59"));
+      setGenerandoReporte(true);
+      setTimeout(()=>generarReporte(new Date(rangoPersonalizado.desde+"T00:00:00"),new Date(rangoPersonalizado.hasta+"T23:59:59")),50);
       return;
     }
-    generarReporte(desde,hoy);
+    setGenerandoReporte(true);
+    setTimeout(()=>generarReporte(desde,hoy),50);
   };
   const [menuContextual,   setMenuContextual]   = useState(null);
   const [modalTelefono, setModalTelefono] = useState<{uid:string,nombre:string}|null>(null);
@@ -969,19 +973,27 @@ export default function App({ session }) {
     <button disabled={subiendoFotoResolucion} onClick={()=>setModalFotoResolucion(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",opacity:subiendoFotoResolucion?0.6:1}}>Cancelar</button>
   </div></div>;
 
-  const modalPeriodoJSX = modalPeriodoReporte&&<div style={s.overlay} onClick={()=>setModalPeriodoReporte(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
-    <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Informe interno</p>
-    <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Elegí el período que querés analizar de "{obraActual?.nombre}"</p>
-    {[["dia","Hoy"],["semana","Últimos 7 días"],["mes","Últimos 30 días"],["inicio","Desde el inicio de la obra"]].map(([key,lbl])=>(
-      <button key={key} onClick={()=>elegirPeriodo(key)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:8}}>{lbl}</button>
-    ))}
-    <p style={{margin:"14px 0 8px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase"}}>Rango personalizado</p>
-    <div style={{display:"flex",gap:8,marginBottom:12}}>
-      <input type="date" value={rangoPersonalizado.desde} onChange={e=>setRangoPersonalizado(r=>({...r,desde:e.target.value}))} style={{...s.input,flex:1,fontSize:13,padding:"10px"}}/>
-      <input type="date" value={rangoPersonalizado.hasta} onChange={e=>setRangoPersonalizado(r=>({...r,hasta:e.target.value}))} style={{...s.input,flex:1,fontSize:13,padding:"10px"}}/>
-    </div>
-    <button onClick={()=>elegirPeriodo("personalizado")} style={{...s.btnPrincipal,background:"#2E3A4B",marginBottom:8}}>Generar con este rango</button>
-    <button onClick={()=>setModalPeriodoReporte(false)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}}>Cancelar</button>
+  const modalPeriodoJSX = modalPeriodoReporte&&<div style={s.overlay} onClick={()=>{if(!generandoReporte)setModalPeriodoReporte(false);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+    {generandoReporte?(
+      <div style={{textAlign:"center",padding:"30px 10px"}}>
+        <span style={{width:34,height:34,border:"3px solid #E5E5EA",borderTopColor:"#0057FF",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite",marginBottom:16}}/>
+        <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E"}}>Generando informe...</p>
+        <p style={{margin:"4px 0 0",fontSize:13,color:"#8E8E93"}}>Puede tardar algunos segundos</p>
+      </div>
+    ):(<>
+      <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Informe interno</p>
+      <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Elegí el período que querés analizar de "{obraActual?.nombre}"</p>
+      {[["dia","Hoy"],["semana","Últimos 7 días"],["mes","Últimos 30 días"],["inicio","Desde el inicio de la obra"]].map(([key,lbl])=>(
+        <button key={key} onClick={()=>elegirPeriodo(key)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:8}}>{lbl}</button>
+      ))}
+      <p style={{margin:"14px 0 8px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase"}}>Rango personalizado</p>
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        <input type="date" value={rangoPersonalizado.desde} onChange={e=>setRangoPersonalizado(r=>({...r,desde:e.target.value}))} style={{...s.input,flex:1,fontSize:13,padding:"10px"}}/>
+        <input type="date" value={rangoPersonalizado.hasta} onChange={e=>setRangoPersonalizado(r=>({...r,hasta:e.target.value}))} style={{...s.input,flex:1,fontSize:13,padding:"10px"}}/>
+      </div>
+      <button onClick={()=>elegirPeriodo("personalizado")} style={{...s.btnPrincipal,background:"#2E3A4B",marginBottom:8}}>Generar con este rango</button>
+      <button onClick={()=>setModalPeriodoReporte(false)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}}>Cancelar</button>
+    </>)}
   </div></div>;
 
   const avisoObraEliminadaJSX = avisoObraEliminada&&<div style={s.overlay} onClick={()=>setAvisoObraEliminada(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
@@ -2007,13 +2019,16 @@ export default function App({ session }) {
             </button>
           )}
 
-          {/* INFORMES PRO */}
-          <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
-            <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
-            <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
-            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>{if(esVersionPro)setModalPeriodoReporte(true);else setModalPro(true);}}><span style={{display:"flex",alignItems:"center",gap:8}}><ClipboardList size={17}/>Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
-            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span style={{display:"flex",alignItems:"center",gap:8}}><FileText size={17}/>Informe para cliente</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
-          </div>
+          {/* INFORME INTERNO */}
+          {esVersionPro?(
+            <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"13px"}}><ClipboardList size={15}/>Informe interno<ChevronRight size={15}/></button>
+          ):(
+            <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
+              <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
+              <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
+              <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span style={{display:"flex",alignItems:"center",gap:8}}><ClipboardList size={17}/>Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
+            </div>
+          )}
         </div>
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
