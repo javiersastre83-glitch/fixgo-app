@@ -319,6 +319,11 @@ export default function App({ session }) {
   const [modoOscuro,       setModoOscuro]       = useState(false);
   const [tabActiva,        setTabActiva]        = useState("obras");
   const [compartidoId,     setCompartidoId]     = useState(null);
+  const [modalPro,         setModalPro]         = useState(false);
+  const [modalPeriodoReporte, setModalPeriodoReporte] = useState(false);
+  const [rangoPersonalizado, setRangoPersonalizado] = useState({desde:"",hasta:""});
+  const [reporteData,      setReporteData]      = useState<any>(null);
+  const [vistaReporte,     setVistaReporte]      = useState(false);
   const generarReporte=(desde,hasta)=>{
     const desdeMs=desde.getTime(),hastaMs=hasta.getTime();
     const duracionMs=hastaMs-desdeMs;
