@@ -981,7 +981,7 @@ export default function App({ session }) {
         <p style={{margin:"4px 0 0",fontSize:13,color:"#8E8E93"}}>Puede tardar algunos segundos</p>
       </div>
     ):(<>
-      <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Informe interno</p>
+      <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Generar informe</p>
       <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Elegí el período que querés analizar de "{obraActual?.nombre}"</p>
       {[["dia","Hoy"],["semana","Últimos 7 días"],["mes","Últimos 30 días"],["inicio","Desde el inicio de la obra"]].map(([key,lbl])=>(
         <button key={key} onClick={()=>elegirPeriodo(key)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:8}}>{lbl}</button>
@@ -1071,7 +1071,7 @@ export default function App({ session }) {
             <div>
               <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.5,marginBottom:14}}><div style={{width:15,height:15,borderRadius:4,background:"#8E8E93",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:8.5}}>F</div><span style={{fontWeight:700,fontSize:10,color:"#8E8E93"}}>Generado con Fixgo</span></div>
               <h1 style={{fontSize:26,margin:0,color:"#1C1C1E",letterSpacing:-0.4}}>{obraActual?.nombre}</h1>
-              <p style={{fontSize:11.5,fontWeight:700,color:"#5CA9E0",textTransform:"uppercase",letterSpacing:0.4,margin:"5px 0 0"}}>Reporte interno · Resolución de novedades</p>
+              <p style={{fontSize:11.5,fontWeight:700,color:"#5CA9E0",textTransform:"uppercase",letterSpacing:0.4,margin:"5px 0 0"}}>Informe del período · Resolución de novedades</p>
               <p style={{fontSize:11,color:"#8E8E93",margin:"6px 0 0"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)} · Emitido el {fmtFecha(new Date())}</p>
             </div>
             <div style={{width:84,height:84,border:"1.5px dashed #E5E5E7",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,textAlign:"center",fontSize:8.5,color:"#C7C7CC",fontWeight:600}}>Logo del<br/>estudio</div>
@@ -2021,7 +2021,7 @@ export default function App({ session }) {
 
           {/* INFORME INTERNO */}
           {esVersionPro?(
-            <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"13px"}}><ClipboardList size={15}/>Informe interno<ChevronRight size={15}/></button>
+            <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"13px"}}><ClipboardList size={15}/>Generar informe<ChevronRight size={15}/></button>
           ):(
             <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
               <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
@@ -2033,6 +2033,7 @@ export default function App({ session }) {
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
         {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#8E8E93"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
+        {modalPeriodoJSX}
       </div>
     );
   }
