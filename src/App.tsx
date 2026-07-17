@@ -497,9 +497,19 @@ export default function App({ session }) {
   const [perfilForm,       setPerfilForm]       = useState({nombre:"",especialidad:"",email:""});
   const [esProReal,        setEsProReal]        = useState(false);
   const esVersionPro = esProReal;
+  const [nombreEstudio,    setNombreEstudio]    = useState("");
+  const [nombreEstudioInput, setNombreEstudioInput] = useState("");
+  const [logoEstudioUrl,   setLogoEstudioUrl]   = useState("");
+  const [subiendoLogo,     setSubiendoLogo]     = useState(false);
+  const fileRefLogo = useRef();
   useEffect(()=>{
     if(!usuarioReal){setEsProReal(false);return;}
-    supabase.from("usuarios").select("es_pro").eq("id",usuarioReal.id).single().then(({data})=>{setEsProReal(!!data?.es_pro);});
+    supabase.from("usuarios").select("es_pro,nombre_estudio,logo_estudio_url").eq("id",usuarioReal.id).single().then(({data})=>{
+      setEsProReal(!!data?.es_pro);
+      setNombreEstudio(data?.nombre_estudio||"");
+      setNombreEstudioInput(data?.nombre_estudio||"");
+      setLogoEstudioUrl(data?.logo_estudio_url||"");
+    });
   },[usuarioReal?.id]);
   const simularPro=async(valor)=>{
     if(!usuarioReal)return;
@@ -877,6 +887,32 @@ export default function App({ session }) {
     }
   };
   const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
+  const guardarNombreEstudio=async()=>{
+    if(!usuarioReal)return;
+    const{error}=await supabase.from("usuarios").update({nombre_estudio:nombreEstudioInput.trim()||null}).eq("id",usuarioReal.id);
+    if(error){alert("No se pudo guardar: "+error.message);return;}
+    setNombreEstudio(nombreEstudioInput.trim());
+    mostrarToast("Nombre guardado");
+  };
+  const subirLogoEstudio=async(file)=>{
+    if(!usuarioReal||!file)return;
+    const LIMITE_BYTES=2*1024*1024; // 2MB
+    if(file.size>LIMITE_BYTES){alert("La imagen pesa demasiado (máximo 2MB). Elegí una más liviana.");return;}
+    setSubiendoLogo(true);
+    try{
+      const ext=file.name.split(".").pop()||"png";
+      const nombreArchivo=`${usuarioReal.id}-${Date.now()}.${ext}`;
+      const{error:errorSubida}=await supabase.storage.from("logos-estudio").upload(nombreArchivo,file,{contentType:file.type});
+      if(errorSubida)throw errorSubida;
+      const{data:urlData}=supabase.storage.from("logos-estudio").getPublicUrl(nombreArchivo);
+      const url=urlData.publicUrl;
+      const{error:errorUpdate}=await supabase.from("usuarios").update({logo_estudio_url:url}).eq("id",usuarioReal.id);
+      if(errorUpdate)throw errorUpdate;
+      setLogoEstudioUrl(url);
+      mostrarToast("Logo actualizado");
+    }catch(e:any){alert("No se pudo subir el logo: "+(e.message||"error desconocido"));}
+    setSubiendoLogo(false);
+  };
   const crearEmpresa=async()=>{
     if(!usuarioReal||!nombreEmpresaInput.trim())return;
     if(empresaPropia){
@@ -1072,9 +1108,13 @@ export default function App({ session }) {
               <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.5,marginBottom:14}}><div style={{width:15,height:15,borderRadius:4,background:"#8E8E93",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:8.5}}>F</div><span style={{fontWeight:700,fontSize:10,color:"#8E8E93"}}>Generado con Fixgo</span></div>
               <h1 style={{fontSize:26,margin:0,color:"#1C1C1E",letterSpacing:-0.4}}>{obraActual?.nombre}</h1>
               <p style={{fontSize:11.5,fontWeight:700,color:"#5CA9E0",textTransform:"uppercase",letterSpacing:0.4,margin:"5px 0 0"}}>Informe del período · Resolución de novedades</p>
+              {nombreEstudio&&<p style={{fontSize:11,color:"#8E8E93",margin:"3px 0 0"}}>{nombreEstudio}</p>}
               <p style={{fontSize:11,color:"#8E8E93",margin:"6px 0 0"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)} · Emitido el {fmtFecha(new Date())}</p>
             </div>
-            <div style={{width:84,height:84,border:"1.5px dashed #E5E5E7",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,textAlign:"center",fontSize:8.5,color:"#C7C7CC",fontWeight:600}}>Logo del<br/>estudio</div>
+            {logoEstudioUrl?
+              <div style={{maxWidth:120,maxHeight:84,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"flex-end"}}><img src={logoEstudioUrl} alt={nombreEstudio||"Logo"} style={{maxWidth:120,maxHeight:84,objectFit:"contain"}}/></div>
+              :<div style={{width:84,height:84,border:"1.5px dashed #E5E5E7",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,textAlign:"center",fontSize:8.5,color:"#C7C7CC",fontWeight:600}}>Logo del<br/>estudio</div>
+            }
           </div>
           <div style={{height:3,background:"linear-gradient(90deg,#34C759,#5CA9E0)",borderRadius:99,margin:"18px 0 22px"}}/>
 
@@ -1274,6 +1314,24 @@ export default function App({ session }) {
               <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#C7C7CC",flexShrink:0}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Google</span>
             </div>
             <button style={{...s.btnPrincipal,background:"#34C759",marginTop:0}} onClick={async()=>{setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));if(usuarioReal)await supabase.auth.updateUser({data:{full_name:perfilForm.nombre}});alert("✅ Cambios guardados");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar cambios</span></button>
+          </div>
+          <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"18px 16px",flexShrink:0}}>
+            <p style={{margin:"0 0 4px",fontSize:15,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>Tu estudio</p>
+            <p style={{margin:"0 0 14px",fontSize:12,color:"#8E8E93"}}>Aparece en los informes que generás. Es opcional.</p>
+            <p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Nombre del estudio</p>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              <input style={{...s.input,flex:1,background:modoOscuro?"#3A3A3C":"#F2F2F7",color:modoOscuro?"#fff":"#1C1C1E",border:"none"}} value={nombreEstudioInput} onChange={e=>setNombreEstudioInput(e.target.value)} placeholder="Ej: Estudio Sastre" maxLength={40}/>
+              {nombreEstudioInput!==nombreEstudio&&<button onClick={guardarNombreEstudio} style={{background:"#0057FF",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontWeight:700,cursor:"pointer",fontSize:13,flexShrink:0}}>Guardar</button>}
+            </div>
+            <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Logo</p>
+            <input ref={fileRefLogo} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)subirLogoEstudio(f);}}/>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:64,height:64,borderRadius:12,background:modoOscuro?"#3A3A3C":"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden",border:logoEstudioUrl?"1px solid #E5E5EA":"1.5px dashed #D0D0D5"}}>
+                {logoEstudioUrl?<img src={logoEstudioUrl} alt="Logo" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}}/>:<span style={{fontSize:20,color:"#C7C7CC"}}>🏢</span>}
+              </div>
+              <button onClick={()=>fileRefLogo.current?.click()} disabled={subiendoLogo} style={{background:modoOscuro?"#3A3A3C":"#F2F2F7",border:"none",borderRadius:12,padding:"11px 16px",fontWeight:700,cursor:"pointer",fontSize:13,color:modoOscuro?"#fff":"#1C1C1E",opacity:subiendoLogo?0.6:1}}>{subiendoLogo?"Subiendo...":logoEstudioUrl?"Cambiar logo":"Subir logo"}</button>
+            </div>
+            <p style={{margin:"8px 0 0",fontSize:11,color:"#C7C7CC"}}>Máximo 2MB. Se muestra tal cual es, sin recortar.</p>
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,padding:"16px",flexShrink:0,border:"1.5px dashed #FFB800"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
