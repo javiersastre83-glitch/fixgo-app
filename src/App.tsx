@@ -319,7 +319,106 @@ export default function App({ session }) {
   const [modoOscuro,       setModoOscuro]       = useState(false);
   const [tabActiva,        setTabActiva]        = useState("obras");
   const [compartidoId,     setCompartidoId]     = useState(null);
-  const [modalPro,         setModalPro]         = useState(false);
+  const generarReporte=(desde,hasta)=>{
+    const desdeMs=desde.getTime(),hastaMs=hasta.getTime();
+    const duracionMs=hastaMs-desdeMs;
+    const desdeAntMs=desdeMs-duracionMs,hastaAntMs=desdeMs;
+    const enRango=(fecha,dMs,hMs)=>{if(!fecha)return false;const t=new Date(fecha).getTime();return t>=dMs&&t<=hMs;};
+    const hoyMs=Date.now();
+
+    const calcularPeriodo=(dMs,hMs)=>{
+      const reportadas=novedades.filter(n=>enRango(n.created_at,dMs,hMs));
+      const resueltas=novedades.filter(n=>n.resuelta&&enRango(n.resueltaAt,dMs,hMs));
+      const tiempos=resueltas.filter(n=>n.resueltaAt&&n.created_at).map(n=>(new Date(n.resueltaAt).getTime()-new Date(n.created_at).getTime())/864e5);
+      const tiempoProm=tiempos.length>0?tiempos.reduce((a,b)=>a+b,0)/tiempos.length:0;
+      return{reportadas,resueltas,tiempoProm};
+    };
+
+    const actual=calcularPeriodo(desdeMs,hastaMs);
+    const anterior=calcularPeriodo(desdeAntMs,hastaAntMs);
+
+    const pendientesActuales=novedades.filter(n=>!n.resuelta);
+    const vencidasActuales=pendientesActuales.filter(n=>n.fechaLimite&&new Date(n.fechaLimite).getTime()<hoyMs);
+    const criticasAbiertas=pendientesActuales.filter(n=>n.prioridad===0&&n.fechaLimite&&new Date(n.fechaLimite).getTime()<hoyMs);
+
+    const porSectorMap={};
+    actual.reportadas.forEach(n=>{const s=n.sector||"Sin sector";porSectorMap[s]=(porSectorMap[s]||0)+1;});
+    const porSector=Object.entries(porSectorMap).map(([nombre,cant])=>({nombre,cant})).sort((a:any,b:any)=>b.cant-a.cant);
+
+    // Actividad por persona: resueltas por responsable_usuario_id, a-su-cargo por responsable asignado (reportadas del período)
+    const personasMap={};
+    const clavePersona=(n)=>n.responsable_usuario_id||`oficio:${n.responsable}`;
+    actual.reportadas.forEach(n=>{
+      const k=clavePersona(n);
+      if(!personasMap[k])personasMap[k]={uid:n.responsable_usuario_id||null,nombre:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||"Sin nombre"):n.responsable,oficio:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.especialidad||""):n.responsable,resueltas:0,aCargo:0};
+      personasMap[k].aCargo++;
+    });
+    actual.resueltas.forEach(n=>{
+      const k=clavePersona(n);
+      if(!personasMap[k])personasMap[k]={uid:n.responsable_usuario_id||null,nombre:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||"Sin nombre"):n.responsable,oficio:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.especialidad||""):n.responsable,resueltas:0,aCargo:0};
+      personasMap[k].resueltas++;
+    });
+    const actividadPersonas=Object.values(personasMap).sort((a:any,b:any)=>(b.resueltas+b.aCargo)-(a.resueltas+a.aCargo));
+
+    // Evolución: bucket diario si el rango es <=31 días, sino semanal
+    const diasTotales=Math.max(1,Math.round(duracionMs/864e5));
+    const bucketDias=diasTotales<=31?1:7;
+    const buckets=[];
+    for(let t=desdeMs;t<=hastaMs;t+=bucketDias*864e5){
+      const bMs=t,bFinMs=Math.min(t+bucketDias*864e5-1,hastaMs);
+      const rep=novedades.filter(n=>enRango(n.created_at,bMs,bFinMs)).length;
+      const res=novedades.filter(n=>n.resuelta&&enRango(n.resueltaAt,bMs,bFinMs)).length;
+      const fechaLbl=new Date(bMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"});
+      buckets.push({label:fechaLbl,reportadas:rep,resueltas:res});
+    }
+
+    const fotos=actual.resueltas.filter(n=>n.fotoResolucion).map((n,i)=>({
+      num:i+1,descripcion:n.descripcion,sector:n.sector,foto:n.fotoResolucion,
+      responsable:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||n.responsable):n.responsable
+    }));
+
+    const delta=(act,ant,invertido=false)=>{
+      if(ant===0&&act===0)return{texto:"Sin cambios",tipo:"neutral"};
+      if(ant===0)return{texto:"Primer período con datos",tipo:"neutral"};
+      const pct=Math.round(((act-ant)/ant)*100);
+      const bueno=invertido?pct<=0:pct>=0;
+      return{texto:`${Math.abs(pct)}% ${pct>=0?"más":"menos"} que el período anterior`,tipo:pct===0?"neutral":(bueno?"good":"bad")};
+    };
+
+    setReporteData({
+      desde,hasta,
+      reportadas:actual.reportadas.length,
+      resueltas:actual.resueltas.length,
+      tiempoProm:actual.tiempoProm,
+      pendientes:pendientesActuales.length,
+      vencidas:vencidasActuales.length,
+      criticas:criticasAbiertas.length,
+      avance:actual.reportadas.length>0?Math.round((actual.resueltas.length/actual.reportadas.length)*100):0,
+      deltaReportadas:delta(actual.reportadas.length,anterior.reportadas.length),
+      deltaResueltas:delta(actual.resueltas.length,anterior.resueltas.length),
+      deltaTiempo:delta(Number(actual.tiempoProm.toFixed(1)),Number(anterior.tiempoProm.toFixed(1)),true),
+      porSector,
+      actividadPersonas,
+      buckets,
+      fotos,
+    });
+    setModalPeriodoReporte(false);
+    setVistaReporte(true);
+  };
+  const elegirPeriodo=(tipo)=>{
+    const hoy=new Date();hoy.setHours(23,59,59,999);
+    let desde=new Date();
+    if(tipo==="dia"){desde=new Date();desde.setHours(0,0,0,0);}
+    else if(tipo==="semana"){desde=new Date();desde.setDate(desde.getDate()-6);desde.setHours(0,0,0,0);}
+    else if(tipo==="mes"){desde=new Date();desde.setDate(desde.getDate()-29);desde.setHours(0,0,0,0);}
+    else if(tipo==="inicio"){desde=obraActual?.created_at?new Date(obraActual.created_at):new Date(2020,0,1);desde.setHours(0,0,0,0);}
+    else if(tipo==="personalizado"){
+      if(!rangoPersonalizado.desde||!rangoPersonalizado.hasta){alert("Elegí las dos fechas");return;}
+      generarReporte(new Date(rangoPersonalizado.desde+"T00:00:00"),new Date(rangoPersonalizado.hasta+"T23:59:59"));
+      return;
+    }
+    generarReporte(desde,hoy);
+  };
   const [menuContextual,   setMenuContextual]   = useState(null);
   const [modalTelefono, setModalTelefono] = useState<{uid:string,nombre:string}|null>(null);
   const [telInput, setTelInput] = useState("");
@@ -563,7 +662,7 @@ export default function App({ session }) {
 
   useEffect(()=>{
     if(!usuarioReal)return;
-    const mapNov=(n)=>({...n,fotos:n.fotos||[],fotoResolucion:n.foto_resolucion||null,ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:[]});
+    const mapNov=(n)=>({...n,fotos:n.fotos||[],fotoResolucion:n.foto_resolucion||null,ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",resueltaAt:n.resuelta_at||null,comentarios:[]});
     const canal=supabase.channel(`fixgo-realtime-${usuarioReal.id}`)
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"novedades"},(payload)=>{
         const obraId=payload.new.obra_id;
@@ -683,9 +782,10 @@ export default function App({ session }) {
       if(errorSubida)throw errorSubida;
       const{data:urlData}=supabase.storage.from("fotos-resolucion").getPublicUrl(nombreArchivo);
       const url=urlData.publicUrl;
-      const cambios=esDirecta?{resuelta:true,estado_aprobacion:null,foto_resolucion:url}:{estado_aprobacion:"pendiente",foto_resolucion:url};
+      const ahora=new Date().toISOString();
+      const cambios=esDirecta?{resuelta:true,estado_aprobacion:null,foto_resolucion:url,resuelta_at:ahora}:{estado_aprobacion:"pendiente",foto_resolucion:url};
       if(usuarioReal&&typeof id==="string"){const{error:errorUpdate}=await supabase.from("novedades").update(cambios).eq("id",id);if(errorUpdate)throw errorUpdate;}
-      const cambiosLocal=esDirecta?{resuelta:true,estadoAprobacion:null,fotoResolucion:url}:{estadoAprobacion:"pendiente",fotoResolucion:url};
+      const cambiosLocal=esDirecta?{resuelta:true,estadoAprobacion:null,fotoResolucion:url,resueltaAt:ahora}:{estadoAprobacion:"pendiente",fotoResolucion:url};
       setNovedades(n=>n.map(x=>x.id===id?{...x,...cambiosLocal}:x));
       mostrarToast(esDirecta?"Novedad resuelta con foto":"Enviado a aprobación con foto");
       setVista("lista");
@@ -729,10 +829,10 @@ export default function App({ session }) {
     setForm(FORM_INICIAL);setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast("Tarea creada con éxito");
   };
 
-  const resolver=async(id)=>{const actual=novedades.find(x=>x.id===id);const nuevoEstado=!actual?.resuelta;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:nuevoEstado,estado_aprobacion:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null}:x));};
+  const resolver=async(id)=>{const actual=novedades.find(x=>x.id===id);const nuevoEstado=!actual?.resuelta;const ahora=nuevoEstado?new Date().toISOString():null;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:nuevoEstado,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null,resueltaAt:ahora}:x));};
   const enviarAprobacion=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({estado_aprobacion:"pendiente"}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,estadoAprobacion:"pendiente"}:x));};
-  const aprobar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null}:x));};
-  const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null}:x));};
+  const aprobar=async(id)=>{const ahora=new Date().toISOString();if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,resueltaAt:ahora}:x));};
+  const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null,resuelta_at:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null,resueltaAt:null}:x));};
   const eliminar=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").delete().eq("id",id);if(error){alert("No se pudo eliminar: "+error.message);return;}}setNovedades(n=>n.filter(x=>x.id!==id));setVista("lista");};
   const agregarComentario=async(id)=>{if(!nuevoComentario.trim()||guardando)return;const texto=nuevoComentario.trim();setGuardando(true);if(usuarioReal&&typeof id==="string"){await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});}setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId:usuarioReal?.id||usuarioActivo.id,ts:Date.now()}]}:x));setNuevoComentario("");setGuardando(false);mostrarToast("Comentario agregado");};
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").delete().eq("obra_id",id);await supabase.from("obras").delete().eq("id",id);}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
@@ -864,6 +964,21 @@ export default function App({ session }) {
     <button disabled={subiendoFotoResolucion} onClick={()=>setModalFotoResolucion(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",opacity:subiendoFotoResolucion?0.6:1}}>Cancelar</button>
   </div></div>;
 
+  const modalPeriodoJSX = modalPeriodoReporte&&<div style={s.overlay} onClick={()=>setModalPeriodoReporte(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+    <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Informe interno</p>
+    <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Elegí el período que querés analizar de "{obraActual?.nombre}"</p>
+    {[["dia","Hoy"],["semana","Últimos 7 días"],["mes","Últimos 30 días"],["inicio","Desde el inicio de la obra"]].map(([key,lbl])=>(
+      <button key={key} onClick={()=>elegirPeriodo(key)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:8}}>{lbl}</button>
+    ))}
+    <p style={{margin:"14px 0 8px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase"}}>Rango personalizado</p>
+    <div style={{display:"flex",gap:8,marginBottom:12}}>
+      <input type="date" value={rangoPersonalizado.desde} onChange={e=>setRangoPersonalizado(r=>({...r,desde:e.target.value}))} style={{...s.input,flex:1,fontSize:13,padding:"10px"}}/>
+      <input type="date" value={rangoPersonalizado.hasta} onChange={e=>setRangoPersonalizado(r=>({...r,hasta:e.target.value}))} style={{...s.input,flex:1,fontSize:13,padding:"10px"}}/>
+    </div>
+    <button onClick={()=>elegirPeriodo("personalizado")} style={{...s.btnPrincipal,background:"#2E3A4B",marginBottom:8}}>Generar con este rango</button>
+    <button onClick={()=>setModalPeriodoReporte(false)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}}>Cancelar</button>
+  </div></div>;
+
   const avisoObraEliminadaJSX = avisoObraEliminada&&<div style={s.overlay} onClick={()=>setAvisoObraEliminada(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <div style={{textAlign:"center",marginBottom:20}}>
       <span style={{fontSize:44}}>👋</span>
@@ -912,6 +1027,157 @@ export default function App({ session }) {
   // ─────────────────────────────
   // INFO APP
   // ─────────────────────────────
+  if(vistaReporte&&reporteData){
+    const rd=reporteData;
+    const fmtFecha=(d)=>d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"});
+    const paletaPersona=["#8B7FD1","#E0A85C","#5CA9E0","#5CC9A7","#D17FA0","#9AAE8E"];
+    const paletaSector=["#5CC9A7","#5CA9E0","#8B7FD1","#E0A85C","#D17FA0"];
+    const pendientesNoVencidas=Math.max(0,rd.pendientes-rd.vencidas);
+    const totalDonut=rd.resueltas+pendientesNoVencidas+rd.vencidas;
+    const circ=326.7;
+    const segResueltas=totalDonut>0?(rd.resueltas/totalDonut)*circ:0;
+    const segPend=totalDonut>0?(pendientesNoVencidas/totalDonut)*circ:0;
+    const segVenc=totalDonut>0?(rd.vencidas/totalDonut)*circ:0;
+    const totalSector=rd.porSector.reduce((a,s:any)=>a+s.cant,0)||1;
+    let offsetSector=0;
+    const maxBucket=Math.max(1,...rd.buckets.map(b=>Math.max(b.reportadas,b.resueltas)));
+    const deltaColor=(tipo)=>tipo==="good"?"#1E9E4A":tipo==="bad"?"#E5484D":"#8E8E93";
+    return(
+      <div style={{...s.root,background:"#8A8D93",overflowY:"auto",padding:"20px"}}>
+        <style>{`@media print{body *{visibility:hidden;} .hoja-reporte,.hoja-reporte *{visibility:visible;} .hoja-reporte{position:absolute;left:0;top:0;} .no-print{display:none!important;}}`}</style>
+        <div className="no-print" style={{maxWidth:794,margin:"0 auto 14px",display:"flex",gap:10}}>
+          <button onClick={()=>{setVistaReporte(false);setReporteData(null);}} style={{background:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><ChevronLeft size={16}/>Volver</button>
+          <button onClick={()=>window.print()} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer"}}>Imprimir / Guardar PDF</button>
+        </div>
+        <div className="hoja-reporte" style={{background:"#fff",width:794,minHeight:1000,margin:"0 auto",padding:"40px 46px",boxShadow:"0 4px 24px rgba(0,0,0,0.2)"}}>
+          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:24}}>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.5,marginBottom:14}}><div style={{width:15,height:15,borderRadius:4,background:"#8E8E93",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:8.5}}>F</div><span style={{fontWeight:700,fontSize:10,color:"#8E8E93"}}>Generado con Fixgo</span></div>
+              <h1 style={{fontSize:26,margin:0,color:"#1C1C1E",letterSpacing:-0.4}}>{obraActual?.nombre}</h1>
+              <p style={{fontSize:11.5,fontWeight:700,color:"#5CA9E0",textTransform:"uppercase",letterSpacing:0.4,margin:"5px 0 0"}}>Reporte interno · Resolución de novedades</p>
+              <p style={{fontSize:11,color:"#8E8E93",margin:"6px 0 0"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)} · Emitido el {fmtFecha(new Date())}</p>
+            </div>
+            <div style={{width:84,height:84,border:"1.5px dashed #E5E5E7",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,textAlign:"center",fontSize:8.5,color:"#C7C7CC",fontWeight:600}}>Logo del<br/>estudio</div>
+          </div>
+          <div style={{height:3,background:"linear-gradient(90deg,#34C759,#5CA9E0)",borderRadius:99,margin:"18px 0 22px"}}/>
+
+          <div style={{display:"flex",background:"#F7F7F8",border:"1px solid #EEEEF0",borderRadius:12,padding:"18px 6px",marginBottom:26}}>
+            {[["Resueltas",rd.resueltas,rd.deltaResueltas],["Reportadas",rd.reportadas,rd.deltaReportadas],["Tiempo prom. resolución",rd.tiempoProm.toFixed(1)+"d",rd.deltaTiempo],["Pendientes",rd.pendientes,null],["Críticas abiertas",rd.criticas,null]].map(([lbl,num,d]:any,i)=>(
+              <div key={i} style={{flex:1,textAlign:"center",padding:"0 8px",borderRight:i<4?"1px solid #E5E5E7":"none"}}>
+                <div style={{fontSize:8.5,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.3,minHeight:22,display:"flex",alignItems:"center",justifyContent:"center"}}>{lbl}</div>
+                <div style={{fontSize:22,fontWeight:900,color:"#1C1C1E",margin:"5px 0 4px"}}>{num}</div>
+                {d&&<div style={{fontSize:9.5,fontWeight:700,color:deltaColor(d.tipo),minHeight:24}}>{d.texto}</div>}
+              </div>
+            ))}
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:32,marginBottom:30}}>
+            <div>
+              <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Novedades por sector</p>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <thead><tr><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>Sector</th><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>Reportadas</th><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>% del total</th></tr></thead>
+                <tbody>
+                  {rd.porSector.length===0&&<tr><td colSpan={3} style={{padding:"10px 0",color:"#8E8E93"}}>Sin novedades en este período</td></tr>}
+                  {rd.porSector.map((s:any,i)=>(
+                    <tr key={s.nombre}><td style={{padding:"8px 0",borderBottom:"1px solid #F5F5F6"}}><span style={{width:9,height:9,borderRadius:3,background:paletaSector[i%paletaSector.length],display:"inline-block",marginRight:7}}/>{s.nombre}</td><td style={{padding:"8px 0",borderBottom:"1px solid #F5F5F6"}}>{s.cant}</td><td style={{padding:"8px 0",borderBottom:"1px solid #F5F5F6"}}>{Math.round((s.cant/totalSector)*100)}%</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Evolución en el período</p>
+              <div style={{background:"#F8F8F9",borderRadius:12,padding:"18px 22px",height:172,display:"flex",alignItems:"flex-end",gap:8,justifyContent:rd.buckets.length<10?"space-between":"flex-start",overflowX:"auto"}}>
+                {rd.buckets.map((b,i)=>(
+                  <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flexShrink:0}}>
+                    <div style={{display:"flex",gap:3,alignItems:"flex-end",height:118}}>
+                      <div style={{width:12,borderRadius:"3px 3px 0 0",background:"#5CA9E0",height:Math.max(2,(b.reportadas/maxBucket)*118)}}/>
+                      <div style={{width:12,borderRadius:"3px 3px 0 0",background:"#34C759",height:Math.max(2,(b.resueltas/maxBucket)*118)}}/>
+                    </div>
+                    <span style={{fontSize:9,color:"#8E8E93"}}>{b.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"flex",gap:16,justifyContent:"center",marginTop:10,fontSize:9.5,color:"#636366"}}>
+                <span><i style={{width:9,height:9,borderRadius:3,background:"#5CA9E0",display:"inline-block",marginRight:5}}/>Reportadas</span>
+                <span><i style={{width:9,height:9,borderRadius:3,background:"#34C759",display:"inline-block",marginRight:5}}/>Resueltas</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"1.7fr 1fr",gap:32,marginBottom:30,alignItems:"start"}}>
+            <div>
+              <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Equipo ({rd.actividadPersonas.length} integrante{rd.actividadPersonas.length!==1?"s":""}) — actividad del período</p>
+              <div style={{display:"flex",gap:14,fontSize:9.5,color:"#636366",marginBottom:14}}>
+                <span><i style={{width:9,height:9,borderRadius:3,background:"#34C759",display:"inline-block",marginRight:4}}/>Resueltas</span>
+                <span><i style={{width:9,height:9,borderRadius:3,background:"#5CA9E0",display:"inline-block",marginRight:4}}/>A su cargo</span>
+              </div>
+              {rd.actividadPersonas.length===0&&<p style={{color:"#8E8E93",fontSize:12}}>Sin actividad en este período</p>}
+              {rd.actividadPersonas.map((p:any,i)=>{
+                const maxP=Math.max(1,...rd.actividadPersonas.map((x:any)=>Math.max(x.resueltas,x.aCargo)));
+                return(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:11,marginBottom:13}}>
+                    <div style={{width:28,height:28,borderRadius:"50%",color:"#fff",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:paletaPersona[i%paletaPersona.length]}}>{p.nombre[0]?.toUpperCase()}</div>
+                    <div style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",width:84,flexShrink:0,lineHeight:1.3}}>{p.nombre}<br/><small style={{fontWeight:400,color:"#8E8E93",fontSize:9.5}}>{p.oficio}</small></div>
+                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:4}}>
+                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#34C759",width:`${(p.resueltas/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.resueltas} resueltas</div></div>
+                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#5CA9E0",width:`${(p.aCargo/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.aCargo} a su cargo</div></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div>
+              <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Estado general</p>
+              <div style={{background:"#F8F8F9",borderRadius:12,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
+                <div style={{width:110,height:110,position:"relative"}}>
+                  <svg width="110" height="110" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="#F0F0F2" strokeWidth="16"/>
+                    {totalDonut>0&&<>
+                      <circle cx="60" cy="60" r="52" fill="none" stroke="#34C759" strokeWidth="16" strokeDasharray={`${segResueltas} ${circ-segResueltas}`} transform="rotate(-90 60 60)"/>
+                      <circle cx="60" cy="60" r="52" fill="none" stroke="#FF9500" strokeWidth="16" strokeDasharray={`${segPend} ${circ-segPend}`} strokeDashoffset={-segResueltas} transform="rotate(-90 60 60)"/>
+                      <circle cx="60" cy="60" r="52" fill="none" stroke="#FF3B30" strokeWidth="16" strokeDasharray={`${segVenc} ${circ-segVenc}`} strokeDashoffset={-(segResueltas+segPend)} transform="rotate(-90 60 60)"/>
+                    </>}
+                  </svg>
+                  <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,fontWeight:900,color:"#1C1C1E"}}>{totalDonut>0?Math.round((rd.resueltas/totalDonut)*100):0}%</div>
+                </div>
+                <div style={{width:"100%",display:"flex",flexDirection:"column",gap:8}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11}}><span style={{display:"flex",alignItems:"center",gap:6,fontWeight:600}}><span style={{width:9,height:9,borderRadius:3,background:"#34C759",display:"inline-block"}}/>Resueltas</span><b>{rd.resueltas}</b></div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11}}><span style={{display:"flex",alignItems:"center",gap:6,fontWeight:600}}><span style={{width:9,height:9,borderRadius:3,background:"#FF9500",display:"inline-block"}}/>Pendientes</span><b>{pendientesNoVencidas}</b></div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11}}><span style={{display:"flex",alignItems:"center",gap:6,fontWeight:600}}><span style={{width:9,height:9,borderRadius:3,background:"#FF3B30",display:"inline-block"}}/>Vencidas</span><b>{rd.vencidas}</b></div>
+                </div>
+                <div style={{width:"100%",borderTop:"1px solid #E5E5E7",paddingTop:8,display:"flex",justifyContent:"space-between",fontSize:11,fontWeight:800,color:"#1C1C1E"}}><span>Total</span><span>{totalDonut}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Fotos de resultado</p>
+            {rd.fotos.length===0?<p style={{color:"#8E8E93",fontSize:12}}>No hay fotos de resultado en este período</p>:
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+              {rd.fotos.map((f:any)=>(
+                <div key={f.num} style={{borderRadius:9,overflow:"hidden",background:"#fff",border:"1px solid #EEEEF0"}}>
+                  <img src={f.foto} alt="" style={{width:"100%",height:70,objectFit:"cover",display:"block"}}/>
+                  <div style={{padding:"7px 8px"}}>
+                    <div style={{fontSize:7.5,color:"#C7C7CC",fontWeight:700}}>#{f.num}</div>
+                    <div style={{fontSize:9.5,color:"#1C1C1E",fontWeight:700,margin:"2px 0",lineHeight:1.2}}>{f.descripcion}</div>
+                    <div style={{fontSize:8.5,color:"#8E8E93",marginTop:3}}>{f.responsable} · {f.sector}</div>
+                    <span style={{display:"inline-block",fontSize:7,fontWeight:800,color:"#34C759",background:"#34C75915",padding:"2px 6px",borderRadius:99,textTransform:"uppercase",marginTop:4}}>Resuelta</span>
+                  </div>
+                </div>
+              ))}
+            </div>}
+          </div>
+
+          <div style={{marginTop:34,paddingTop:16,borderTop:"1px solid #F0F0F2",display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9.5,color:"#B0B0B4"}}>
+            <div><b style={{color:"#1C1C1E"}}>Fixgo</b> · Gestión simple, obras organizadas</div>
+            <div>fixgo.ar</div>
+            <div>Página 1 de 1</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if(vistaInfoApp) return(
     <div style={s.root}>
       <Header migas={[{label:"Inicio",onClick:irInicio},{label:"Fixgo"}]} />
@@ -1568,6 +1834,7 @@ export default function App({ session }) {
         {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
+        {modalPeriodoJSX}
       </div>
     );
   }
@@ -1739,7 +2006,7 @@ export default function App({ session }) {
           <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
             <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
             <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
-            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span style={{display:"flex",alignItems:"center",gap:8}}><ClipboardList size={17}/>Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
+            <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>{if(esVersionPro)setModalPeriodoReporte(true);else setModalPro(true);}}><span style={{display:"flex",alignItems:"center",gap:8}}><ClipboardList size={17}/>Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
             <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span style={{display:"flex",alignItems:"center",gap:8}}><FileText size={17}/>Informe para cliente</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
           </div>
         </div>
@@ -1962,6 +2229,7 @@ export default function App({ session }) {
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
+        {modalPeriodoJSX}
       </div>
     );
   }
@@ -2071,6 +2339,7 @@ export default function App({ session }) {
       {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#8E8E93"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
       {modalInvitarJSX}
         {avisoObraEliminadaJSX}
+        {modalPeriodoJSX}
     </div>
   );
 }
