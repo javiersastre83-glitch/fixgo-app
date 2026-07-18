@@ -928,7 +928,15 @@ export default function App({ session }) {
           const{data,error}=await supabase.from("novedades").insert(item.payload).select().single();
           if(error)throw error;
           if(item.comentario){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:item.comentario});}
-          setNovedadesPorObra(p=>{const lista=p[item.payload.obra_id]||[];return{...p,[item.payload.obra_id]:lista.filter(x=>x.id!==item.tempId)};});
+          const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,resueltaAt:data.resuelta_at||null,fotoResolucion:data.foto_resolucion||null,comentarios:item.comentario?[{texto:item.comentario,autorId:usuarioReal.id,ts:Date.now()}]:[]};
+          setNovedadesPorObra(p=>{
+            const lista=p[item.payload.obra_id]||[];
+            const yaLaAgregoTiempoReal=lista.some(x=>x.id===data.id);
+            const nuevaLista=yaLaAgregoTiempoReal
+              ?lista.filter(x=>x.id!==item.tempId) // ya está visible por Tiempo Real, solo sacamos la temporal
+              :lista.map(x=>x.id===item.tempId?nn:x); // Tiempo Real todavía no llegó, la mostramos ya
+            return{...p,[item.payload.obra_id]:nuevaLista};
+          });
           quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
         } else if(item.tipo==="resolver"){
           await supabase.from("novedades").update({resuelta:item.resuelta,estado_aprobacion:null,resuelta_at:item.resuelta_at}).eq("id",item.id);
@@ -952,6 +960,11 @@ export default function App({ session }) {
   useEffect(()=>{
     if(estaOnline&&colaOffline.length>0)sincronizarCola();
   },[estaOnline]);
+  useEffect(()=>{
+    const onVisible=()=>{if(document.visibilityState==="visible"&&navigator.onLine)sincronizarCola();};
+    document.addEventListener("visibilitychange",onVisible);
+    return()=>document.removeEventListener("visibilitychange",onVisible);
+  },[]);
 
   const agregarComentario=async(id)=>{if(!nuevoComentario.trim()||guardando)return;const texto=nuevoComentario.trim();setGuardando(true);if(usuarioReal&&typeof id==="string"){await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});}setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId:usuarioReal?.id||usuarioActivo.id,ts:Date.now()}]}:x));setNuevoComentario("");setGuardando(false);mostrarToast("Comentario agregado");};
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").delete().eq("obra_id",id);await supabase.from("obras").delete().eq("id",id);}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
