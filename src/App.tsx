@@ -287,6 +287,27 @@ export default function App({ session }) {
   const [avisoObraEliminada, setAvisoObraEliminada] = useState<string|null>(null);
   const [cargandoDatos,    setCargandoDatos]    = useState(true);
   const [novedadesPorObra, setNovedadesPorObra] = useState({1:NOVEDADES_DEMO,2:[]});
+  const [estaOnline,       setEstaOnline]       = useState(typeof navigator!=="undefined"?navigator.onLine:true);
+  const [colaOffline,      setColaOffline]      = useState<any[]>(()=>{try{return JSON.parse(localStorage.getItem("fixgo_cola_offline")||"[]");}catch(e){return[];}});
+  const [sincronizando,    setSincronizando]    = useState(false);
+  useEffect(()=>{
+    const onOnline=()=>setEstaOnline(true);
+    const onOffline=()=>setEstaOnline(false);
+    window.addEventListener("online",onOnline);
+    window.addEventListener("offline",onOffline);
+    return()=>{window.removeEventListener("online",onOnline);window.removeEventListener("offline",onOffline);};
+  },[]);
+  useEffect(()=>{
+    if(!usuarioReal)return;
+    try{localStorage.setItem("fixgo_cache_novedades",JSON.stringify(novedadesPorObra));}catch(e){}
+  },[novedadesPorObra,usuarioReal?.id]);
+  useEffect(()=>{
+    if(!usuarioReal||obras.length===0)return;
+    try{localStorage.setItem("fixgo_cache_obras_full",JSON.stringify(obras));}catch(e){}
+  },[obras,usuarioReal?.id]);
+  useEffect(()=>{
+    try{localStorage.setItem("fixgo_cola_offline",JSON.stringify(colaOffline));}catch(e){}
+  },[colaOffline]);
   const [vista,            setVista]            = useState("lista");
   const [form,             setForm]             = useState(FORM_INICIAL);
   const [masOpciones,      setMasOpciones]      = useState(false);
@@ -626,6 +647,17 @@ export default function App({ session }) {
   useEffect(()=>{
     if(!usuarioReal){setCargandoDatos(false);return;}
     if(!invitacionProcesada)return;
+    if(!estaOnline){
+      // ── Sin conexión: hidratar desde lo guardado localmente ──
+      try{
+        const obrasCache=JSON.parse(localStorage.getItem("fixgo_cache_obras_full")||"null");
+        const novsCache=JSON.parse(localStorage.getItem("fixgo_cache_novedades")||"null");
+        if(obrasCache)setObras(obrasCache);
+        if(novsCache)setNovedadesPorObra(novsCache);
+      }catch(e){}
+      setCargandoDatos(false);
+      return;
+    }
     (async()=>{
      try{
       // Obras propias (donde es dueño)
@@ -836,6 +868,17 @@ export default function App({ session }) {
     setGuardando(true);
     const resp=form.responsable==="Otro"&&form.responsableCustom.trim()?form.responsableCustom.trim():form.responsable;
     const sect=form.sector==="Otro"&&form.sectorCustom.trim()?form.sectorCustom.trim():form.sector;
+    if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"&&!estaOnline){
+      // ── SIN CONEXIÓN: guardar localmente y encolar para sincronizar ──
+      const tempId=`local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+      const payload={obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:form.responsableUsuarioId||null};
+      const comentarioInicial=form.comentario.trim();
+      const nn={...payload,id:tempId,fecha:new Date().toISOString().slice(0,10),fechaLimite:payload.fecha_limite||"",ocultoCapataz:payload.oculto_capataz,autorId:payload.autor_id,pendienteSync:true,comentarios:comentarioInicial?[{texto:comentarioInicial,autorId:usuarioReal.id,ts:Date.now()}]:[]};
+      setNovedades(n=>[nn,...n]);
+      setColaOffline(c=>[...c,{tipo:"crear_novedad",tempId,payload,comentario:comentarioInicial||null}]);
+      setForm(FORM_INICIAL);setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast("📡 Guardada sin conexión — se sube sola cuando vuelva la señal");
+      return;
+    }
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
       const{data}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:form.responsableUsuarioId||null}).select().single();
       if(data){
@@ -849,11 +892,61 @@ export default function App({ session }) {
     setForm(FORM_INICIAL);setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast("Tarea creada con éxito");
   };
 
-  const resolver=async(id)=>{const actual=novedades.find(x=>x.id===id);const nuevoEstado=!actual?.resuelta;const ahora=nuevoEstado?new Date().toISOString():null;if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:nuevoEstado,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null,resueltaAt:ahora}:x));};
+  const resolver=async(id)=>{
+    const actual=novedades.find(x=>x.id===id);
+    const nuevoEstado=!actual?.resuelta;
+    const ahora=nuevoEstado?new Date().toISOString():null;
+    if(usuarioReal&&typeof id==="string"&&id.startsWith("local-")){
+      // Todavía ni se subió la novedad — solo actualizamos localmente, se sube ya resuelta cuando sincronice
+      setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null,resueltaAt:ahora}:x));
+      setColaOffline(c=>c.map(item=>item.tempId===id?{...item,payload:{...item.payload,resuelta:nuevoEstado,resuelta_at:ahora}}:item));
+      return;
+    }
+    if(usuarioReal&&typeof id==="string"&&!estaOnline){
+      setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null,resueltaAt:ahora,pendienteSync:true}:x));
+      setColaOffline(c=>[...c,{tipo:"resolver",id,resuelta:nuevoEstado,resuelta_at:ahora}]);
+      return;
+    }
+    if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:nuevoEstado,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);}
+    setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null,resueltaAt:ahora}:x));
+  };
   const enviarAprobacion=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({estado_aprobacion:"pendiente"}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,estadoAprobacion:"pendiente"}:x));};
   const aprobar=async(id)=>{const ahora=new Date().toISOString();if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,resueltaAt:ahora}:x));};
   const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null,resuelta_at:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null,resueltaAt:null}:x));};
   const eliminar=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").delete().eq("id",id);if(error){alert("No se pudo eliminar: "+error.message);return;}}setNovedades(n=>n.filter(x=>x.id!==id));setVista("lista");};
+  const sincronizarCola=async()=>{
+    if(!usuarioReal||sincronizando)return;
+    const pendientes=JSON.parse(localStorage.getItem("fixgo_cola_offline")||"[]");
+    if(pendientes.length===0)return;
+    setSincronizando(true);
+    let quedaronPendientes=[...pendientes];
+    for(const item of pendientes){
+      try{
+        if(item.tipo==="crear_novedad"){
+          const{data,error}=await supabase.from("novedades").insert(item.payload).select().single();
+          if(error)throw error;
+          if(item.comentario){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:item.comentario});}
+          const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,resueltaAt:data.resuelta_at||null,fotoResolucion:data.foto_resolucion||null,comentarios:item.comentario?[{texto:item.comentario,autorId:usuarioReal.id,ts:Date.now()}]:[]};
+          setNovedades(n=>n.map(x=>x.id===item.tempId?nn:x));
+          quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
+        } else if(item.tipo==="resolver"){
+          await supabase.from("novedades").update({resuelta:item.resuelta,estado_aprobacion:null,resuelta_at:item.resuelta_at}).eq("id",item.id);
+          setNovedades(n=>n.map(x=>x.id===item.id?{...x,pendienteSync:false}:x));
+          quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
+        }
+      }catch(e){
+        console.error("Error sincronizando item offline:",e);
+        // lo dejamos en la cola para reintentar la próxima vez
+      }
+    }
+    setColaOffline(quedaronPendientes);
+    setSincronizando(false);
+    if(quedaronPendientes.length===0&&pendientes.length>0)mostrarToast("✅ Todo sincronizado");
+  };
+  useEffect(()=>{
+    if(estaOnline&&colaOffline.length>0)sincronizarCola();
+  },[estaOnline]);
+
   const agregarComentario=async(id)=>{if(!nuevoComentario.trim()||guardando)return;const texto=nuevoComentario.trim();setGuardando(true);if(usuarioReal&&typeof id==="string"){await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});}setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId:usuarioReal?.id||usuarioActivo.id,ts:Date.now()}]}:x));setNuevoComentario("");setGuardando(false);mostrarToast("Comentario agregado");};
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").delete().eq("obra_id",id);await supabase.from("obras").delete().eq("id",id);}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
   const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
@@ -1009,6 +1102,13 @@ export default function App({ session }) {
     <button disabled={subiendoFotoResolucion} onClick={()=>confirmarSinFoto(modalFotoResolucion)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>Confirmar sin foto</button>
     <button disabled={subiendoFotoResolucion} onClick={()=>setModalFotoResolucion(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",opacity:subiendoFotoResolucion?0.6:1}}>Cancelar</button>
   </div></div>;
+
+  const offlineBannerJSX = (!estaOnline||colaOffline.length>0)&&(
+    <div style={{background:!estaOnline?"#FF3B30":"#FFB800",color:"#fff",padding:"8px 16px",fontSize:12.5,fontWeight:700,textAlign:"center",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+      {!estaOnline?<>📡 Sin conexión — viendo datos guardados{colaOffline.length>0?` (${colaOffline.length} pendiente${colaOffline.length!==1?"s":""} de subir)`:""}</>
+      :<>{sincronizando?<span style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>:"⏳"} {sincronizando?"Sincronizando...":`${colaOffline.length} novedad${colaOffline.length!==1?"es":""} pendiente${colaOffline.length!==1?"s":""} de subir`}</>}
+    </div>
+  );
 
   const modalPeriodoJSX = modalPeriodoReporte&&<div style={s.overlay} onClick={()=>{if(!generandoReporte)setModalPeriodoReporte(false);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     {generandoReporte?(
@@ -1284,7 +1384,8 @@ export default function App({ session }) {
         ))}
         <p style={{textAlign:"center",fontSize:12,color:"#C7C7CC",marginBottom:8}}>Fixgo · Versión 1.0.0</p>
       </div>
-      <NavBar tabActiva={tabActiva} onTab={(k)=>{setVistaInfoApp(false);setTabActiva(k);irInicio();}} onPerfil={()=>{setVistaInfoApp(false);setVistaPerfil(true);}} />
+      {offlineBannerJSX}
+        <NavBar tabActiva={tabActiva} onTab={(k)=>{setVistaInfoApp(false);setTabActiva(k);irInicio();}} onPerfil={()=>{setVistaInfoApp(false);setVistaPerfil(true);}} />
     </div>
   );
 
@@ -1372,6 +1473,7 @@ export default function App({ session }) {
           </div>
           <p style={{textAlign:"center",fontSize:12,color:"#C7C7CC",marginBottom:8}}>Fixgo · Versión 1.0.0</p>
         </div>
+        {offlineBannerJSX}
         <NavBar tabActiva="perfil" onTab={(k)=>{setVistaPerfil(false);setTabActiva(k);}} onPerfil={()=>{}} />
       </div>
     );
@@ -1453,6 +1555,7 @@ export default function App({ session }) {
             </button>
           ))}
         </div>
+        {offlineBannerJSX}
         <NavBar tabActiva="alertas" onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
       </div>
     );
@@ -1658,6 +1761,7 @@ export default function App({ session }) {
           </>)}
         </div>
         )}
+        {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
         {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
@@ -1803,6 +1907,7 @@ export default function App({ session }) {
           ))}
           {tareasU.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:"#8E8E93"}}><p style={{fontSize:40,margin:0}}>🎉</p><p style={{fontSize:16,fontWeight:600,margin:"10px 0 4px"}}>{esProfesional?"La obra no tiene novedades":"Sin novedades asignadas"}</p></div>}
         </div>
+        {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {asignarTareaMiembro&&(()=>{
           const sinAsignar=novedades.filter(n=>!n.resuelta&&!n.responsable_usuario_id);
@@ -1911,6 +2016,7 @@ export default function App({ session }) {
             <Plus size={22} color="#8E8E93"/><span style={{fontSize:16,fontWeight:600,color:"#8E8E93"}}>Invitar integrante</span>
           </button>
         </div>
+        {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
         {modalInvitarJSX}
@@ -2101,6 +2207,7 @@ export default function App({ session }) {
             </div>
           )}
         </div>
+        {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
         {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#8E8E93"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
@@ -2149,6 +2256,7 @@ export default function App({ session }) {
               :<span style={{display:"flex",alignItems:"center",gap:6}}><CheckCircle size={16}/>Guardar cambios</span>}
           </button>
         </div>
+        {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
       </div>
@@ -2264,6 +2372,7 @@ export default function App({ session }) {
           {(detalle.autorId===miId||puedeGestionar)&&<button style={{width:"100%",background:"#fff",border:"none",borderRadius:14,padding:"14px",display:"flex",alignItems:"center",justifyContent:"center",gap:6,color:"#FF3B30",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={()=>setConfirmarEliminar(detalle.id)}><Trash2 size={15}/>Borrar novedad</button>}
           </div>
         </div>
+        {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
         {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
@@ -2318,6 +2427,7 @@ export default function App({ session }) {
           </>}
           <button style={{...s.btnPrincipal,opacity:(form.descripcion.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={guardar}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={16}/>Guardar novedad</>}</span></button>
         </div>
+        {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
@@ -2398,6 +2508,7 @@ export default function App({ session }) {
                     <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
                     <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
                     {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
+                    {nov.pendienteSync&&<span style={{fontSize:9.5,fontWeight:800,color:"#FFB800",background:"#FFB80015",padding:"2px 7px",borderRadius:99,textTransform:"uppercase"}}>📡 Pendiente</span>}
                   </div>
                   <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
                   <p style={{margin:0,fontSize:12,color:"#636366",display:"flex",alignItems:"center",gap:4,flexWrap:"nowrap",minWidth:0}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?<span style={{width:18,height:18,borderRadius:"50%",background:colorPastelDe(miembro.uid),flexShrink:0,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff"}}>{miembro.nombre?miembro.nombre[0].toUpperCase():""}</span>:<Wrench size={12} color="#8E8E93" style={{flexShrink:0}}/>;})()}<span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0,fontWeight:nov.responsable_usuario_id?700:400,color:nov.responsable_usuario_id?"#1C1C1E":"#636366"}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?miembro.nombre:nov.responsable;})()}</span><span style={{color:"#C7C7CC",margin:"0 2px",flexShrink:0}}>·</span><MapPin size={12} color="#8E8E93" style={{flexShrink:0}}/><span style={{whiteSpace:"nowrap",flexShrink:0}}>{nov.sector}</span></p>
@@ -2410,7 +2521,8 @@ export default function App({ session }) {
         })}
       </div>
       {puedeGestionar&&novedadesFiltradas.length>0&&<button onClick={()=>setVista("nueva")} aria-label="Nueva novedad" style={{position:"absolute",right:18,bottom:82,width:58,height:58,borderRadius:"50%",background:"#1C1C1E",border:"none",boxShadow:"0 4px 16px rgba(0,0,0,0.28)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:20}}><Plus size={26} color="#fff" strokeWidth={2.5}/></button>}
-      <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
+      {offlineBannerJSX}
+        <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
 
       {menuContextual&&<div style={s.overlay} onClick={()=>setMenuContextual(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones</p>{(()=>{const nov=novedades.find(n=>n.id===menuContextual.novId);const puedeReabrirOResolver=nov&&(!nov.resuelta||nov.autorId===miId||puedeGestionar);const puedeEliminar=nov&&(nov.autorId===miId||puedeGestionar);const puedeAsignar=nov&&(nov.autorId===miId||puedeGestionar);return(<>
         {puedeReabrirOResolver&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{resolver(menuContextual.novId);setMenuContextual(null);}}>{nov?.resuelta?"↩ Reabrir":"✅ Marcar como resuelto"}</button>}
