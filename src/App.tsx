@@ -904,7 +904,7 @@ export default function App({ session }) {
     }
     if(usuarioReal&&typeof id==="string"&&!estaOnline){
       setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null,resueltaAt:ahora,pendienteSync:true}:x));
-      setColaOffline(c=>[...c,{tipo:"resolver",id,resuelta:nuevoEstado,resuelta_at:ahora}]);
+      setColaOffline(c=>[...c,{tipo:"resolver",id,resuelta:nuevoEstado,resuelta_at:ahora,obraId:obraActual?.id}]);
       return;
     }
     if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:nuevoEstado,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);}
@@ -914,10 +914,12 @@ export default function App({ session }) {
   const aprobar=async(id)=>{const ahora=new Date().toISOString();if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,resueltaAt:ahora}:x));};
   const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null,resuelta_at:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null,resueltaAt:null}:x));};
   const eliminar=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").delete().eq("id",id);if(error){alert("No se pudo eliminar: "+error.message);return;}}setNovedades(n=>n.filter(x=>x.id!==id));setVista("lista");};
+  const sincronizandoRef = useRef(false);
   const sincronizarCola=async()=>{
-    if(!usuarioReal||sincronizando)return;
+    if(!usuarioReal||sincronizandoRef.current)return;
+    sincronizandoRef.current=true;
     const pendientes=JSON.parse(localStorage.getItem("fixgo_cola_offline")||"[]");
-    if(pendientes.length===0)return;
+    if(pendientes.length===0){sincronizandoRef.current=false;return;}
     setSincronizando(true);
     let quedaronPendientes=[...pendientes];
     for(const item of pendientes){
@@ -926,12 +928,15 @@ export default function App({ session }) {
           const{data,error}=await supabase.from("novedades").insert(item.payload).select().single();
           if(error)throw error;
           if(item.comentario){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:item.comentario});}
-          const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,resueltaAt:data.resuelta_at||null,fotoResolucion:data.foto_resolucion||null,comentarios:item.comentario?[{texto:item.comentario,autorId:usuarioReal.id,ts:Date.now()}]:[]};
-          setNovedades(n=>n.map(x=>x.id===item.tempId?nn:x));
+          setNovedadesPorObra(p=>{const lista=p[item.payload.obra_id]||[];return{...p,[item.payload.obra_id]:lista.filter(x=>x.id!==item.tempId)};});
           quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
         } else if(item.tipo==="resolver"){
           await supabase.from("novedades").update({resuelta:item.resuelta,estado_aprobacion:null,resuelta_at:item.resuelta_at}).eq("id",item.id);
-          setNovedades(n=>n.map(x=>x.id===item.id?{...x,pendienteSync:false}:x));
+          setNovedadesPorObra(p=>{
+            const obraKey=item.obraId&&p[item.obraId]?item.obraId:Object.keys(p).find(k=>(p[k]||[]).some(x=>x.id===item.id));
+            if(!obraKey)return p;
+            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.id?{...x,pendienteSync:false}:x)};
+          });
           quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
         }
       }catch(e){
@@ -941,6 +946,7 @@ export default function App({ session }) {
     }
     setColaOffline(quedaronPendientes);
     setSincronizando(false);
+    sincronizandoRef.current=false;
     if(quedaronPendientes.length===0&&pendientes.length>0)mostrarToast("✅ Todo sincronizado");
   };
   useEffect(()=>{
