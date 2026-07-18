@@ -913,7 +913,29 @@ export default function App({ session }) {
   const enviarAprobacion=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({estado_aprobacion:"pendiente"}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,estadoAprobacion:"pendiente"}:x));};
   const aprobar=async(id)=>{const ahora=new Date().toISOString();if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,resueltaAt:ahora}:x));};
   const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null,resuelta_at:null}).eq("id",id);}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null,resueltaAt:null}:x));};
-  const eliminar=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").delete().eq("id",id);if(error){alert("No se pudo eliminar: "+error.message);return;}}setNovedades(n=>n.filter(x=>x.id!==id));setVista("lista");};
+  const eliminar=async(id)=>{
+    if(typeof id==="string"&&id.startsWith("local-")){
+      // Todavía ni se subió, la sacamos también de la cola de sincronización
+      setColaOffline(c=>c.filter(item=>item.tempId!==id));
+      setNovedades(n=>n.filter(x=>x.id!==id));
+      setVista("lista");
+      return;
+    }
+    if(!estaOnline){
+      alert("📡 No hay conexión. Para borrar esta novedad necesitás internet — probá de nuevo cuando vuelva la señal.");
+      return;
+    }
+    if(usuarioReal&&typeof id==="string"){
+      const{error}=await supabase.from("novedades").delete().eq("id",id);
+      if(error){
+        const sinRed=error.message?.toLowerCase().includes("fetch")||error.message?.toLowerCase().includes("network");
+        alert(sinRed?"📡 No se pudo borrar por falta de conexión. Probá de nuevo cuando vuelva la señal.":"No se pudo eliminar: "+error.message);
+        return;
+      }
+    }
+    setNovedades(n=>n.filter(x=>x.id!==id));
+    setVista("lista");
+  };
   const sincronizandoRef = useRef(false);
   const sincronizarCola=async()=>{
     if(!usuarioReal||sincronizandoRef.current)return;
