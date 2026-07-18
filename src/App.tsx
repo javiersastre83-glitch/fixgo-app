@@ -18,7 +18,7 @@ const colorPastelDe = (id) => { const s=String(id||""); let h=0; for(let i=0;i<s
 const colorPorIndice = (idx) => PALETA_PASTEL[idx%PALETA_PASTEL.length];
 const ROLES_SISTEMA = [
   { id:"profesional", label:"Profesional", emoji:"📐", color:"#0057FF", desc:"Arquitecto, Ingeniero o Idóneo." },
-  { id:"co_profesional", label:"Co-profesional", emoji:"🤝", color:"#0057FF", desc:"Mismos poderes que el dueño sobre esta obra." },
+  { id:"co_profesional", label:"Colega", emoji:"🤝", color:"#0057FF", desc:"Mismos poderes que el dueño sobre esta obra." },
   { id:"capataz",     label:"Capataz",     emoji:"🦺",   color:"#FF6B00", desc:"Gestiona subcontratos y hace seguimiento." },
   { id:"operario",    label:"Operario",    emoji:"👷",   color:"#8E44AD", desc:"Ejecuta las novedades." },
 ];
@@ -484,7 +484,7 @@ export default function App({ session }) {
   };
   const reenviarInvitacion=(inv)=>{
     const link=`https://www.fixgo.ar/?invitacion=${inv.codigo}`;
-    const rolTxt=inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Co-profesional":(inv.especialidad||"Operario");
+    const rolTxt=inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":(inv.especialidad||"Operario");
     const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
@@ -883,11 +883,11 @@ export default function App({ session }) {
     setGenerandoLink(false);
     setInvitacionesPendientes(p=>[{codigo,rol:invitarRol,especialidad:esp,nombre:invitarNombre.trim()||null,telefono:invitarTelefono.trim()||null,created_at:new Date().toISOString()},...p]);
     if(invitarCallback){
-      const etiqueta=invitarNombre.trim()||esp||(invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Co-profesional":"Nuevo integrante");
+      const etiqueta=invitarNombre.trim()||esp||(invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":"Nuevo integrante");
       invitarCallback({responsable:etiqueta,usuarioId:null});
     }
   };
-  const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Co-profesional":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
+  const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
   const guardarNombreEstudio=async()=>{
     if(!usuarioReal)return;
     const{error}=await supabase.from("usuarios").update({nombre_estudio:nombreEstudioInput.trim()||null}).eq("id",usuarioReal.id);
@@ -1052,7 +1052,7 @@ export default function App({ session }) {
           <button key={val} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol===val?"#0057FF":"#E5E5EA"}`,background:invitarRol===val?"#0057FF15":"#fff",color:invitarRol===val?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol===val?700:400,cursor:"pointer"}} onClick={()=>setInvitarRol(val)}>{lbl}</button>
         ))}
         <button onClick={()=>{if(esVersionPro)setInvitarRol("co_profesional");else setModalPro(true);}} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol==="co_profesional"?"#0057FF":"#E5E5EA"}`,background:invitarRol==="co_profesional"?"#0057FF15":"#fff",color:invitarRol==="co_profesional"?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol==="co_profesional"?700:400,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:esVersionPro?1:0.7}}>
-          <span>🤝 Co-prof.</span>
+          <span>🤝 Colega</span>
           {!esVersionPro&&<span style={{fontSize:9,fontWeight:800,color:"#FFB800"}}>🔒 PRO</span>}
         </button>
       </div>
@@ -1077,7 +1077,7 @@ export default function App({ session }) {
       </div>
       <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#8E8E93"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
       <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={compartirLinkWhatsapp}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Compartir por WhatsApp</span></button>
-      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Co-profesional":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;if(navigator.share){navigator.share({title:"Invitación a Fixgo",text:msg}).catch(()=>{});}else{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Share2 size={16}/>Compartir por otro medio</span></button>
+      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;if(navigator.share){navigator.share({title:"Invitación a Fixgo",text:msg}).catch(()=>{});}else{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Share2 size={16}/>Compartir por otro medio</span></button>
       <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarCallback(null);}}>Cerrar</button>
     </>}
   </div></div>;
@@ -1606,7 +1606,7 @@ export default function App({ session }) {
                   <>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
                       {esDueno?<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#1C1C1E",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}>⭐ Tu obra</span>
-                      :<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#0057FF",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}>🤝 Co-profesional</span>}
+                      :<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#0057FF",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}>🤝 Colega</span>}
                       {tieneCoProfesional&&<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#0057FF12",color:"#0057FF",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}>🤝 En equipo</span>}
                       {enModoDirector&&<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#2E3A4B12",color:"#2E3A4B",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}>🧭 En Modo Director</span>}
                     </div>
@@ -1898,8 +1898,8 @@ export default function App({ session }) {
                 <div key={inv.codigo} style={{background:"#fff",borderRadius:16,padding:"12px 14px",boxShadow:"0 1px 3px rgba(0,0,0,0.06)",display:"flex",alignItems:"center",gap:12}}>
                   <div style={{width:40,height:40,borderRadius:"50%",background:"#FF950015",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:17}}>⏳</div>
                   <div style={{flex:1,minWidth:0}}>
-                    <p style={{margin:0,fontSize:14.5,fontWeight:700,color:"#1C1C1E"}}>{inv.nombre||(inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Co-profesional":inv.especialidad)||"Sin nombre"}</p>
-                    <p style={{margin:"1px 0 0",fontSize:12,color:"#8E8E93"}}>{inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Co-profesional":`Operario · ${inv.especialidad}`} · Esperando que acepte</p>
+                    <p style={{margin:0,fontSize:14.5,fontWeight:700,color:"#1C1C1E"}}>{inv.nombre||(inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":inv.especialidad)||"Sin nombre"}</p>
+                    <p style={{margin:"1px 0 0",fontSize:12,color:"#8E8E93"}}>{inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":`Operario · ${inv.especialidad}`} · Esperando que acepte</p>
                   </div>
                   <button onClick={()=>reenviarInvitacion(inv)} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",flexShrink:0}}><Share2 size={15} color="#1C1C1E"/></button>
                   <button onClick={()=>cancelarInvitacion(inv.codigo)} style={{background:"none",border:"none",cursor:"pointer",padding:6,display:"flex",alignItems:"center",flexShrink:0}}><Trash2 size={16} color="#C7C7CC"/></button>
