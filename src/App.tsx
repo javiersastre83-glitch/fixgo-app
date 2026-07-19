@@ -729,8 +729,12 @@ export default function App({ session }) {
         })};});
       })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"novedades"},(payload)=>{
-        const obraId=payload.old.obra_id;
-        setNovedadesPorObra(p=>{const lista=p[obraId];if(!lista)return p;return{...p,[obraId]:lista.filter(x=>x.id!==payload.old.id)};});
+        const idBorrado=payload.old.id;
+        setNovedadesPorObra(p=>{
+          const obraKey=payload.old.obra_id&&p[payload.old.obra_id]?payload.old.obra_id:Object.keys(p).find(k=>(p[k]||[]).some(x=>x.id===idBorrado));
+          if(!obraKey)return p;
+          return{...p,[obraKey]:p[obraKey].filter(x=>x.id!==idBorrado)};
+        });
       })
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"comentarios"},(payload)=>{
         const nuevo=payload.new;
@@ -880,7 +884,8 @@ export default function App({ session }) {
       return;
     }
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
-      const{data}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:form.responsableUsuarioId||null}).select().single();
+      const{data,error}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:form.responsableUsuarioId||null}).select().single();
+      if(error){alert("No se pudo guardar la novedad: "+error.message);setGuardando(false);guardandoRef.current=false;return;}
       if(data){
         const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
         if(form.comentario.trim()){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()});nn.comentarios=[{texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
@@ -991,6 +996,17 @@ export default function App({ session }) {
   const agregarComentario=async(id)=>{if(!nuevoComentario.trim()||guardando)return;const texto=nuevoComentario.trim();setGuardando(true);if(usuarioReal&&typeof id==="string"){await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});}setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId:usuarioReal?.id||usuarioActivo.id,ts:Date.now()}]}:x));setNuevoComentario("");setGuardando(false);mostrarToast("Comentario agregado");};
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){await supabase.from("novedades").delete().eq("obra_id",id);await supabase.from("obras").delete().eq("id",id);}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
   const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
+  const [modalEditarObra, setModalEditarObra] = useState<any>(null);
+  const [editarObraForm,  setEditarObraForm]  = useState({nombre:"",direccion:""});
+  const guardarEdicionObra=async()=>{
+    if(!editarObraForm.nombre.trim()||!modalEditarObra)return;
+    const{error}=await supabase.from("obras").update({nombre:editarObraForm.nombre.trim(),direccion:editarObraForm.direccion.trim()}).eq("id",modalEditarObra);
+    if(error){alert("No se pudo guardar: "+error.message);return;}
+    setObras(o=>o.map(x=>x.id===modalEditarObra?{...x,nombre:editarObraForm.nombre.trim(),direccion:editarObraForm.direccion.trim()}:x));
+    setObraActual(oa=>(oa&&oa.id===modalEditarObra)?{...oa,nombre:editarObraForm.nombre.trim(),direccion:editarObraForm.direccion.trim()}:oa);
+    setModalEditarObra(null);
+    mostrarToast("Obra actualizada");
+  };
   const crearObra=async()=>{if(!nuevaObraForm.nombre.trim()||guardando)return;setGuardando(true);if(usuarioReal){const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id}).select().single();if(error){alert("Error al crear la obra: "+error.message);setGuardando(false);return;}await supabase.from("equipo_obra").insert({obra_id:data.id,usuario_id:usuarioReal.id,rol_en_obra:"profesional"});const obraConEquipo={...data,equipo:[{uid:usuarioReal.id,rolEnObra:"profesional",nombre:usuarioActivoReal.nombre,especialidad:"Profesional",avatar:"📐"}]};setObras(o=>[...o,obraConEquipo]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);setGuardando(false);mostrarToast("Obra creada con éxito");};
 
   const abrirModalInvitar=(callback=null)=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarNombre("");setInvitarTelefono("");setLinkGenerado("");setInvitarCallback(()=>callback);setModalInvitar(true);};
@@ -1172,6 +1188,16 @@ export default function App({ session }) {
       <button onClick={()=>elegirPeriodo("personalizado")} style={{...s.btnPrincipal,background:"#2E3A4B",marginBottom:8}}>Generar con este rango</button>
       <button onClick={()=>setModalPeriodoReporte(false)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}}>Cancelar</button>
     </>)}
+  </div></div>;
+
+  const modalEditarObraJSX = modalEditarObra&&<div style={s.overlay} onClick={()=>setModalEditarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+    <p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Editar datos de la obra</p>
+    <input style={{...s.input,marginBottom:10}} placeholder="Nombre de la obra *" value={editarObraForm.nombre} onChange={e=>setEditarObraForm(f=>({...f,nombre:e.target.value}))}/>
+    <input style={{...s.input,marginBottom:20}} placeholder="Dirección (opcional)" value={editarObraForm.direccion} onChange={e=>setEditarObraForm(f=>({...f,direccion:e.target.value}))}/>
+    <div style={{display:"flex",gap:10}}>
+      <button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalEditarObra(null)}>Cancelar</button>
+      <button style={{...s.btnPrincipal,flex:1,opacity:editarObraForm.nombre.trim()?1:0.4}} disabled={!editarObraForm.nombre.trim()} onClick={guardarEdicionObra}>Guardar</button>
+    </div>
   </div></div>;
 
   const avisoObraEliminadaJSX = avisoObraEliminada&&<div style={s.overlay} onClick={()=>setAvisoObraEliminada(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
@@ -1840,6 +1866,7 @@ export default function App({ session }) {
               <button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
         {menuObra&&(()=>{const obraM=obras.find(o=>o.id===menuObra);const esDuenoM=usuarioReal&&obraM?.propietario_id===usuarioReal.id;const miRolM=(obraM?.equipo||[]).find(m=>m.uid===miId)?.rolEnObra;const esGestorM=esDuenoM||miRolM==="co_profesional";return(
         <div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p>
+          {esGestorM&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setEditarObraForm({nombre:obraM?.nombre||"",direccion:obraM?.direccion||""});setModalEditarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={15}/>Editar datos de la obra</span></button>}
           {esGestorM&&misEmpresasComoMiembro.length>0&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setModalCompartirObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}>Compartir con equipo</span></button>}
           {esDuenoM&&<button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar obra</span></button>}
           <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuObra(null)}>Cancelar</button>
@@ -2062,6 +2089,7 @@ export default function App({ session }) {
         {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
+        {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
     );
@@ -2472,6 +2500,7 @@ export default function App({ session }) {
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
+        {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
     );
@@ -2584,6 +2613,7 @@ export default function App({ session }) {
       {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#8E8E93"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
       {modalInvitarJSX}
         {avisoObraEliminadaJSX}
+        {modalEditarObraJSX}
         {modalPeriodoJSX}
     </div>
   );
