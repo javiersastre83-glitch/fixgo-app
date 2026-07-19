@@ -1536,10 +1536,8 @@ export default function App({ session }) {
             <p style={{margin:"0 0 4px",fontSize:15,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>Tu estudio</p>
             <p style={{margin:"0 0 14px",fontSize:12,color:"#8E8E93"}}>Aparece en los informes que generás. Es opcional.</p>
             <p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Nombre del estudio</p>
-            <div style={{display:"flex",gap:8,marginBottom:16}}>
-              <input style={{...s.input,flex:1,background:modoOscuro?"#3A3A3C":"#F2F2F7",color:modoOscuro?"#fff":"#1C1C1E",border:"none"}} value={nombreEstudioInput} onChange={e=>setNombreEstudioInput(e.target.value)} placeholder="Completar con el nombre de tu estudio" maxLength={40}/>
-              {nombreEstudioInput!==nombreEstudio&&<button onClick={guardarNombreEstudio} style={{background:"#0057FF",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontWeight:700,cursor:"pointer",fontSize:13,flexShrink:0}}>Guardar</button>}
-            </div>
+            <input style={{...s.input,marginBottom:10,background:modoOscuro?"#3A3A3C":"#F2F2F7",color:modoOscuro?"#fff":"#1C1C1E",border:"none"}} value={nombreEstudioInput} onChange={e=>setNombreEstudioInput(e.target.value)} placeholder="Completar con el nombre de tu estudio" maxLength={40}/>
+            <button onClick={guardarNombreEstudio} disabled={nombreEstudioInput===nombreEstudio} style={{...s.btnPrincipal,background:"#0057FF",marginTop:0,marginBottom:16,opacity:nombreEstudioInput===nombreEstudio?0.4:1}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar nombre</span></button>
             <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Logo</p>
             <input ref={fileRefLogo} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)subirLogoEstudio(f);}}/>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
