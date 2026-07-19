@@ -768,6 +768,20 @@ export default function App({ session }) {
       })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"equipo_obra"},(payload)=>{
         const obraId=payload.old.obra_id;const uidBorrado=payload.old.usuario_id;
+        if(uidBorrado&&uidBorrado===usuarioReal.id){
+          // ── Me sacaron a mí de esta obra: se la saco de mi lista y aviso ──
+          const obraSaliente=obras.find(o=>o.id===obraId);
+          setObras(os=>os.filter(o=>o.id!==obraId));
+          setNovedadesPorObra(p=>{const{[obraId]:_omitido,...resto}=p;return resto;});
+          if(obraActual?.id===obraId){setObraActual(null);setVistaRaiz("inicio");}
+          setAvisoObraEliminada(obraSaliente?.nombre||"una obra");
+          // Avisamos también al otro sistema (el que compara al recargar) para que no repita el mismo aviso después
+          try{
+            const cachePrev=JSON.parse(localStorage.getItem("fixgo_obras_cache")||"[]");
+            localStorage.setItem("fixgo_obras_cache",JSON.stringify(cachePrev.filter((o:any)=>o.id!==obraId)));
+          }catch(e){}
+          return;
+        }
         setObras(os=>os.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).filter(x=>x.uid!==uidBorrado)}:o));
         setObraActual(oa=>(oa&&oa.id===obraId)?{...oa,equipo:(oa.equipo||[]).filter(x=>x.uid!==uidBorrado)}:oa);
       })
