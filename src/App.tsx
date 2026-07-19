@@ -1214,6 +1214,17 @@ export default function App({ session }) {
     </div>
   </div></div>;
 
+  const asignacionRapidaJSX = asignacionRapida&&(()=>{const nov=novedades.find(n=>n.id===asignacionRapida);if(!nov)return null;return(
+    <div style={s.overlay} onClick={()=>setAsignacionRapida(null)}><div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+      <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
+      <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>{nov.descripcion}</p>
+      <div style={{overflowY:"auto"}}>
+        <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId}))} />
+      </div>
+      <button type="button" onClick={()=>setAsignacionRapida(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:16}}>Cancelar</button>
+    </div></div>
+  );})();
+
   const avisoObraEliminadaJSX = avisoObraEliminada&&<div style={s.overlay} onClick={()=>setAvisoObraEliminada(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <div style={{textAlign:"center",marginBottom:20}}>
       <span style={{fontSize:44}}>👋</span>
@@ -1283,12 +1294,31 @@ export default function App({ session }) {
     const deltaColor=(tipo)=>tipo==="good"?"#1E9E4A":tipo==="bad"?"#E5484D":"#8E8E93";
     return(
       <div style={{...s.root,background:"#8A8D93",overflowY:"auto",padding:"20px"}}>
-        <style>{`@media print{body *{visibility:hidden;} .hoja-reporte,.hoja-reporte *{visibility:visible;} .hoja-reporte{position:absolute;left:0;top:0;} .no-print{display:none!important;}}`}</style>
-        <div className="no-print" style={{maxWidth:794,margin:"0 auto 14px",display:"flex",gap:10}}>
+        <style>{`
+          @media print{
+            body *{visibility:hidden;}
+            .hoja-reporte,.hoja-reporte *{visibility:visible;}
+            .hoja-reporte{position:absolute;left:0;top:0;width:794px!important;max-width:794px!important;padding:32px 40px!important;box-shadow:none!important;}
+            .no-print{display:none!important;}
+            .rep-kpi-strip{flex-wrap:nowrap!important;}
+            .rep-kpi-strip>div{flex:1 1 0!important;margin-bottom:0!important;}
+            .rep-2col,.rep-2col-wn{grid-template-columns:1fr 1fr!important;gap:20px!important;}
+            .rep-foto-grid{grid-template-columns:repeat(5,1fr)!important;}
+            @page{size:A4;margin:8mm;}
+          }
+          @media screen and (max-width:850px){
+            .hoja-reporte{padding:24px 18px!important;}
+            .rep-kpi-strip{flex-wrap:wrap!important;}
+            .rep-kpi-strip>div{flex:1 1 40%!important;border-right:none!important;margin-bottom:14px!important;}
+            .rep-2col,.rep-2col-wn{grid-template-columns:1fr!important;gap:18px!important;}
+            .rep-foto-grid{grid-template-columns:repeat(2,1fr)!important;}
+          }
+        `}</style>
+        <div className="no-print" style={{maxWidth:794,width:"100%",boxSizing:"border-box",margin:"0 auto 14px",display:"flex",gap:10,padding:"0 4px"}}>
           <button onClick={()=>{setVistaReporte(false);setReporteData(null);}} style={{background:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><ChevronLeft size={16}/>Volver</button>
           <button onClick={()=>window.print()} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer"}}>Imprimir / Guardar PDF</button>
         </div>
-        <div className="hoja-reporte" style={{background:"#fff",width:794,minHeight:1000,margin:"0 auto",padding:"40px 46px",boxShadow:"0 4px 24px rgba(0,0,0,0.2)"}}>
+        <div className="hoja-reporte" style={{background:"#fff",width:"100%",maxWidth:794,minHeight:1000,margin:"0 auto",padding:"40px 46px",boxShadow:"0 4px 24px rgba(0,0,0,0.2)",boxSizing:"border-box"}}>
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:24}}>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.5,marginBottom:14}}><div style={{width:15,height:15,borderRadius:4,background:"#8E8E93",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:8.5}}>F</div><span style={{fontWeight:700,fontSize:10,color:"#8E8E93"}}>Generado con Fixgo</span></div>
@@ -1304,7 +1334,7 @@ export default function App({ session }) {
           </div>
           <div style={{height:3,background:"linear-gradient(90deg,#34C759,#5CA9E0)",borderRadius:99,margin:"18px 0 22px"}}/>
 
-          <div style={{display:"flex",background:"#F7F7F8",border:"1px solid #EEEEF0",borderRadius:12,padding:"18px 6px",marginBottom:26}}>
+          <div className="rep-kpi-strip" style={{display:"flex",background:"#F7F7F8",border:"1px solid #EEEEF0",borderRadius:12,padding:"18px 6px",marginBottom:26}}>
             {[["Resueltas",rd.resueltas,rd.deltaResueltas],["Reportadas",rd.reportadas,rd.deltaReportadas],["Tiempo prom. resolución",rd.tiempoProm.toFixed(1)+"d",rd.deltaTiempo],["Pendientes",rd.pendientes,null],["Críticas abiertas",rd.criticas,null]].map(([lbl,num,d]:any,i)=>(
               <div key={i} style={{flex:1,textAlign:"center",padding:"0 8px",borderRight:i<4?"1px solid #E5E5E7":"none"}}>
                 <div style={{fontSize:8.5,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.3,minHeight:22,display:"flex",alignItems:"center",justifyContent:"center"}}>{lbl}</div>
@@ -1314,7 +1344,7 @@ export default function App({ session }) {
             ))}
           </div>
 
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:32,marginBottom:30}}>
+          <div className="rep-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:32,marginBottom:30}}>
             <div>
               <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Novedades por sector</p>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
@@ -1347,7 +1377,7 @@ export default function App({ session }) {
             </div>
           </div>
 
-          <div style={{display:"grid",gridTemplateColumns:"1.7fr 1fr",gap:32,marginBottom:30,alignItems:"start"}}>
+          <div className="rep-2col-wn" style={{display:"grid",gridTemplateColumns:"1.7fr 1fr",gap:32,marginBottom:30,alignItems:"start"}}>
             <div>
               <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Equipo ({rd.actividadPersonas.length} integrante{rd.actividadPersonas.length!==1?"s":""}) — actividad del período</p>
               <div style={{display:"flex",gap:14,fontSize:9.5,color:"#636366",marginBottom:14}}>
@@ -1396,7 +1426,7 @@ export default function App({ session }) {
           <div>
             <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Fotos de resultado</p>
             {rd.fotos.length===0?<p style={{color:"#8E8E93",fontSize:12}}>No hay fotos de resultado en este período</p>:
-            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+            <div className="rep-foto-grid" style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
               {rd.fotos.map((f:any)=>(
                 <div key={f.num} style={{borderRadius:9,overflow:"hidden",background:"#fff",border:"1px solid #EEEEF0"}}>
                   <img src={f.foto} alt="" style={{width:"100%",height:70,objectFit:"cover",display:"block"}}/>
@@ -2103,6 +2133,7 @@ export default function App({ session }) {
         {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
+        {asignacionRapidaJSX}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
@@ -2403,6 +2434,9 @@ export default function App({ session }) {
                 <Phone size={16} color="#0057FF"/>
               </button>
             </>}
+            {(detalle.autorId===miId||puedeGestionar)&&<button onClick={()=>setAsignacionRapida(detalle.id)} style={{width:34,height:34,borderRadius:10,background:"#F2F2F7",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <Edit2 size={15} color="#1C1C1E"/>
+            </button>}
           </div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {detalle.sector&&<span style={{display:"flex",alignItems:"center",gap:5,background:"#F2F2F7",borderRadius:99,padding:"5px 10px",fontSize:12,fontWeight:600,color:"#636366"}}><MapPin size={11} color="#8E8E93"/>{detalle.sector}</span>}
@@ -2460,6 +2494,7 @@ export default function App({ session }) {
         {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
         {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
         {modalFotoResolucionJSX}
+        {asignacionRapidaJSX}
       </div>
     );
   }
@@ -2514,6 +2549,7 @@ export default function App({ session }) {
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
+        {asignacionRapidaJSX}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
@@ -2613,20 +2649,12 @@ export default function App({ session }) {
         {puedeAsignar&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setAsignacionRapida(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={15}/>Asignar a alguien del equipo</span></button>}
         {puedeEliminar&&<button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminar(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar</span></button>}
       </>);})()}<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
-      {asignacionRapida&&(()=>{const nov=novedades.find(n=>n.id===asignacionRapida);if(!nov)return null;return(
-        <div style={s.overlay} onClick={()=>setAsignacionRapida(null)}><div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
-          <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
-          <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>{nov.descripcion}</p>
-          <div style={{overflowY:"auto"}}>
-            <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId}))} />
-          </div>
-          <button type="button" onClick={()=>setAsignacionRapida(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:16}}>Cancelar</button>
-        </div></div>
-      );})()}
+      {null}
       {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
       {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#8E8E93"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
       {modalInvitarJSX}
         {avisoObraEliminadaJSX}
+        {asignacionRapidaJSX}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
     </div>
