@@ -2040,8 +2040,8 @@ export default function App({ session }) {
           <div>
             <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resumen de la obra</p>
             <div style={{display:"flex",gap:10}}>
-              {[["#FF6B00",obraPend,"Pendientes"],["#34C759",obraRes,"Resueltas"],["#1C1C1E",novedades.length,"Total"]].map(([col,val,lbl])=>(
-                <div key={lbl} style={{flex:1,background:"#fff",borderRadius:14,padding:"14px 8px",textAlign:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}><p style={{margin:0,fontSize:24,fontWeight:800,color:col}}>{val}</p><p style={{margin:"2px 0 0",fontSize:11,color:"#8E8E93"}}>{lbl}</p></div>
+              {[["#FF6B00",obraPend,"Pendientes","pendientes"],["#34C759",obraRes,"Resueltas","resueltas"],["#1C1C1E",novedades.length,"Total","todas"]].map(([col,val,lbl,filtroVal])=>(
+                <div key={lbl} onClick={()=>{setFiltro(filtroVal);setVistaEquipo(false);setVista("lista");}} style={{flex:1,background:"#fff",borderRadius:14,padding:"14px 8px",textAlign:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.06)",cursor:"pointer"}}><p style={{margin:0,fontSize:24,fontWeight:800,color:col}}>{val}</p><p style={{margin:"2px 0 0",fontSize:11,color:"#8E8E93"}}>{lbl}</p></div>
               ))}
             </div>
           </div>
