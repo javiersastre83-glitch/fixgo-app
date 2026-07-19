@@ -1158,7 +1158,7 @@ export default function App({ session }) {
 
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);};
-  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setOrden("urgencia");setOrdenDesc(false);setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);
+  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setOrden("urgencia");setOrdenDesc(false);setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);setModalEditarObra(null);setMenuObra(null);setModalCompartirObra(null);
     // Cargar novedades de esta obra si no están cargadas aún
     if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
