@@ -1812,10 +1812,10 @@ export default function App({ session }) {
             };
 
             return(
-              <button key={obra.id} style={{...s.cardObra,padding:"16px 18px",textAlign:"left"}} onClick={()=>irObra(obra)}
-                onContextMenu={e=>{e.preventDefault();setMenuObra(obra.id);}}
-                onPointerDown={e=>{const t=setTimeout(()=>setMenuObra(obra.id),600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
-                onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuObra(obra.id),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
+              <button key={obra.id} style={{...s.cardObra,padding:"16px 18px",textAlign:"left"}} onClick={()=>{if(obra._menuAbierto){obra._menuAbierto=false;return;}irObra(obra);}}
+                onContextMenu={e=>{e.preventDefault();obra._menuAbierto=true;setMenuObra(obra.id);}}
+                onPointerDown={e=>{const t=setTimeout(()=>{obra._menuAbierto=true;setMenuObra(obra.id);},600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
+                onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>{obra._menuAbierto=true;setMenuObra(obra.id);},600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
 
                 {esGestorObra?(
                   // ── TARJETA DUEÑO / CO-PROFESIONAL ──
