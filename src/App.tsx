@@ -180,7 +180,7 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
         {onInvitarNuevo&&<button type="button" onClick={onInvitarNuevo}
           style={{flexShrink:0,minWidth:110,background:"#F9F9F9",border:"1.5px dashed #D0D0D5",borderRadius:14,padding:"10px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",justifyContent:"center"}}>
           <div style={{fontSize:18,color:"#8E8E93",lineHeight:1}}>＋</div>
-          <div style={{fontSize:11,fontWeight:700,color:"#8E8E93",marginTop:3,whiteSpace:"nowrap"}}>Invitar integrante</div>
+          <div style={{fontSize:11,fontWeight:700,color:"#8E8E93",marginTop:3,whiteSpace:"nowrap"}}>Invitar nuevo integrante</div>
         </button>}
       </div>
 
@@ -1223,7 +1223,7 @@ export default function App({ session }) {
       <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
       <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>{nov.descripcion}</p>
       <div style={{overflowY:"auto"}}>
-        <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId}))} />
+        <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} onInvitarNuevo={()=>{setAsignacionRapida(null);abrirModalInvitar(({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId}));}} />
       </div>
       <button type="button" onClick={()=>setAsignacionRapida(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:16}}>Cancelar</button>
     </div></div>
@@ -1316,6 +1316,8 @@ export default function App({ session }) {
             .rep-kpi-strip>div{flex:1 1 40%!important;border-right:none!important;margin-bottom:14px!important;}
             .rep-2col,.rep-2col-wn{grid-template-columns:1fr!important;gap:18px!important;}
             .rep-foto-grid{grid-template-columns:repeat(2,1fr)!important;}
+            .rep-act-nombre{width:60px!important;font-size:10px!important;}
+            .rep-act-val{width:56px!important;font-size:8.5px!important;}
           }
         `}</style>
         <div className="no-print" style={{maxWidth:794,width:"100%",boxSizing:"border-box",margin:"0 auto 14px",display:"flex",gap:10,padding:"0 4px"}}>
@@ -1331,9 +1333,8 @@ export default function App({ session }) {
               {nombreEstudio&&<p style={{fontSize:11,color:"#8E8E93",margin:"3px 0 0"}}>{nombreEstudio}</p>}
               <p style={{fontSize:11,color:"#8E8E93",margin:"6px 0 0"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)} · Emitido el {fmtFecha(new Date())}</p>
             </div>
-            {logoEstudioUrl?
+            {logoEstudioUrl&&
               <div style={{maxWidth:120,maxHeight:84,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"flex-end"}}><img src={logoEstudioUrl} alt={nombreEstudio||"Logo"} style={{maxWidth:120,maxHeight:84,objectFit:"contain"}}/></div>
-              :<div style={{width:84,height:84,border:"1.5px dashed #E5E5E7",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,textAlign:"center",fontSize:8.5,color:"#C7C7CC",fontWeight:600}}>Logo del<br/>estudio</div>
             }
           </div>
           <div style={{height:3,background:"linear-gradient(90deg,#34C759,#5CA9E0)",borderRadius:99,margin:"18px 0 22px"}}/>
@@ -1392,12 +1393,12 @@ export default function App({ session }) {
               {rd.actividadPersonas.map((p:any,i)=>{
                 const maxP=Math.max(1,...rd.actividadPersonas.map((x:any)=>Math.max(x.resueltas,x.aCargo)));
                 return(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:11,marginBottom:13}}>
+                  <div key={i} className="rep-act-row" style={{display:"flex",alignItems:"center",gap:11,marginBottom:13,minWidth:0}}>
                     <div style={{width:28,height:28,borderRadius:"50%",color:"#fff",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:paletaPersona[i%paletaPersona.length]}}>{p.nombre[0]?.toUpperCase()}</div>
-                    <div style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",width:84,flexShrink:0,lineHeight:1.3}}>{p.nombre}<br/><small style={{fontWeight:400,color:"#8E8E93",fontSize:9.5}}>{p.oficio}</small></div>
-                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:4}}>
-                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#34C759",width:`${(p.resueltas/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.resueltas} resueltas</div></div>
-                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#5CA9E0",width:`${(p.aCargo/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.aCargo} a su cargo</div></div>
+                    <div className="rep-act-nombre" style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",width:84,flexShrink:0,lineHeight:1.3}}>{p.nombre}<br/><small style={{fontWeight:400,color:"#8E8E93",fontSize:9.5}}>{p.oficio}</small></div>
+                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#34C759",width:`${(p.resueltas/maxP)*100}%`}}/></div><div className="rep-act-val" style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.resueltas} resueltas</div></div>
+                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#5CA9E0",width:`${(p.aCargo/maxP)*100}%`}}/></div><div className="rep-act-val" style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.aCargo} a su cargo</div></div>
                     </div>
                   </div>
                 );
@@ -1899,6 +1900,10 @@ export default function App({ session }) {
               <p style={{margin:"0 0 6px",fontSize:14,fontWeight:700,color:"#34C759"}}>✅ Link generado</p>
               <p style={{margin:0,fontSize:12,color:"#636366",wordBreak:"break-all"}}>{linkEmpresaGenerado}</p>
             </div>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(linkEmpresaGenerado)}`} alt="QR de invitación" style={{width:180,height:180,borderRadius:12,border:"1px solid #E5E5EA"}}/>
+            </div>
+            <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#8E8E93"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
             <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={()=>{const msg=`Te invito a sumarte a mi equipo de profesionales en Fixgo 👷\n\n${linkEmpresaGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");}}>Compartir por WhatsApp</button>
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}>Cerrar</button>
           </>)}
@@ -2306,8 +2311,8 @@ export default function App({ session }) {
             </button>
           )}
 
-          {/* INFORME INTERNO */}
-          {esVersionPro?(
+          {/* INFORME INTERNO — solo Profesional o Colega, nunca Capataz/Operario */}
+          {(miRolEnObra==="profesional"||miRolEnObra==="co_profesional")&&(esVersionPro?(
             <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left"}}>
               <div style={{width:44,height:44,borderRadius:14,background:"#0057FF15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><ClipboardList size={20} color="#0057FF"/></div>
               <div style={{flex:1}}>
@@ -2322,7 +2327,7 @@ export default function App({ session }) {
               <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
               <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span style={{display:"flex",alignItems:"center",gap:8}}><ClipboardList size={17}/>Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
             </div>
-          )}
+          ))}
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
