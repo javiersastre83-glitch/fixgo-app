@@ -1298,33 +1298,12 @@ export default function App({ session }) {
     const deltaColor=(tipo)=>tipo==="good"?"#1E9E4A":tipo==="bad"?"#E5484D":"#8E8E93";
     return(
       <div style={{...s.root,background:"#8A8D93",overflowY:"auto",padding:"20px"}}>
-        <style>{`
-          @media print{
-            body *{visibility:hidden;}
-            .hoja-reporte,.hoja-reporte *{visibility:visible;}
-            .hoja-reporte{position:absolute;left:0;top:0;width:794px!important;max-width:794px!important;padding:32px 40px!important;box-shadow:none!important;}
-            .no-print{display:none!important;}
-            .rep-kpi-strip{flex-wrap:nowrap!important;}
-            .rep-kpi-strip>div{flex:1 1 0!important;margin-bottom:0!important;}
-            .rep-2col,.rep-2col-wn{grid-template-columns:1fr 1fr!important;gap:20px!important;}
-            .rep-foto-grid{grid-template-columns:repeat(5,1fr)!important;}
-            @page{size:A4;margin:8mm;}
-          }
-          @media screen and (max-width:850px){
-            .hoja-reporte{padding:20px 16px!important;}
-            .rep-kpi-strip{flex-direction:column!important;background:transparent!important;border:none!important;padding:0!important;gap:10px!important;}
-            .rep-kpi-strip>div{flex:none!important;width:100%!important;border-right:none!important;margin-bottom:0!important;background:#F7F7F8!important;border-radius:12px!important;padding:14px!important;text-align:left!important;display:flex!important;align-items:center!important;justify-content:space-between!important;}
-            .rep-kpi-strip>div>*{min-height:0!important;}
-            .rep-2col,.rep-2col-wn{grid-template-columns:1fr!important;gap:16px!important;}
-            .rep-foto-grid{grid-template-columns:repeat(2,1fr)!important;}
-            .rep-act-nombre{width:70px!important;}
-          }
-        `}</style>
-        <div className="no-print" style={{maxWidth:794,width:"100%",boxSizing:"border-box",margin:"0 auto 14px",display:"flex",gap:10,padding:"0 4px"}}>
+        <style>{`@media print{body *{visibility:hidden;} .hoja-reporte,.hoja-reporte *{visibility:visible;} .hoja-reporte{position:absolute;left:0;top:0;} .no-print{display:none!important;}}`}</style>
+        <div className="no-print" style={{maxWidth:794,margin:"0 auto 14px",display:"flex",gap:10}}>
           <button onClick={()=>{setVistaReporte(false);setReporteData(null);}} style={{background:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><ChevronLeft size={16}/>Volver</button>
           <button onClick={()=>window.print()} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer"}}>Imprimir / Guardar PDF</button>
         </div>
-        <div className="hoja-reporte" style={{background:"#fff",width:"100%",maxWidth:794,minHeight:1000,margin:"0 auto",padding:"40px 46px",boxShadow:"0 4px 24px rgba(0,0,0,0.2)",boxSizing:"border-box"}}>
+        <div className="hoja-reporte" style={{background:"#fff",width:794,minHeight:1000,margin:"0 auto",padding:"40px 46px",boxShadow:"0 4px 24px rgba(0,0,0,0.2)"}}>
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:24}}>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.5,marginBottom:14}}><div style={{width:15,height:15,borderRadius:4,background:"#8E8E93",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:8.5}}>F</div><span style={{fontWeight:700,fontSize:10,color:"#8E8E93"}}>Generado con Fixgo</span></div>
@@ -1333,13 +1312,14 @@ export default function App({ session }) {
               {nombreEstudio&&<p style={{fontSize:11,color:"#8E8E93",margin:"3px 0 0"}}>{nombreEstudio}</p>}
               <p style={{fontSize:11,color:"#8E8E93",margin:"6px 0 0"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)} · Emitido el {fmtFecha(new Date())}</p>
             </div>
-            {logoEstudioUrl&&
+            {logoEstudioUrl?
               <div style={{maxWidth:120,maxHeight:84,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"flex-end"}}><img src={logoEstudioUrl} alt={nombreEstudio||"Logo"} style={{maxWidth:120,maxHeight:84,objectFit:"contain"}}/></div>
+              :<div style={{width:84,height:84,border:"1.5px dashed #E5E5E7",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,textAlign:"center",fontSize:8.5,color:"#C7C7CC",fontWeight:600}}>Logo del<br/>estudio</div>
             }
           </div>
           <div style={{height:3,background:"linear-gradient(90deg,#34C759,#5CA9E0)",borderRadius:99,margin:"18px 0 22px"}}/>
 
-          <div className="rep-kpi-strip" style={{display:"flex",background:"#F7F7F8",border:"1px solid #EEEEF0",borderRadius:12,padding:"18px 6px",marginBottom:26}}>
+          <div style={{display:"flex",background:"#F7F7F8",border:"1px solid #EEEEF0",borderRadius:12,padding:"18px 6px",marginBottom:26}}>
             {[["Resueltas",rd.resueltas,rd.deltaResueltas],["Reportadas",rd.reportadas,rd.deltaReportadas],["Tiempo prom. resolución",rd.tiempoProm.toFixed(1)+"d",rd.deltaTiempo],["Pendientes",rd.pendientes,null],["Críticas abiertas",rd.criticas,null]].map(([lbl,num,d]:any,i)=>(
               <div key={i} style={{flex:1,textAlign:"center",padding:"0 8px",borderRight:i<4?"1px solid #E5E5E7":"none"}}>
                 <div style={{fontSize:8.5,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.3,minHeight:22,display:"flex",alignItems:"center",justifyContent:"center"}}>{lbl}</div>
@@ -1349,7 +1329,7 @@ export default function App({ session }) {
             ))}
           </div>
 
-          <div className="rep-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:32,marginBottom:30}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:32,marginBottom:30}}>
             <div>
               <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Novedades por sector</p>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
@@ -1382,7 +1362,7 @@ export default function App({ session }) {
             </div>
           </div>
 
-          <div className="rep-2col-wn" style={{display:"grid",gridTemplateColumns:"1.7fr 1fr",gap:32,marginBottom:30,alignItems:"start"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1.7fr 1fr",gap:32,marginBottom:30,alignItems:"start"}}>
             <div>
               <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Equipo ({rd.actividadPersonas.length} integrante{rd.actividadPersonas.length!==1?"s":""}) — actividad del período</p>
               <div style={{display:"flex",gap:14,fontSize:9.5,color:"#636366",marginBottom:14}}>
@@ -1393,12 +1373,12 @@ export default function App({ session }) {
               {rd.actividadPersonas.map((p:any,i)=>{
                 const maxP=Math.max(1,...rd.actividadPersonas.map((x:any)=>Math.max(x.resueltas,x.aCargo)));
                 return(
-                  <div key={i} className="rep-act-row" style={{display:"flex",alignItems:"center",gap:11,marginBottom:13,minWidth:0}}>
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:11,marginBottom:13}}>
                     <div style={{width:28,height:28,borderRadius:"50%",color:"#fff",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:paletaPersona[i%paletaPersona.length]}}>{p.nombre[0]?.toUpperCase()}</div>
-                    <div className="rep-act-nombre" style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",width:84,flexShrink:0,lineHeight:1.3}}>{p.nombre}<br/><small style={{fontWeight:400,color:"#8E8E93",fontSize:9.5}}>{p.oficio}</small></div>
-                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
-                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#34C759",width:`${(p.resueltas/maxP)*100}%`}}/></div><div className="rep-act-val" style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.resueltas} resueltas</div></div>
-                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#5CA9E0",width:`${(p.aCargo/maxP)*100}%`}}/></div><div className="rep-act-val" style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.aCargo} a su cargo</div></div>
+                    <div style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",width:84,flexShrink:0,lineHeight:1.3}}>{p.nombre}<br/><small style={{fontWeight:400,color:"#8E8E93",fontSize:9.5}}>{p.oficio}</small></div>
+                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:4}}>
+                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#34C759",width:`${(p.resueltas/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.resueltas} resueltas</div></div>
+                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#5CA9E0",width:`${(p.aCargo/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.aCargo} a su cargo</div></div>
                     </div>
                   </div>
                 );
@@ -1431,7 +1411,7 @@ export default function App({ session }) {
           <div>
             <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Fotos de resultado</p>
             {rd.fotos.length===0?<p style={{color:"#8E8E93",fontSize:12}}>No hay fotos de resultado en este período</p>:
-            <div className="rep-foto-grid" style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
               {rd.fotos.map((f:any)=>(
                 <div key={f.num} style={{borderRadius:9,overflow:"hidden",background:"#fff",border:"1px solid #EEEEF0"}}>
                   <img src={f.foto} alt="" style={{width:"100%",height:70,objectFit:"cover",display:"block"}}/>
