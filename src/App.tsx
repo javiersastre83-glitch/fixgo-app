@@ -1311,13 +1311,13 @@ export default function App({ session }) {
             @page{size:A4;margin:8mm;}
           }
           @media screen and (max-width:850px){
-            .hoja-reporte{padding:24px 18px!important;}
-            .rep-kpi-strip{flex-wrap:wrap!important;}
-            .rep-kpi-strip>div{flex:1 1 40%!important;border-right:none!important;margin-bottom:14px!important;}
-            .rep-2col,.rep-2col-wn{grid-template-columns:1fr!important;gap:18px!important;}
+            .hoja-reporte{padding:20px 16px!important;}
+            .rep-kpi-strip{flex-direction:column!important;background:transparent!important;border:none!important;padding:0!important;gap:10px!important;}
+            .rep-kpi-strip>div{flex:none!important;width:100%!important;border-right:none!important;margin-bottom:0!important;background:#F7F7F8!important;border-radius:12px!important;padding:14px!important;text-align:left!important;display:flex!important;align-items:center!important;justify-content:space-between!important;}
+            .rep-kpi-strip>div>*{min-height:0!important;}
+            .rep-2col,.rep-2col-wn{grid-template-columns:1fr!important;gap:16px!important;}
             .rep-foto-grid{grid-template-columns:repeat(2,1fr)!important;}
-            .rep-act-nombre{width:60px!important;font-size:10px!important;}
-            .rep-act-val{width:56px!important;font-size:8.5px!important;}
+            .rep-act-nombre{width:70px!important;}
           }
         `}</style>
         <div className="no-print" style={{maxWidth:794,width:"100%",boxSizing:"border-box",margin:"0 auto 14px",display:"flex",gap:10,padding:"0 4px"}}>
