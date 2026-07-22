@@ -1058,9 +1058,18 @@ export default function App({ session }) {
   const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
   const guardarNombreEstudio=async()=>{
     if(!usuarioReal)return;
-    const{error}=await supabase.from("usuarios").update({nombre_estudio:nombreEstudioInput.trim()||null}).eq("id",usuarioReal.id);
+    const nombreFinal=nombreEstudioInput.trim();
+    const{error}=await supabase.from("usuarios").update({nombre_estudio:nombreFinal||null}).eq("id",usuarioReal.id);
     if(error){alert("No se pudo guardar: "+error.message);return;}
-    setNombreEstudio(nombreEstudioInput.trim());
+    setNombreEstudio(nombreFinal);
+    if(empresaPropia&&nombreFinal){
+      const{error:errorEmpresa}=await supabase.from("empresas").update({nombre:nombreFinal}).eq("id",empresaPropia.id);
+      if(errorEmpresa){
+        console.error("No se pudo sincronizar el nombre en Modo Director:",errorEmpresa.message);
+      }else{
+        setEmpresaPropia(e=>e?({...e,nombre:nombreFinal}):e);
+      }
+    }
     mostrarToast("Nombre guardado");
   };
   const subirLogoEstudio=async(file)=>{
@@ -1691,20 +1700,19 @@ export default function App({ session }) {
               <p style={{fontSize:38,margin:"0 0 10px"}}>🧭</p>
               <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>Todavía no armaste tu equipo de profesionales</p>
               <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Sabé al instante quién está al día y quién necesita ayuda.</p>
-              <button onClick={()=>setModalCrearEmpresa(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Crear mi equipo de profesionales</button>
+              <button onClick={()=>{setNombreEmpresaInput(nombreEstudio);setModalCrearEmpresa(true);}} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Crear mi equipo de profesionales</button>
             </div>
           ):miembrosEmpresa.length===0?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
               <p style={{fontSize:38,margin:"0 0 10px"}}>🧭</p>
-              <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>{empresaPropia.nombre} todavía no tiene profesionales</p>
+              <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>{nombreEstudio||empresaPropia.nombre} todavía no tiene profesionales</p>
               <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Invitá a los profesionales de tu equipo para verlos acá.</p>
               <button onClick={()=>setModalInvitarArq(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Invitar profesional</button>
             </div>
           ):(
             <>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E",flex:1}}>{empresaPropia.nombre}</p>
-                <button onClick={()=>{setNombreEmpresaInput(empresaPropia.nombre);setModalCrearEmpresa(true);}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"7px 8px",cursor:"pointer",display:"flex",alignItems:"center",flexShrink:0}}><Edit2 size={14} color="#1C1C1E"/></button>
+                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E",flex:1}}>{nombreEstudio||empresaPropia.nombre}</p>
                 <button onClick={()=>setModalInvitarArq(true)} style={{background:"#2E3A4B",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Invitar</button>
               </div>
               {miembrosEmpresa.map(m=>{
