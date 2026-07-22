@@ -466,7 +466,7 @@ export default function App({ session }) {
   const [linkEmpresaGenerado,  setLinkEmpresaGenerado]  = useState("");
   const [generandoLinkEmpresa, setGenerandoLinkEmpresa] = useState(false);
   const [invitacionesEmpresaPendientes, setInvitacionesEmpresaPendientes] = useState<any[]>([]);
-  const [vistaHome,            setVistaHome]            = useState("tuyas");
+  const [vistaHome,            setVistaHome]            = useState("mias");
   const [misEmpresasComoMiembro, setMisEmpresasComoMiembro] = useState<any[]>([]);
   const [modalCompartirObra,   setModalCompartirObra]   = useState(null);
   const cargarEmpresa=async()=>{
@@ -1679,10 +1679,11 @@ export default function App({ session }) {
             </div>
           </div>
         </div>
-        {esVersionPro&&<div style={{padding:"10px 16px 14px",flexShrink:0,display:"flex",gap:8}}>
-          <button onClick={()=>setVistaHome("tuyas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tuyas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tuyas"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer"}}>Tus obras</button>
-          <button onClick={()=>setVistaHome("director")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>Modo Director</button>
-        </div>}
+        <div style={{padding:"10px 16px 14px",flexShrink:0,display:"flex",gap:8}}>
+          <button onClick={()=>setVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
+          <button onClick={()=>setVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
+          {esVersionPro&&<button onClick={()=>setVistaHome("director")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>Director</button>}
+        </div>
         {vistaHome==="director"?(
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
           {!empresaPropia?(
@@ -1752,7 +1753,12 @@ export default function App({ session }) {
               <p style={{margin:0,fontSize:14,fontWeight:600,color:"#8E8E93"}}>Cargando tus obras…</p>
             </div>
           ):(<>
-          {obras.map(obra=>{
+          {obras.filter(obra=>{
+            const esDuenoF=usuarioReal?obra.propietario_id===usuarioReal.id:true;
+            const miRolObraF=esDuenoF?"profesional":((obra.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||"operario");
+            const esGestorObraF=esDuenoF||miRolObraF==="co_profesional";
+            return vistaHome==="tareas"?!esGestorObraF:esGestorObraF;
+          }).map(obra=>{
             const novs=novedadesPorObra[obra.id]||[];
             const pend=novs.filter(n=>!n.resuelta).length;
             const venc=novs.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length;
@@ -1848,10 +1854,10 @@ export default function App({ session }) {
               </button>
             );
           })}
-          <button style={{width:"100%",border:"1.5px solid #C7C7CC",background:"#fff",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}}
+          {vistaHome==="mias"&&<button style={{width:"100%",border:"1.5px solid #C7C7CC",background:"#fff",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}}
             onClick={()=>{if(!esVersionPro&&misObrasPropias>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
             <Plus size={22} color="#636366"/><span style={{fontSize:16,fontWeight:600,color:"#636366"}}>Nueva obra</span>
-          </button>
+          </button>}
           </>)}
         </div>
         )}
