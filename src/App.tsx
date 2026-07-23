@@ -845,6 +845,9 @@ export default function App({ session }) {
       }else if(data?.motivo==="no_existe"){
         setToast("El link de invitación no es válido");
         setTimeout(()=>setToast(""),2500);
+      }else if(data?.error){
+        setToast(data.error);
+        setTimeout(()=>setToast(""),2500);
       }
       setInvitacionProcesada(true);
     })();
