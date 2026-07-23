@@ -13,6 +13,79 @@ const EMOJI_OFICIO = {
   "Albañil":"🧱","Demoledor":"🔨","Encofrador carpintero":"🪵","Fierrero / Armador de hierro":"⛓️","Hormigonero":"🏗️","Pilotero":"🛠️","Pocero / Excavador":"⛏️","Techista":"🏠","Calderista":"🔥","Electricista de obra":"⚡","Gasista":"🔧","Instalador de ascensores y montacargas":"🛗","Instalador de corrientes débiles":"🔌","Instalador de sistemas contra incendios":"🧯","Instalador de sistemas de climatización":"❄️","Instalador de sistemas solares / renovables":"☀️","Instalador sanitario":"🚿","Plomero / Fontanero":"🔧","Técnico en domótica y automatización":"🤖","Carpintero de obra / terminaciones":"🪚","Carpintero de obra gruesa":"🪵","Cerrajero de obra":"🔑","Herrero de obra":"⚒️","Instalador de aberturas de aluminio":"🪟","Instalador de aberturas de PVC":"🪟","Instalador de aberturas metálicas":"🪟","Montador de estructuras metálicas":"🏗️","Soldador":"🔥","Vidriero":"🪟","Zinguería":"🏠","Ceramista":"🧱","Colocador de pisos de madera / Parquetista":"🪵","Colocador de pisos vinílicos / Alfombrista":"🧶","Colocador revestimientos plásticos texturados":"🎨","Durlero / Montador de construcción en seco":"🧱","Enduido":"🪣","Impermeabilizador / Techista de membranas":"🏠","Marmolero":"🪨","Pintor de obra":"🖌️","Pintor industrial":"🎨","Pulidor de pisos":"✨","Yesero":"🪣","Armador de andamios / Andamiero":"🚧","Jardinero":"🌳","Operario de limpieza de obra (fin de obra)":"🧹","Proveedor de servicios":"📦","Restaurador":"🛠️","Riego":"💧","Sereno / Personal de vigilancia de obra":"👁️","Técnico en Higiene y Seguridad en el Trabajo":"🦺","Topógrafo / Agrimensor":"📐","Tunelero":"⛏️","Otro":"👷"
 };
 const emojiDeOficio = (oficio) => EMOJI_OFICIO[oficio] || "👷";
+
+// ══════════════════════════════════════════════════════
+// BÚSQUEDA INTELIGENTE DE OFICIOS — punto 4 de pendientes
+// Cada oficio tiene palabras clave (materiales/jerga de obra) además
+// de su nombre, para que "mesa", "silestone", "durlock", etc. encuentren
+// el oficio correcto aunque el usuario no sepa el nombre técnico.
+// ══════════════════════════════════════════════════════
+const TAGS_OFICIO = {
+  "Albañil": ["pared","muro","ladrillo","mezcla","revoque","contrapiso","azulejo","mamposteria","bloque","cimiento","fino","grueso"],
+  "Demoledor": ["picar","demoler","escombro","martillo","rotura","derribar","tirar pared","losa vieja"],
+  "Encofrador carpintero": ["madera","encofrado","molde","columna","viga","losa","tablero","apuntalamiento"],
+  "Fierrero / Armador de hierro": ["malla","estribo","varilla","hierro","armadura","doblado","atado","acero","8mm","10mm","12mm"],
+  "Hormigonero": ["hormigon","llenado","trompito","mixer","losa","colado","cemento","base"],
+  "Pilotero": ["pilote","perforacion","fundacion profunda","pozo romano","cimentacion"],
+  "Pocero / Excavador": ["zanja","pozo","excavacion","tierra","pozo ciego","camara","pala","retroexcavadora"],
+  "Techista": ["techo","chapa","teja","cubierta","estructura de techo","cabio","tirante","cumbrera"],
+  "Calderista": ["caldera","radiador","calefaccion","piso radiante","vapor","agua caliente","termotanque grande"],
+  "Electricista de obra": ["luz","cable","termica","disyuntor","cañeria electrica","caja","toma","llave","tablero","corriente","pico"],
+  "Gasista": ["gas","caño epoxi","sigas","termofusion gas","estufa","cocina","medidor","prueba hermeticidad"],
+  "Instalador de ascensores y montacargas": ["ascensor","montacargas","elevador","cabina","guias","motor elevacion"],
+  "Instalador de corrientes débiles": ["red","internet","ethernet","camara","alarma","portero","citofono","wifi","fibra optica","rack","cableado estructurado"],
+  "Instalador de sistemas contra incendios": ["nicho hidrante","extintor","matafuego","sprinkler","rociador","deteccion humo","bomba incendio"],
+  "Instalador de sistemas de climatización": ["aire acondicionado","split","fancoil","ducto","ventilacion","extraccion","vrv","clima"],
+  "Instalador de sistemas solares / renovables": ["panel solar","inversor","fotovoltaico","termotanque solar","energia renovable","bateria"],
+  "Instalador sanitario": ["baño","agua","desague","cloaca","cañeria","termofusion","agua fria","agua caliente","camara de inspeccion"],
+  "Plomero / Fontanero": ["canilla","grifo","griferia","mochila","inodoro","bidet","sifon","perdida","caño","fuga","lavatorio","bacha"],
+  "Técnico en domótica y automatización": ["domotica","sensor","automatizacion","porton automatico","luz inteligente","escena"],
+  "Carpintero de obra / terminaciones": ["mueble","bajo mesada","alacena","zocalo","placard","vestidor","puerta de madera","frente de placard","marco"],
+  "Carpintero de obra gruesa": ["encofrado grueso","madera estructural","tirantes","andamio de madera","apuntalamiento"],
+  "Cerrajero de obra": ["cerradura","llave","picaporte","cerrojo","traba","cilindro"],
+  "Herrero de obra": ["reja","porton","baranda","pasamanos","hierro","perfileria","estructura metalica chica","escalera de hierro"],
+  "Instalador de aberturas de aluminio": ["ventana de aluminio","puerta de aluminio","marco","vidrio doble","dvh","paño fijo","abertura"],
+  "Instalador de aberturas de PVC": ["ventana de pvc","puerta de pvc","dvh","carpinteria de pvc","abertura"],
+  "Instalador de aberturas metálicas": ["puerta placa metalica","marco de chapa","porton de chapa","cortina metalica"],
+  "Montador de estructuras metálicas": ["perfil w","ipn","upn","galpon","parabolico","reticulado","estructura pesada","alma llena"],
+  "Soldador": ["soldadura","electrodo","mig","tig","costura","union de hierro"],
+  "Vidriero": ["vidrio","espejo","dvh","templado","laminado","mampara","ventanal"],
+  "Zinguería": ["canaleta","batea","caño de bajada","zingueria","cumbrera","babeta"],
+  "Ceramista": ["ceramica","porcelanato","azulejo","pastina","pegamento","klaukol","revestimiento"],
+  "Colocador de pisos de madera / Parquetista": ["parquet","piso flotante","entablonado","pulido de madera","plastificado","hidrolaqueado","zocalo de madera"],
+  "Colocador de pisos vinílicos / Alfombrista": ["vinilico","spc","lvt","alfombra","piso de goma"],
+  "Colocador revestimientos plásticos texturados": ["revear","tarquini","texturado","plastilok","fino texturado","rodillo","revestimiento exterior"],
+  "Durlero / Montador de construcción en seco": ["durlock","placa de yeso","tabique","cielorraso","montante","solera","masillado","perfileria durlock"],
+  "Enduido": ["enduido","lija","masilla","pared lisa","preparado de pared"],
+  "Impermeabilizador / Techista de membranas": ["membrana","asfalto","pintura asfaltica","gotera","filtracion","impermeabilizante","losa"],
+  "Marmolero": ["marmol","granito","mesada","mesa","zocalo de granito","bacha pegada","travertino","silestone","dekton","barra"],
+  "Pintor de obra": ["pintura","latex","sintetico","rodillo","pincel","enduido basico","fachada","pared"],
+  "Pintor industrial": ["epoxi","poliuretano","pintura anticorrosiva","soplete","estructura metalica","granallado"],
+  "Pulidor de pisos": ["pulido granito","mosaico","marmol","curado","diamantado","pisos antiguos"],
+  "Yesero": ["yeso","cielorraso de yeso","moldura","aplicado","proyectado","enlucido"],
+  "Armador de andamios / Andamiero": ["andamio","tubular","acople","plataforma","torre","seguridad en altura"],
+  "Jardinero": ["cesped","grama","plantas","tierra negra","jardin","paisajismo","cantero"],
+  "Operario de limpieza de obra (fin de obra)": ["limpieza","final de obra","retiro de restos","calcomanias","vidrios","polvo"],
+  "Proveedor de servicios": ["flete","volquete","contenedor","alquiler maquinaria","quimicos","baños quimicos"],
+  "Restaurador": ["restauracion","patrimonio","moldura antigua","fachada historica","conservacion"],
+  "Riego": ["aspersor","riego por goteo","electrovalvula","bomba de riego","automatizacion de riego"],
+  "Sereno / Personal de vigilancia de obra": ["sereno","guardia","seguridad nocturna","cuidado de materiales","control de acceso"],
+  "Técnico en Higiene y Seguridad en el Trabajo": ["seguridad","epp","casco","arnes","art","plan de seguridad","auditoria","higiene"],
+  "Topógrafo / Agrimensor": ["nivelacion","terreno","estaca","loteo","teodolito","estacion total","plano de mensura"],
+  "Tunelero": ["tunelera","cruce de calle","topo","cañeria subterranea sin zanja"],
+};
+const normalizarTexto = (texto) => (texto||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+// Busca por nombre de oficio O por cualquiera de sus tags/palabras clave. Ignora tildes y mayúsculas.
+const buscarOficio = (terminoBusqueda, listaOficios=RESPONSABLES) => {
+  const busquedaLimpia = normalizarTexto((terminoBusqueda||"").trim());
+  if (!busquedaLimpia) return listaOficios;
+  return listaOficios.filter((nombreOficio) => {
+    const coincideNombre = normalizarTexto(nombreOficio).includes(busquedaLimpia);
+    const tags = TAGS_OFICIO[nombreOficio] || [];
+    const coincideTag = tags.some((tag) => normalizarTexto(tag).includes(busquedaLimpia));
+    return coincideNombre || coincideTag;
+  });
+};
 const PALETA_PASTEL = ["#C9A6E8","#F5C77E","#A8C7E8","#E8A6B8","#A6D4C4","#D4C4A6","#E8C4A6","#A6C4D4","#B8D4A6","#E8B8A6","#A6B8E8","#D4A6A6"];
 const colorPastelDe = (id) => { const s=String(id||""); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))&0xffffffff; return PALETA_PASTEL[Math.abs(h)%PALETA_PASTEL.length]; };
 const colorPorIndice = (idx) => PALETA_PASTEL[idx%PALETA_PASTEL.length];
@@ -74,7 +147,7 @@ const generarResumen = (nov,obraNombre) => {
 const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#007AFF" }) => {
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
-  const filtrados = RESPONSABLES.filter(r => r.toLowerCase().includes(busqueda.toLowerCase()));
+  const filtrados = buscarOficio(busqueda, RESPONSABLES);
   return (
     <div style={{position:"relative"}}>
       <button type="button" onClick={()=>setAbierto(a=>!a)}
@@ -115,7 +188,7 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
   const [busqueda, setBusqueda] = useState("");
   const miembros = (equipo||[]).filter(m=>m.nombre);
   const miembrosFiltrados = miembros.filter(m=>(m.nombre||"").toLowerCase().includes(busqueda.toLowerCase()));
-  const oficiosFiltrados = RESPONSABLES.filter(r => r.toLowerCase().includes(busqueda.toLowerCase()));
+  const oficiosFiltrados = buscarOficio(busqueda, RESPONSABLES);
   const personaSel = usuarioId ? miembros.find(m=>m.uid===usuarioId) : null;
   const etiqueta = personaSel ? `${personaSel.nombre}${personaSel.especialidad?" — "+personaSel.especialidad:""}` : (value||"Seleccioná...");
   return (
@@ -162,7 +235,7 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
   const [busqueda, setBusqueda] = useState("");
   const miembros = (equipo||[]).filter(m=>m.nombre);
   const oficioSel = (!usuarioId && value) ? value : null;
-  const oficiosFiltrados = RESPONSABLES.filter(r=>r.toLowerCase().includes(busqueda.toLowerCase()));
+  const oficiosFiltrados = buscarOficio(busqueda, RESPONSABLES);
   return (
     <div>
       {/* TIRA DE MIEMBROS */}
