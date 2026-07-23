@@ -778,7 +778,13 @@ export default function App({ session }) {
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
   const miRolInfo    = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
   const puedeGestionar = miRolEnObra==="profesional"||miRolEnObra==="capataz"||miRolEnObra==="co_profesional";
-  const getUserById  = (id)=>USUARIOS_DEMO.find(u=>u.id===id);
+  const getUserById  = (id)=>{
+    if(!id)return null;
+    if(usuarioReal&&id===usuarioReal.id)return{id,nombre:usuarioActivoReal.nombre};
+    const enEquipo=(obraActual?.equipo||[]).find(m=>m.uid===id);
+    if(enEquipo)return{id,nombre:enEquipo.nombre||"Usuario"};
+    return USUARIOS_DEMO.find(u=>u.id===id)||null;
+  };
 
   useEffect(()=>{
     if(document.getElementById("fixgo-spin-style"))return;
@@ -1089,14 +1095,34 @@ export default function App({ session }) {
     setSubiendoFotoResolucion(false);
     setModalFotoResolucion(null);
   };
+  const subirFotoNovedad=async(base64,carpetaId)=>{
+    const blob=await(await fetch(base64)).blob();
+    const nombreArchivo=`${carpetaId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+    const{error}=await supabase.storage.from("fotos-novedad").upload(nombreArchivo,blob,{contentType:"image/jpeg"});
+    if(error)throw error;
+    const{data}=supabase.storage.from("fotos-novedad").getPublicUrl(nombreArchivo);
+    return data.publicUrl;
+  };
   const handleFotos=async(e)=>{
     const files=Array.from(e.target.files);
     for(const f of files){
       const comprimida=await comprimirFoto(f);
       let idxNuevo;
       setForm(ff=>{idxNuevo=ff.fotos.length;return{...ff,fotos:[...ff.fotos,comprimida]};});
+      let fotoFinal=comprimida;
       if(esVersionPro){
-        await new Promise(resolve=>setEditorDibujo({src:comprimida,origen:"nueva",idx:idxNuevo,onListo:resolve}));
+        fotoFinal=await new Promise(resolve=>setEditorDibujo({src:comprimida,origen:"nueva",idx:idxNuevo,onListo:resolve}));
+      }
+      if(estaOnline){
+        try{
+          const url=await subirFotoNovedad(fotoFinal,obraActual?.id||"temp");
+          setForm(ff=>({...ff,fotos:ff.fotos.map((foto,i)=>i===idxNuevo?url:foto)}));
+        }catch(err){
+          console.error("No se pudo subir la foto, se guarda localmente como respaldo:",err);
+          setForm(ff=>({...ff,fotos:ff.fotos.map((foto,i)=>i===idxNuevo?fotoFinal:foto)}));
+        }
+      }else{
+        setForm(ff=>({...ff,fotos:ff.fotos.map((foto,i)=>i===idxNuevo?fotoFinal:foto)}));
       }
     }
   };
@@ -1107,8 +1133,20 @@ export default function App({ session }) {
       const comprimida=await comprimirFoto(f);
       let idxNuevo;
       setFormEdit(ff=>{idxNuevo=(ff.fotos||[]).length;return{...ff,fotos:[...(ff.fotos||[]),comprimida]};});
+      let fotoFinal=comprimida;
       if(esVersionPro){
-        await new Promise(resolve=>setEditorDibujo({src:comprimida,origen:"editar",idx:idxNuevo,onListo:resolve}));
+        fotoFinal=await new Promise(resolve=>setEditorDibujo({src:comprimida,origen:"editar",idx:idxNuevo,onListo:resolve}));
+      }
+      if(estaOnline){
+        try{
+          const url=await subirFotoNovedad(fotoFinal,obraActual?.id||"temp");
+          setFormEdit(ff=>({...ff,fotos:(ff.fotos||[]).map((foto,i)=>i===idxNuevo?url:foto)}));
+        }catch(err){
+          console.error("No se pudo subir la foto, se guarda localmente como respaldo:",err);
+          setFormEdit(ff=>({...ff,fotos:(ff.fotos||[]).map((foto,i)=>i===idxNuevo?fotoFinal:foto)}));
+        }
+      }else{
+        setFormEdit(ff=>({...ff,fotos:(ff.fotos||[]).map((foto,i)=>i===idxNuevo?fotoFinal:foto)}));
       }
     }
   };
@@ -1123,8 +1161,14 @@ export default function App({ session }) {
     const{origen,idx,onListo}=editorDibujo;
     if(origen==="nueva"){
       setForm(f=>({...f,fotos:f.fotos.map((foto,i)=>i===idx?dataUrlFinal:foto)}));
+      setEditorDibujo(null);
+      onListo?.(dataUrlFinal);
+      return;
     }else if(origen==="editar"){
       setFormEdit(f=>({...f,fotos:(f.fotos||[]).map((foto,i)=>i===idx?dataUrlFinal:foto)}));
+      setEditorDibujo(null);
+      onListo?.(dataUrlFinal);
+      return;
     }else if(origen==="resolucion"){
       const blob=await(await fetch(dataUrlFinal)).blob();
       confirmarResolucionConFoto(modalFotoResolucion,blob);
@@ -1156,7 +1200,7 @@ export default function App({ session }) {
       if(data){
         const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
         if(form.comentario.trim()){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()});nn.comentarios=[{texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
-        setNovedades(n=>[nn,...n]);
+        setNovedades(n=>n.some(x=>x.id===nn.id)?n:[nn,...n]);
       }
     } else {
       setNovedades(n=>[{id:Date.now(),fotos:form.fotos,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fechaLimite:form.fechaLimite,resuelta:false,fecha:new Date().toISOString().slice(0,10),comentarios:form.comentario.trim()?[{texto:form.comentario.trim(),autorId:usuarioActivo.id,ts:Date.now()}]:[]},...n]);
@@ -1219,7 +1263,14 @@ export default function App({ session }) {
     for(const item of pendientes){
       try{
         if(item.tipo==="crear_novedad"){
-          const{data,error}=await supabase.from("novedades").insert(item.payload).select().single();
+          const fotosFinales=await Promise.all((item.payload.fotos||[]).map(async(f)=>{
+            if(typeof f==="string"&&f.startsWith("data:")){
+              try{return await subirFotoNovedad(f,item.payload.obra_id);}
+              catch(e){console.error("No se pudo subir una foto offline, se guarda como respaldo local:",e);return f;}
+            }
+            return f;
+          }));
+          const{data,error}=await supabase.from("novedades").insert({...item.payload,fotos:fotosFinales}).select().single();
           if(error)throw error;
           if(item.comentario){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:item.comentario});}
           const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,resueltaAt:data.resuelta_at||null,fotoResolucion:data.foto_resolucion||null,comentarios:item.comentario?[{texto:item.comentario,autorId:usuarioReal.id,ts:Date.now()}]:[]};
@@ -2481,7 +2532,7 @@ export default function App({ session }) {
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
-        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;setEditorDibujo(null);cont?.();}}/>}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
@@ -2863,7 +2914,7 @@ export default function App({ session }) {
         {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
         {modalFotoResolucionJSX}
         {asignacionRapidaJSX}
-        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;setEditorDibujo(null);cont?.();}}/>}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
       </div>
     );
   }
@@ -2921,7 +2972,7 @@ export default function App({ session }) {
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
-        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;setEditorDibujo(null);cont?.();}}/>}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
@@ -3027,7 +3078,7 @@ export default function App({ session }) {
       {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
-        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;setEditorDibujo(null);cont?.();}}/>}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
     </div>
