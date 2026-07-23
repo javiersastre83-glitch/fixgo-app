@@ -54,7 +54,7 @@ const estadoBadge = (nov) => {
   if(d<0)  return {label:`⚠️ Vencida hace ${Math.abs(d)} ${Math.abs(d)===1?"día":"días"}`,color:"#FF3B30",bg:"#FF3B3020"};
   if(d===0) return {label:"⏰ Vence hoy",color:"#FF6B00",bg:"#FF6B0020"};
   if(d<=3)  return {label:`⏳ ${d} ${d===1?"día":"días"} restantes`,color:"#FF6B00",bg:"#FF6B0020"};
-  return {label:`📅 ${d} ${d===1?"día":"días"} restantes`,color:"#8E8E93",bg:"#8E8E9315"};
+  return {label:`📅 ${d} ${d===1?"día":"días"} restantes`,color:"#55555A",bg:"#55555A15"};
 };
 const generarResumen = (nov,obraNombre) => {
   const pri=PRIORIDADES[nov.prioridad]; const badge=estadoBadge(nov);
@@ -78,9 +78,9 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
   return (
     <div style={{position:"relative"}}>
       <button type="button" onClick={()=>setAbierto(a=>!a)}
-        style={{width:"100%",padding:"13px 14px",borderRadius:14,border:`1.5px solid ${value?color:"#E5E5EA"}`,background:"#fff",fontSize:16,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:value?"#1C1C1E":"#8E8E93"}}>
+        style={{width:"100%",padding:"13px 14px",borderRadius:14,border:`1.5px solid ${value?color:"#E5E5EA"}`,background:"#fff",fontSize:16,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:value?"#1C1C1E":"#55555A"}}>
         <span>{value || "Seleccioná el oficio..."}</span>
-        <span style={{color:"#8E8E93",fontSize:13}}>{abierto?"▲":"▼"}</span>
+        <span style={{color:"#55555A",fontSize:13}}>{abierto?"▲":"▼"}</span>
       </button>
       {abierto && (
         <>
@@ -91,7 +91,7 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
               style={{width:"100%",padding:"10px 12px",borderRadius:10,border:"1.5px solid #E5E5EA",fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
           </div>
           <div style={{overflowY:"auto",flex:1}}>
-            {filtrados.length===0 && <p style={{padding:"14px",margin:0,fontSize:14,color:"#8E8E93",textAlign:"center"}}>Sin resultados</p>}
+            {filtrados.length===0 && <p style={{padding:"14px",margin:0,fontSize:14,color:"#55555A",textAlign:"center"}}>Sin resultados</p>}
             {filtrados.map(r => (
               <button type="button" key={r} onClick={()=>{onChange(r);setAbierto(false);setBusqueda("");}}
                 style={{width:"100%",padding:"12px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:value===r?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:value===r?color:"#1C1C1E",fontWeight:value===r?700:400,fontFamily:"inherit"}}>
@@ -121,9 +121,9 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
   return (
     <div style={{position:"relative"}}>
       <button type="button" onClick={()=>setAbierto(a=>!a)}
-        style={{width:"100%",padding:"13px 14px",borderRadius:14,border:`1.5px solid ${(value||usuarioId)?color:"#E5E5EA"}`,background:"#fff",fontSize:16,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:(value||usuarioId)?"#1C1C1E":"#8E8E93"}}>
+        style={{width:"100%",padding:"13px 14px",borderRadius:14,border:`1.5px solid ${(value||usuarioId)?color:"#E5E5EA"}`,background:"#fff",fontSize:16,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:(value||usuarioId)?"#1C1C1E":"#55555A"}}>
         <span>{etiqueta}</span>
-        <span style={{color:"#8E8E93",fontSize:13}}>{abierto?"▲":"▼"}</span>
+        <span style={{color:"#55555A",fontSize:13}}>{abierto?"▲":"▼"}</span>
       </button>
       {abierto && (
         <>
@@ -134,21 +134,21 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
               style={{width:"100%",padding:"10px 12px",borderRadius:10,border:"1.5px solid #E5E5EA",fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
           </div>
           <div style={{overflowY:"auto",flex:1}}>
-            {miembrosFiltrados.length>0 && <p style={{padding:"8px 14px 4px",margin:0,fontSize:12,fontWeight:700,color:"#8E8E93"}}>👥 Mi equipo</p>}
+            {miembrosFiltrados.length>0 && <p style={{padding:"8px 14px 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A"}}>👥 Mi equipo</p>}
             {miembrosFiltrados.map(m => (
               <button type="button" key={m.uid} onClick={()=>{onChange({responsable:m.especialidad||"",usuarioId:m.uid});setAbierto(false);setBusqueda("");}}
                 style={{width:"100%",padding:"12px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:usuarioId===m.uid?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:usuarioId===m.uid?color:"#1C1C1E",fontWeight:usuarioId===m.uid?700:400,fontFamily:"inherit"}}>
-                {m.nombre}{m.especialidad?<span style={{color:"#8E8E93",fontWeight:400}}> — {m.especialidad}</span>:null}
+                {m.nombre}{m.especialidad?<span style={{color:"#55555A",fontWeight:400}}> — {m.especialidad}</span>:null}
               </button>
             ))}
-            {oficiosFiltrados.length>0 && <p style={{padding:"8px 14px 4px",margin:0,fontSize:12,fontWeight:700,color:"#8E8E93"}}>🔧 Oficio genérico</p>}
+            {oficiosFiltrados.length>0 && <p style={{padding:"8px 14px 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A"}}>🔧 Oficio genérico</p>}
             {oficiosFiltrados.map(r => (
               <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setAbierto(false);setBusqueda("");}}
                 style={{width:"100%",padding:"12px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:(!usuarioId&&value===r)?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(!usuarioId&&value===r)?color:"#1C1C1E",fontWeight:(!usuarioId&&value===r)?700:400,fontFamily:"inherit"}}>
                 {r}
               </button>
             ))}
-            {miembrosFiltrados.length===0 && oficiosFiltrados.length===0 && <p style={{padding:"14px",margin:0,fontSize:14,color:"#8E8E93",textAlign:"center"}}>Sin resultados</p>}
+            {miembrosFiltrados.length===0 && oficiosFiltrados.length===0 && <p style={{padding:"14px",margin:0,fontSize:14,color:"#55555A",textAlign:"center"}}>Sin resultados</p>}
           </div>
         </div>
         </>
@@ -173,14 +173,14 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
             <button type="button" key={m.uid} onClick={()=>onChange({responsable:m.especialidad||"",usuarioId:m.uid})}
               style={{flexShrink:0,minWidth:90,background:sel?"#F5F5F5":"#fff",border:`2px solid ${sel?"#1C1C1E":"#E5E5EA"}`,borderRadius:14,padding:"10px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
               <div style={{fontSize:14,fontWeight:800,color:"#1C1C1E",whiteSpace:"nowrap"}}>{m.nombre}</div>
-              {m.especialidad&&<div style={{fontSize:11,color:"#8E8E93",marginTop:2,whiteSpace:"nowrap"}}>{m.especialidad}</div>}
+              {m.especialidad&&<div style={{fontSize:11,color:"#55555A",marginTop:2,whiteSpace:"nowrap"}}>{m.especialidad}</div>}
             </button>
           );
         })}
         {onInvitarNuevo&&<button type="button" onClick={onInvitarNuevo}
           style={{flexShrink:0,minWidth:110,background:"#F9F9F9",border:"1.5px dashed #D0D0D5",borderRadius:14,padding:"10px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",justifyContent:"center"}}>
-          <div style={{fontSize:18,color:"#8E8E93",lineHeight:1}}>＋</div>
-          <div style={{fontSize:11,fontWeight:700,color:"#8E8E93",marginTop:3,whiteSpace:"nowrap"}}>Invitar nuevo integrante</div>
+          <div style={{fontSize:18,color:"#55555A",lineHeight:1}}>＋</div>
+          <div style={{fontSize:11,fontWeight:700,color:"#55555A",marginTop:3,whiteSpace:"nowrap"}}>Invitar nuevo integrante</div>
         </button>}
       </div>
 
@@ -199,11 +199,11 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
             {oficioSel?"🔧":"🔧"}
           </div>
           <div style={{textAlign:"left"}}>
-            <div style={{fontSize:14,fontWeight:oficioSel?700:500,color:oficioSel?"#1C1C1E":"#8E8E93"}}>{oficioSel||"Sin oficio asignado"}</div>
-            <div style={{fontSize:11,color:"#8E8E93",marginTop:1}}>Para contratistas fuera del equipo</div>
+            <div style={{fontSize:14,fontWeight:oficioSel?700:500,color:oficioSel?"#1C1C1E":"#55555A"}}>{oficioSel||"Sin oficio asignado"}</div>
+            <div style={{fontSize:11,color:"#55555A",marginTop:1}}>Para contratistas fuera del equipo</div>
           </div>
         </div>
-        <span style={{fontSize:11,fontWeight:600,color:oficioSel?"#fff":"#8E8E93",background:oficioSel?"#1C1C1E":"#EBEBF0",padding:"3px 10px",borderRadius:99}}>{oficioSel?"Cambiar":"Elegir"}</span>
+        <span style={{fontSize:11,fontWeight:600,color:oficioSel?"#fff":"#55555A",background:oficioSel?"#1C1C1E":"#EBEBF0",padding:"3px 10px",borderRadius:99}}>{oficioSel?"Cambiar":"Elegir"}</span>
       </button>
 
       {/* MODAL OFICIO */}
@@ -223,9 +223,9 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
                 <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setModalOficio(false);setBusqueda("");}}
                   style={{width:"100%",padding:"13px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:(oficioSel===r)?"#F5F5F5":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(oficioSel===r)?"#1C1C1E":"#1C1C1E",fontWeight:(oficioSel===r)?700:400,fontFamily:"inherit"}}>{r}</button>
               ))}
-              {oficiosFiltrados.length===0&&<p style={{textAlign:"center",color:"#8E8E93",padding:"20px 0",fontSize:14}}>Sin resultados</p>}
+              {oficiosFiltrados.length===0&&<p style={{textAlign:"center",color:"#55555A",padding:"20px 0",fontSize:14}}>Sin resultados</p>}
             </div>
-            <button type="button" onClick={()=>{setModalOficio(false);setBusqueda("");}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:12}}>Cancelar</button>
+            <button type="button" onClick={()=>{setModalOficio(false);setBusqueda("");}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",marginTop:12}}>Cancelar</button>
           </div>
         </div>
       )}
@@ -242,8 +242,8 @@ const NavBar = ({ tabActiva, onTab, onPerfil }) => (
     ].map(({key,Icon,label})=>(
       <button key={key} onClick={()=>key==="perfil"?onPerfil():onTab(key)}
         style={{flex:1,background:"none",border:"none",padding:"10px 4px 8px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-        <Icon size={22} color={tabActiva===key?"#1C1C1E":"#8E8E93"} strokeWidth={tabActiva===key?2.5:1.8}/>
-        <span style={{fontSize:10,fontWeight:tabActiva===key?700:400,color:tabActiva===key?"#1C1C1E":"#8E8E93"}}>{label}</span>
+        <Icon size={22} color={tabActiva===key?"#1C1C1E":"#55555A"} strokeWidth={tabActiva===key?2.5:1.8}/>
+        <span style={{fontSize:10,fontWeight:tabActiva===key?700:400,color:tabActiva===key?"#1C1C1E":"#55555A"}}>{label}</span>
         {tabActiva===key&&<div style={{width:4,height:4,borderRadius:99,background:"#1C1C1E"}}/>}
       </button>
     ))}
@@ -256,7 +256,7 @@ const NavBar = ({ tabActiva, onTab, onPerfil }) => (
 const Header = ({ migas=[], accionDerecha=null, dark=false }) => {
   const bg   = dark ? "linear-gradient(135deg,#1C1C1E,#2C2C2E)" : "#fff";
   const col  = dark ? "#fff" : "#1C1C1E";
-  const sub  = dark ? "rgba(255,255,255,0.5)" : "#8E8E93";
+  const sub  = dark ? "rgba(255,255,255,0.5)" : "#55555A";
   // migas: array de {label, onClick?}  — el último es el título actual; el penúltimo (si existe) es a dónde vuelve la flecha
   const padre = migas.slice(0,-1);
   const actual = migas[migas.length-1];
@@ -1178,13 +1178,13 @@ export default function App({ session }) {
 
   const modalFotoResolucionJSX = modalFotoResolucion&&<div style={s.overlay} onClick={()=>{if(!subiendoFotoResolucion)setModalFotoResolucion(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>¿Cómo quedó resuelto?</p>
-    <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Sacale una foto del resultado (opcional). Ayuda a mostrar el avance real.</p>
+    <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Sacale una foto del resultado (opcional). Ayuda a mostrar el avance real.</p>
     <input ref={fileRefResolucion} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)confirmarResolucionConFoto(modalFotoResolucion,f);}}/>
     <button disabled={subiendoFotoResolucion} onClick={()=>fileRefResolucion.current.click()} style={{...s.btnPrincipal,background:"#34C759",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>
       <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{subiendoFotoResolucion?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Subiendo foto...</>:<><Camera size={16}/>Sacar foto y confirmar</>}</span>
     </button>
     <button disabled={subiendoFotoResolucion} onClick={()=>confirmarSinFoto(modalFotoResolucion)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>Confirmar sin foto</button>
-    <button disabled={subiendoFotoResolucion} onClick={()=>setModalFotoResolucion(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",opacity:subiendoFotoResolucion?0.6:1}}>Cancelar</button>
+    <button disabled={subiendoFotoResolucion} onClick={()=>setModalFotoResolucion(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",opacity:subiendoFotoResolucion?0.6:1}}>Cancelar</button>
   </div></div>;
 
   const offlineBannerJSX = (!estaOnline||colaOffline.length>0)&&(
@@ -1199,21 +1199,21 @@ export default function App({ session }) {
       <div style={{textAlign:"center",padding:"30px 10px"}}>
         <span style={{width:34,height:34,border:"3px solid #E5E5EA",borderTopColor:"#0057FF",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite",marginBottom:16}}/>
         <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E"}}>Generando informe...</p>
-        <p style={{margin:"4px 0 0",fontSize:13,color:"#8E8E93"}}>Puede tardar algunos segundos</p>
+        <p style={{margin:"4px 0 0",fontSize:13,color:"#55555A"}}>Puede tardar algunos segundos</p>
       </div>
     ):(<>
       <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Generar informe</p>
-      <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Elegí el período que querés analizar de "{obraActual?.nombre}"</p>
+      <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Elegí el período que querés analizar de "{obraActual?.nombre}"</p>
       {[["dia","Hoy"],["semana","Últimos 7 días"],["mes","Últimos 30 días"],["inicio","Desde el inicio de la obra"]].map(([key,lbl])=>(
         <button key={key} onClick={()=>elegirPeriodo(key)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:8}}>{lbl}</button>
       ))}
-      <p style={{margin:"14px 0 8px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase"}}>Rango personalizado</p>
+      <p style={{margin:"14px 0 8px",fontSize:12,fontWeight:700,color:"#55555A",textTransform:"uppercase"}}>Rango personalizado</p>
       <div style={{display:"flex",gap:8,marginBottom:12}}>
         <input type="date" value={rangoPersonalizado.desde} onChange={e=>setRangoPersonalizado(r=>({...r,desde:e.target.value}))} style={{...s.input,flex:1,fontSize:13,padding:"10px"}}/>
         <input type="date" value={rangoPersonalizado.hasta} onChange={e=>setRangoPersonalizado(r=>({...r,hasta:e.target.value}))} style={{...s.input,flex:1,fontSize:13,padding:"10px"}}/>
       </div>
       <button onClick={()=>elegirPeriodo("personalizado")} style={{...s.btnPrincipal,background:"#2E3A4B",marginBottom:8}}>Generar con este rango</button>
-      <button onClick={()=>setModalPeriodoReporte(false)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}}>Cancelar</button>
+      <button onClick={()=>setModalPeriodoReporte(false)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}}>Cancelar</button>
     </>)}
   </div></div>;
 
@@ -1230,11 +1230,11 @@ export default function App({ session }) {
   const asignacionRapidaJSX = asignacionRapida&&(()=>{const nov=novedades.find(n=>n.id===asignacionRapida);if(!nov)return null;return(
     <div style={s.overlay} onClick={()=>setAsignacionRapida(null)}><div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
       <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
-      <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>{nov.descripcion}</p>
+      <p style={{margin:"0 0 14px",fontSize:13,color:"#55555A"}}>{nov.descripcion}</p>
       <div style={{overflowY:"auto"}}>
         <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} onInvitarNuevo={()=>{setAsignacionRapida(null);abrirModalInvitar(({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId}));}} />
       </div>
-      <button type="button" onClick={()=>setAsignacionRapida(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:16}}>Cancelar</button>
+      <button type="button" onClick={()=>setAsignacionRapida(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",marginTop:16}}>Cancelar</button>
     </div></div>
   );})();
 
@@ -1242,16 +1242,16 @@ export default function App({ session }) {
     <div style={{textAlign:"center",marginBottom:20}}>
       <span style={{fontSize:44}}>👋</span>
       <p style={{margin:"12px 0 8px",fontSize:18,fontWeight:800}}>Ya no formás parte de "{avisoObraEliminada}"</p>
-      <p style={{margin:0,fontSize:14,color:"#8E8E93"}}>El administrador eliminó esa obra o te quitó del equipo.</p>
+      <p style={{margin:0,fontSize:14,color:"#55555A"}}>El administrador eliminó esa obra o te quitó del equipo.</p>
     </div>
     <button style={s.btnPrincipal} onClick={()=>setAvisoObraEliminada(null)}>Entendido</button>
   </div></div>;
 
   const modalInvitarJSX = modalInvitar&&<div style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarCallback(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
-    <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Generá un link para sumar a alguien a "{obraActual?.nombre}"</p>
+    <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>Generá un link para sumar a alguien a "{obraActual?.nombre}"</p>
     {!linkGenerado?<>
-      <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Rol</p>
+      <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Rol</p>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         {[["operario","👷 Operario"],["capataz","🦺 Capataz"]].map(([val,lbl])=>(
           <button key={val} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol===val?"#0057FF":"#E5E5EA"}`,background:invitarRol===val?"#0057FF15":"#fff",color:invitarRol===val?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol===val?700:400,cursor:"pointer"}} onClick={()=>setInvitarRol(val)}>{lbl}</button>
@@ -1261,13 +1261,13 @@ export default function App({ session }) {
           {!esVersionPro&&<span style={{fontSize:9,fontWeight:800,color:"#FFB800"}}>🔒 PRO</span>}
         </button>
       </div>
-      {invitarRol==="operario"&&<><p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Especialidad (gremio)</p>
+      {invitarRol==="operario"&&<><p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Especialidad (gremio)</p>
       <div style={{marginBottom:16}}>
         <SelectorOficio value={invitarEsp} onChange={r=>setInvitarEsp(r)} customValue="" onCustomChange={()=>{}} color="#0057FF" />
       </div></>}
-      <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Nombre o empresa <span style={{fontWeight:400}}>(opcional)</span></p>
+      <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Nombre o empresa <span style={{fontWeight:400}}>(opcional)</span></p>
       <input style={{...s.input,marginBottom:12}} placeholder="Ej: Jorge, Cuadrilla 2..." value={invitarNombre} onChange={e=>setInvitarNombre(e.target.value)} maxLength={40}/>
-      <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
+      <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
       {typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["name","tel"],{multiple:false});if(c&&c[0]){if(c[0].tel?.[0])setInvitarTelefono(c[0].tel[0].replace(/\s/g,""));if(c[0].name?.[0]&&!invitarNombre.trim())setInvitarNombre(c[0].name[0]);}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}
       <input style={{...s.input,marginBottom:4}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
       <p style={{margin:"0 0 16px",fontSize:11,color:"#C7C7CC"}}>Para contactarlo rápido desde Estadísticas</p>
@@ -1280,10 +1280,10 @@ export default function App({ session }) {
       <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
         <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(linkGenerado)}`} alt="QR de invitación" style={{width:180,height:180,borderRadius:12,border:"1px solid #E5E5EA"}}/>
       </div>
-      <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#8E8E93"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
+      <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#55555A"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
       <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={compartirLinkWhatsapp}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Compartir por WhatsApp</span></button>
       <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":`${invitarEsp}`;const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;if(navigator.share){navigator.share({title:"Invitación a Fixgo",text:msg}).catch(()=>{});}else{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Share2 size={16}/>Compartir por otro medio</span></button>
-      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarCallback(null);}}>Cerrar</button>
+      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarCallback(null);}}>Cerrar</button>
     </>}
   </div></div>;
 
@@ -1304,7 +1304,7 @@ export default function App({ session }) {
     const totalSector=rd.porSector.reduce((a,s:any)=>a+s.cant,0)||1;
     let offsetSector=0;
     const maxBucket=Math.max(1,...rd.buckets.map(b=>Math.max(b.reportadas,b.resueltas)));
-    const deltaColor=(tipo)=>tipo==="good"?"#1E9E4A":tipo==="bad"?"#E5484D":"#8E8E93";
+    const deltaColor=(tipo)=>tipo==="good"?"#1E9E4A":tipo==="bad"?"#E5484D":"#55555A";
     return(
       <div style={{...s.root,background:"#8A8D93",overflowY:"auto",padding:"20px"}}>
         <style>{`@media print{body *{visibility:hidden;} .hoja-reporte,.hoja-reporte *{visibility:visible;} .hoja-reporte{position:absolute;left:0;top:0;} .no-print{display:none!important;}}`}</style>
@@ -1315,11 +1315,11 @@ export default function App({ session }) {
         <div className="hoja-reporte" style={{background:"#fff",width:794,minHeight:1000,margin:"0 auto",padding:"40px 46px",boxShadow:"0 4px 24px rgba(0,0,0,0.2)"}}>
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:24}}>
             <div>
-              <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.5,marginBottom:14}}><div style={{width:15,height:15,borderRadius:4,background:"#8E8E93",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:8.5}}>F</div><span style={{fontWeight:700,fontSize:10,color:"#8E8E93"}}>Generado con Fixgo</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.5,marginBottom:14}}><div style={{width:15,height:15,borderRadius:4,background:"#55555A",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:8.5}}>F</div><span style={{fontWeight:700,fontSize:10,color:"#55555A"}}>Generado con Fixgo</span></div>
               <h1 style={{fontSize:26,margin:0,color:"#1C1C1E",letterSpacing:-0.4}}>{obraActual?.nombre}</h1>
               <p style={{fontSize:11.5,fontWeight:700,color:"#5CA9E0",textTransform:"uppercase",letterSpacing:0.4,margin:"5px 0 0"}}>Informe del período · Resolución de novedades</p>
-              {nombreEstudio&&<p style={{fontSize:11,color:"#8E8E93",margin:"3px 0 0"}}>{nombreEstudio}</p>}
-              <p style={{fontSize:11,color:"#8E8E93",margin:"6px 0 0"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)} · Emitido el {fmtFecha(new Date())}</p>
+              {nombreEstudio&&<p style={{fontSize:11,color:"#55555A",margin:"3px 0 0"}}>{nombreEstudio}</p>}
+              <p style={{fontSize:11,color:"#55555A",margin:"6px 0 0"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)} · Emitido el {fmtFecha(new Date())}</p>
             </div>
             {logoEstudioUrl?
               <div style={{maxWidth:120,maxHeight:84,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"flex-end"}}><img src={logoEstudioUrl} alt={nombreEstudio||"Logo"} style={{maxWidth:120,maxHeight:84,objectFit:"contain"}}/></div>
@@ -1331,7 +1331,7 @@ export default function App({ session }) {
           <div style={{display:"flex",background:"#F7F7F8",border:"1px solid #EEEEF0",borderRadius:12,padding:"18px 6px",marginBottom:26}}>
             {[["Resueltas",rd.resueltas,rd.deltaResueltas],["Reportadas",rd.reportadas,rd.deltaReportadas],["Tiempo prom. resolución",rd.tiempoProm.toFixed(1)+"d",rd.deltaTiempo],["Pendientes",rd.pendientes,null],["Críticas abiertas",rd.criticas,null]].map(([lbl,num,d]:any,i)=>(
               <div key={i} style={{flex:1,textAlign:"center",padding:"0 8px",borderRight:i<4?"1px solid #E5E5E7":"none"}}>
-                <div style={{fontSize:8.5,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.3,minHeight:22,display:"flex",alignItems:"center",justifyContent:"center"}}>{lbl}</div>
+                <div style={{fontSize:8.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.3,minHeight:22,display:"flex",alignItems:"center",justifyContent:"center"}}>{lbl}</div>
                 <div style={{fontSize:22,fontWeight:900,color:"#1C1C1E",margin:"5px 0 4px"}}>{num}</div>
                 {d&&<div style={{fontSize:9.5,fontWeight:700,color:deltaColor(d.tipo),minHeight:24}}>{d.texto}</div>}
               </div>
@@ -1342,9 +1342,9 @@ export default function App({ session }) {
             <div>
               <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Novedades por sector</p>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                <thead><tr><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>Sector</th><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>Reportadas</th><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#8E8E93",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>% del total</th></tr></thead>
+                <thead><tr><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#55555A",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>Sector</th><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#55555A",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>Reportadas</th><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#55555A",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>% del total</th></tr></thead>
                 <tbody>
-                  {rd.porSector.length===0&&<tr><td colSpan={3} style={{padding:"10px 0",color:"#8E8E93"}}>Sin novedades en este período</td></tr>}
+                  {rd.porSector.length===0&&<tr><td colSpan={3} style={{padding:"10px 0",color:"#55555A"}}>Sin novedades en este período</td></tr>}
                   {rd.porSector.map((s:any,i)=>(
                     <tr key={s.nombre}><td style={{padding:"8px 0",borderBottom:"1px solid #F5F5F6"}}><span style={{width:9,height:9,borderRadius:3,background:paletaSector[i%paletaSector.length],display:"inline-block",marginRight:7}}/>{s.nombre}</td><td style={{padding:"8px 0",borderBottom:"1px solid #F5F5F6"}}>{s.cant}</td><td style={{padding:"8px 0",borderBottom:"1px solid #F5F5F6"}}>{Math.round((s.cant/totalSector)*100)}%</td></tr>
                   ))}
@@ -1360,7 +1360,7 @@ export default function App({ session }) {
                       <div style={{width:12,borderRadius:"3px 3px 0 0",background:"#5CA9E0",height:Math.max(2,(b.reportadas/maxBucket)*118)}}/>
                       <div style={{width:12,borderRadius:"3px 3px 0 0",background:"#34C759",height:Math.max(2,(b.resueltas/maxBucket)*118)}}/>
                     </div>
-                    <span style={{fontSize:9,color:"#8E8E93"}}>{b.label}</span>
+                    <span style={{fontSize:9,color:"#55555A"}}>{b.label}</span>
                   </div>
                 ))}
               </div>
@@ -1378,13 +1378,13 @@ export default function App({ session }) {
                 <span><i style={{width:9,height:9,borderRadius:3,background:"#34C759",display:"inline-block",marginRight:4}}/>Resueltas</span>
                 <span><i style={{width:9,height:9,borderRadius:3,background:"#5CA9E0",display:"inline-block",marginRight:4}}/>A su cargo</span>
               </div>
-              {rd.actividadPersonas.length===0&&<p style={{color:"#8E8E93",fontSize:12}}>Sin actividad en este período</p>}
+              {rd.actividadPersonas.length===0&&<p style={{color:"#55555A",fontSize:12}}>Sin actividad en este período</p>}
               {rd.actividadPersonas.map((p:any,i)=>{
                 const maxP=Math.max(1,...rd.actividadPersonas.map((x:any)=>Math.max(x.resueltas,x.aCargo)));
                 return(
                   <div key={i} style={{display:"flex",alignItems:"center",gap:11,marginBottom:13}}>
                     <div style={{width:28,height:28,borderRadius:"50%",color:"#fff",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:paletaPersona[i%paletaPersona.length]}}>{p.nombre[0]?.toUpperCase()}</div>
-                    <div style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",width:84,flexShrink:0,lineHeight:1.3}}>{p.nombre}<br/><small style={{fontWeight:400,color:"#8E8E93",fontSize:9.5}}>{p.oficio}</small></div>
+                    <div style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",width:84,flexShrink:0,lineHeight:1.3}}>{p.nombre}<br/><small style={{fontWeight:400,color:"#55555A",fontSize:9.5}}>{p.oficio}</small></div>
                     <div style={{flex:1,display:"flex",flexDirection:"column",gap:4}}>
                       <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#34C759",width:`${(p.resueltas/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.resueltas} resueltas</div></div>
                       <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#5CA9E0",width:`${(p.aCargo/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.aCargo} a su cargo</div></div>
@@ -1419,7 +1419,7 @@ export default function App({ session }) {
 
           <div>
             <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Fotos de resultado</p>
-            {rd.fotos.length===0?<p style={{color:"#8E8E93",fontSize:12}}>No hay fotos de resultado en este período</p>:
+            {rd.fotos.length===0?<p style={{color:"#55555A",fontSize:12}}>No hay fotos de resultado en este período</p>:
             <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
               {rd.fotos.map((f:any)=>(
                 <div key={f.num} style={{borderRadius:9,overflow:"hidden",background:"#fff",border:"1px solid #EEEEF0"}}>
@@ -1427,7 +1427,7 @@ export default function App({ session }) {
                   <div style={{padding:"7px 8px"}}>
                     <div style={{fontSize:7.5,color:"#C7C7CC",fontWeight:700}}>#{f.num}</div>
                     <div style={{fontSize:9.5,color:"#1C1C1E",fontWeight:700,margin:"2px 0",lineHeight:1.2}}>{f.descripcion}</div>
-                    <div style={{fontSize:8.5,color:"#8E8E93",marginTop:3}}>{f.responsable} · {f.sector}</div>
+                    <div style={{fontSize:8.5,color:"#55555A",marginTop:3}}>{f.responsable} · {f.sector}</div>
                     <span style={{display:"inline-block",fontSize:7,fontWeight:800,color:"#34C759",background:"#34C75915",padding:"2px 6px",borderRadius:99,textTransform:"uppercase",marginTop:4}}>Resuelta</span>
                   </div>
                 </div>
@@ -1454,33 +1454,33 @@ export default function App({ session }) {
           <p style={{margin:0,fontSize:28,fontWeight:900,color:"#fff",letterSpacing:-1}}>Fixgo</p>
           <p style={{margin:0,fontSize:13,color:"rgba(255,255,255,0.5)"}}>Versión 1.0.0</p>
         </div>
-        <p style={{margin:"4px 0 0",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Planes</p>
+        <p style={{margin:"4px 0 0",fontSize:12,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Planes</p>
         <div style={{background:"#fff",borderRadius:16,overflow:"hidden"}}>
           <div style={{padding:"14px 16px",borderBottom:"1px solid #F2F2F7"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Plan Gratuito</p>
               <span style={{background:"#F2F2F7",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#636366",fontWeight:600}}>Actual</span>
             </div>
-            <p style={{margin:0,fontSize:13,color:"#8E8E93"}}>✅ 1 proyecto · ✅ Novedades ilimitadas · ❌ Estadísticas avanzadas</p>
+            <p style={{margin:0,fontSize:13,color:"#55555A"}}>✅ 1 proyecto · ✅ Novedades ilimitadas · ❌ Estadísticas avanzadas</p>
           </div>
           <div style={{padding:"14px 16px",background:"#FFB80008"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Plan Pro</p>
               <span style={{background:"#FFB800",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#1C1C1E",fontWeight:800}}>✨ PRO</span>
             </div>
-            <p style={{margin:0,fontSize:13,color:"#8E8E93",marginBottom:10}}>✅ Proyectos ilimitados · ✅ Estadísticas avanzadas · ✅ Ranking · ✅ Filtros</p>
+            <p style={{margin:0,fontSize:13,color:"#55555A",marginBottom:10}}>✅ Proyectos ilimitados · ✅ Estadísticas avanzadas · ✅ Ranking · ✅ Filtros</p>
             <button style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer"}}>🚀 Activar Plan Pro</button>
           </div>
         </div>
         {[["Contacto y soporte",[{icon:"💬",label:"Contactarnos",sub:"Escribinos por cualquier consulta"},{icon:"🐛",label:"Reportar un problema",sub:"Ayudanos a mejorar Fixgo"},{icon:"❓",label:"Preguntas frecuentes",sub:"Guías y ayuda"}]],
           ["Legal",[{icon:"📄",label:"Términos y condiciones"},{icon:"🔒",label:"Política de privacidad"}]]].map(([titulo,items])=>(
           <div key={titulo}>
-            <p style={{margin:"4px 0 8px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>{titulo}</p>
+            <p style={{margin:"4px 0 8px",fontSize:12,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>{titulo}</p>
             <div style={{background:"#fff",borderRadius:16,overflow:"hidden"}}>
               {items.map((item,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:i<items.length-1?"1px solid #F2F2F7":"none",cursor:"pointer"}}>
                   <span style={{fontSize:22}}>{item.icon}</span>
-                  <div style={{flex:1}}><p style={{margin:0,fontSize:15,fontWeight:600,color:"#1C1C1E"}}>{item.label}</p>{item.sub&&<p style={{margin:0,fontSize:12,color:"#8E8E93"}}>{item.sub}</p>}</div>
+                  <div style={{flex:1}}><p style={{margin:0,fontSize:15,fontWeight:600,color:"#1C1C1E"}}>{item.label}</p>{item.sub&&<p style={{margin:0,fontSize:12,color:"#55555A"}}>{item.sub}</p>}</div>
                   <span style={{color:"#C7C7CC",fontSize:18}}>›</span>
                 </div>
               ))}
@@ -1516,23 +1516,23 @@ export default function App({ session }) {
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"18px 16px",flexShrink:0}}>
             {[["Nombre","nombre","Tu nombre"],["Especialidad","especialidad","Tu especialidad"]].map(([lbl,key,ph])=>(
-              <div key={key}><p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>{lbl}</p>
+              <div key={key}><p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#55555A"}}>{lbl}</p>
               <input style={{...s.input,marginBottom:14,background:modoOscuro?"#3A3A3C":"#F2F2F7",color:modoOscuro?"#fff":"#1C1C1E",border:"none"}} value={perfilForm[key]} onChange={e=>setPerfilForm(f=>({...f,[key]:e.target.value}))} placeholder={ph}/></div>
             ))}
-            <p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Email</p>
+            <p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#55555A"}}>Email</p>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,background:"transparent",border:"1px dashed #E0E0E5",borderRadius:12,padding:"13px 14px",marginBottom:16}}>
-              <span style={{fontSize:15,color:"#8E8E93",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{perfilForm.email}</span>
+              <span style={{fontSize:15,color:"#55555A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{perfilForm.email}</span>
               <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#C7C7CC",flexShrink:0}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Google</span>
             </div>
             <button style={{...s.btnPrincipal,background:"#34C759",marginTop:0}} onClick={async()=>{setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));if(usuarioReal)await supabase.auth.updateUser({data:{full_name:perfilForm.nombre}});alert("✅ Cambios guardados");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar cambios</span></button>
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"18px 16px",flexShrink:0}}>
             <p style={{margin:"0 0 4px",fontSize:15,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>Tu estudio</p>
-            <p style={{margin:"0 0 14px",fontSize:12,color:"#8E8E93"}}>Aparece en los informes que generás. Es opcional.</p>
-            <p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Nombre del estudio</p>
+            <p style={{margin:"0 0 14px",fontSize:12,color:"#55555A"}}>Aparece en los informes que generás. Es opcional.</p>
+            <p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#55555A"}}>Nombre del estudio</p>
             <input style={{...s.input,marginBottom:10,background:modoOscuro?"#3A3A3C":"#F2F2F7",color:modoOscuro?"#fff":"#1C1C1E",border:"none"}} value={nombreEstudioInput} onChange={e=>setNombreEstudioInput(e.target.value)} placeholder="Completar con el nombre de tu estudio" maxLength={40}/>
             <button onClick={guardarNombreEstudio} disabled={nombreEstudioInput===nombreEstudio} style={{...s.btnPrincipal,background:"#0057FF",marginTop:0,marginBottom:16,opacity:nombreEstudioInput===nombreEstudio?0.4:1}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar nombre</span></button>
-            <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#8E8E93"}}>Logo</p>
+            <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Logo</p>
             <input ref={fileRefLogo} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)subirLogoEstudio(f);}}/>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <div style={{width:64,height:64,borderRadius:12,background:modoOscuro?"#3A3A3C":"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden",border:logoEstudioUrl?"1px solid #E5E5EA":"1.5px dashed #D0D0D5"}}>
@@ -1546,7 +1546,7 @@ export default function App({ session }) {
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
               <div style={{flex:1}}>
                 <p style={{margin:0,fontSize:15,fontWeight:700,color:modoOscuro?"#fff":"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>✨ Modo Pro (prueba)</p>
-                <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>Solo para testear, no cobra nada real</p>
+                <p style={{margin:"2px 0 0",fontSize:12,color:"#55555A"}}>Solo para testear, no cobra nada real</p>
               </div>
               <button onClick={()=>simularPro(!esProReal)} style={{flexShrink:0,width:50,height:30,borderRadius:99,border:"none",cursor:"pointer",background:esProReal?"#FFB800":"#C7C7CC",position:"relative",transition:"background 0.2s"}}>
                 <span style={{position:"absolute",top:3,left:esProReal?23:3,width:24,height:24,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
@@ -1555,7 +1555,7 @@ export default function App({ session }) {
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
-              <LogOut size={20} color="#8E8E93"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Cerrar sesión</p><ChevronRight size={16} color="#C7C7CC"/>
+              <LogOut size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Cerrar sesión</p><ChevronRight size={16} color="#C7C7CC"/>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",cursor:"pointer"}} onClick={async()=>{
               if(!window.confirm("¿Eliminar tu cuenta?\n\nEsto borrará para siempre todas tus obras, novedades, comentarios y tu cuenta. Esta acción NO se puede deshacer."))return;
@@ -1637,7 +1637,7 @@ export default function App({ session }) {
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
           {alertasDinamicas.length===0&&(
-            <div style={{textAlign:"center",padding:"60px 20px",color:"#8E8E93"}}>
+            <div style={{textAlign:"center",padding:"60px 20px",color:"#55555A"}}>
               <p style={{fontSize:44,margin:0}}>✅</p> 
               <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Todo al dia</p> 
               <p style={{fontSize:14,margin:0}}>No hay novedades urgentes ni vencidas</p>
@@ -1652,7 +1652,7 @@ export default function App({ session }) {
               <span style={{width:36,height:36,borderRadius:10,background:"#FF3B3012",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><AlertTriangle size={19} color="#FF3B30"/></span>
               <div style={{flex:1,minWidth:0}}>
                 <p style={{margin:0,fontSize:14,fontWeight:700,color:"#1C1C1E",lineHeight:1.35}}>{a.texto}</p>
-                <p style={{margin:"3px 0 0",fontSize:12,color:"#8E8E93"}}>{a.sub}</p>
+                <p style={{margin:"3px 0 0",fontSize:12,color:"#55555A"}}>{a.sub}</p>
               </div>
               <ChevronRight size={18} color="#C7C7CC" style={{flexShrink:0}}/>
             </button>
@@ -1689,9 +1689,9 @@ export default function App({ session }) {
           </div>
         </div>
         <div style={{padding:"10px 16px 14px",flexShrink:0,display:"flex",gap:8}}>
-          <button onClick={()=>setVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
-          <button onClick={()=>setVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
-          {esVersionPro&&<button onClick={()=>setVistaHome("director")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>Director</button>}
+          <button onClick={()=>setVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
+          <button onClick={()=>setVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
+          {esVersionPro&&<button onClick={()=>setVistaHome("director")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>Director</button>}
         </div>
         {vistaHome==="director"?(
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
@@ -1699,14 +1699,14 @@ export default function App({ session }) {
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
               <p style={{fontSize:38,margin:"0 0 10px"}}>🧭</p>
               <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>Todavía no armaste tu equipo de profesionales</p>
-              <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Sabé al instante quién está al día y quién necesita ayuda.</p>
+              <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Sabé al instante quién está al día y quién necesita ayuda.</p>
               <button onClick={()=>{setNombreEmpresaInput(nombreEstudio);setModalCrearEmpresa(true);}} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Crear mi equipo de profesionales</button>
             </div>
           ):miembrosEmpresa.length===0?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
               <p style={{fontSize:38,margin:"0 0 10px"}}>🧭</p>
               <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>{nombreEstudio||empresaPropia.nombre} todavía no tiene profesionales</p>
-              <p style={{margin:"0 0 18px",fontSize:13,color:"#8E8E93"}}>Invitá a los profesionales de tu equipo para verlos acá.</p>
+              <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Invitá a los profesionales de tu equipo para verlos acá.</p>
               <button onClick={()=>setModalInvitarArq(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Invitar profesional</button>
             </div>
           ):(
@@ -1728,7 +1728,7 @@ export default function App({ session }) {
                       <div style={{width:38,height:38,borderRadius:"50%",background:"#2E3A4B",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:15,flexShrink:0}}>{nombre[0]?.toUpperCase()}</div>
                       <div style={{flex:1,minWidth:0}}>
                         <p style={{margin:0,fontSize:14,fontWeight:800,color:"#1C1C1E"}}>{nombre}</p>
-                        <p style={{margin:0,fontSize:11,color:"#8E8E93"}}>{obrasDeEste.length} obra{obrasDeEste.length!==1?"s":""}</p>
+                        <p style={{margin:0,fontSize:11,color:"#55555A"}}>{obrasDeEste.length} obra{obrasDeEste.length!==1?"s":""}</p>
                       </div>
                       {venc>0?<span style={{fontSize:11,fontWeight:700,color:"#FF3B30",background:"#FFF0EE",padding:"4px 10px",borderRadius:99}}>🔴 Atención</span>:pend===0?<span style={{fontSize:11,fontWeight:700,color:"#34C759",background:"#EDFAF1",padding:"4px 10px",borderRadius:99}}>✅ Al día</span>:null}
                     </div>
@@ -1745,7 +1745,7 @@ export default function App({ session }) {
                 <p style={{margin:"0 0 6px",fontSize:12,fontWeight:700,color:"#B8860B"}}>⏳ {invitacionesEmpresaPendientes.length} invitación{invitacionesEmpresaPendientes.length!==1?"es":""} pendiente{invitacionesEmpresaPendientes.length!==1?"s":""}</p>
                 {invitacionesEmpresaPendientes.map(inv=>(
                   <div key={inv.codigo} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0"}}>
-                    <span style={{fontSize:12,color:"#8E8E93"}}>Esperando que acepte...</span>
+                    <span style={{fontSize:12,color:"#55555A"}}>Esperando que acepte...</span>
                     <button onClick={()=>cancelarInvitacionEmpresa(inv.codigo)} style={{background:"none",border:"none",cursor:"pointer"}}><Trash2 size={14} color="#C7C7CC"/></button>
                   </div>
                 ))}
@@ -1758,7 +1758,7 @@ export default function App({ session }) {
           {cargandoDatos?(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,padding:"48px 16px"}}>
               <span style={{width:28,height:28,border:"3px solid #E5E5EA",borderTopColor:"#2E3A4B",borderRadius:"50%",display:"inline-block",animation:"spin 0.8s linear infinite"}}/>
-              <p style={{margin:0,fontSize:14,fontWeight:600,color:"#8E8E93"}}>Cargando tus obras…</p>
+              <p style={{margin:0,fontSize:14,fontWeight:600,color:"#55555A"}}>Cargando tus obras…</p>
             </div>
           ):(<>
           {obras.filter(obra=>{
@@ -1800,7 +1800,7 @@ export default function App({ session }) {
                   </svg>
                   <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
                     <p style={{margin:0,fontSize:size>100?42:18,fontWeight:900,color:"#1C1C1E",lineHeight:1,letterSpacing:-1}}>{pct}%</p>
-                    {!labelOutside&&<p style={{margin:"2px 0 0",fontSize:size>100?9:7,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.6}}>{esDueno?"resuelto":"mis novedades"}</p>}
+                    {!labelOutside&&<p style={{margin:"2px 0 0",fontSize:size>100?9:7,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.6}}>{esDueno?"resuelto":"mis novedades"}</p>}
                   </div>
                 </div>
               );
@@ -1825,7 +1825,7 @@ export default function App({ session }) {
                       <CirculoProg radius={38} pct={prog} size={90}/>
                       <div style={{flex:1,minWidth:0}}>
                         <p style={{margin:"0 0 2px",fontSize:16,fontWeight:800,color:"#1C1C1E"}}>{obra.nombre}</p>
-                        <p style={{margin:"0 0 10px",fontSize:11,color:"#8E8E93",display:"flex",alignItems:"center",gap:3}}><MapPin size={11} color="#8E8E93"/>{obra.direccion||"Sin dirección"}</p>
+                        <p style={{margin:"0 0 10px",fontSize:11,color:"#55555A",display:"flex",alignItems:"center",gap:3}}><MapPin size={11} color="#55555A"/>{obra.direccion||"Sin dirección"}</p>
                         <div style={{display:"flex",gap:6}}>
                           <div style={{flex:1,background:"#FFF3E8",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
                           <div style={{flex:1,background:"#FFF0EE",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#FF3B30"}}>{venc}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF6B60",textTransform:"uppercase"}}>Venc.</p></div>
@@ -1844,14 +1844,14 @@ export default function App({ session }) {
                   <div style={{display:"flex",alignItems:"center",gap:14}}>
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0}}>
                     <CirculoProg radius={28} pct={prog} size={72} labelOutside/>
-                    <p style={{margin:0,fontSize:9,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.4,whiteSpace:"nowrap"}}>Mis novedades</p>
+                    <p style={{margin:0,fontSize:9,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.4,whiteSpace:"nowrap"}}>Mis novedades</p>
                   </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{marginBottom:6}}>
                         <span style={{display:"inline-flex",alignItems:"center",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3,background:miRolObra==="capataz"?"#FFF3E8":"#F0EEFF",color:miRolObra==="capataz"?"#FF6B00":"#6B4FA8"}}>{miEspecialidad||miRolObra}</span>
                       </div>
                       <p style={{margin:"0 0 2px",fontSize:15,fontWeight:800,color:"#1C1C1E"}}>{obra.nombre}</p>
-                      <p style={{margin:"0 0 8px",fontSize:11,color:"#8E8E93",display:"flex",alignItems:"center",gap:3}}><MapPin size={10} color="#8E8E93"/>{obra.direccion||"Sin dirección"}</p>
+                      <p style={{margin:"0 0 8px",fontSize:11,color:"#55555A",display:"flex",alignItems:"center",gap:3}}><MapPin size={10} color="#55555A"/>{obra.direccion||"Sin dirección"}</p>
                       <div style={{display:"flex",gap:6}}>
                         <div style={{background:"#FFF3E8",borderRadius:8,padding:"5px 8px",textAlign:"center"}}><p style={{margin:0,fontSize:14,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
                         <div style={{background:"#EDFAF1",borderRadius:8,padding:"5px 8px",textAlign:"center"}}><p style={{margin:0,fontSize:14,fontWeight:900,color:"#28A745"}}>{res}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#34C759",textTransform:"uppercase"}}>Res.</p></div>
@@ -1875,7 +1875,7 @@ export default function App({ session }) {
         {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
         {modalCrearEmpresa&&<div style={s.overlay} onClick={()=>setModalCrearEmpresa(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>{empresaPropia?"Renombrar tu equipo":"Crear tu equipo de profesionales"}</p>
-          <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>{empresaPropia?"Este nombre lo ven los profesionales que invites.":"Así vas a poder invitar profesionales y ver todas sus obras."}</p>
+          <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>{empresaPropia?"Este nombre lo ven los profesionales que invites.":"Así vas a poder invitar profesionales y ver todas sus obras."}</p>
           <input style={s.input} placeholder="Nombre de tu equipo/estudio" value={nombreEmpresaInput} onChange={e=>setNombreEmpresaInput(e.target.value)} maxLength={40} autoFocus/>
           <div style={{display:"flex",gap:10,marginTop:20}}>
             <button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalCrearEmpresa(false)}>Cancelar</button>
@@ -1884,7 +1884,7 @@ export default function App({ session }) {
         </div></div>}
         {modalInvitarArq&&<div style={s.overlay} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar profesional</p>
-          <p style={{margin:"0 0 16px",fontSize:13,color:"#8E8E93"}}>Generá un link para sumarlo a "{empresaPropia?.nombre}"</p>
+          <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>Generá un link para sumarlo a "{empresaPropia?.nombre}"</p>
           {!linkEmpresaGenerado?(
             <button style={{...s.btnPrincipal,background:"#2E3A4B",opacity:generandoLinkEmpresa?0.5:1}} disabled={generandoLinkEmpresa} onClick={generarInvitacionEmpresa}>
               {generandoLinkEmpresa?"Generando...":"Generar link de invitación"}
@@ -1897,9 +1897,9 @@ export default function App({ session }) {
             <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(linkEmpresaGenerado)}`} alt="QR de invitación" style={{width:180,height:180,borderRadius:12,border:"1px solid #E5E5EA"}}/>
             </div>
-            <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#8E8E93"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
+            <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#55555A"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
             <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={()=>{const msg=`Te invito a sumarte a mi equipo de profesionales en Fixgo 👷\n\n${linkEmpresaGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");}}>Compartir por WhatsApp</button>
-            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}>Cerrar</button>
+            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}>Cerrar</button>
           </>)}
         </div></div>}
         {modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
@@ -1908,19 +1908,19 @@ export default function App({ session }) {
                   <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><span style={{color:"#34C759",fontSize:16}}>✓</span>{t}</div>
                 ))}
               </div>
-              <button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
+              <button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
         {menuObra&&(()=>{const obraM=obras.find(o=>o.id===menuObra);const esDuenoM=usuarioReal&&obraM?.propietario_id===usuarioReal.id;const miRolM=(obraM?.equipo||[]).find(m=>m.uid===miId)?.rolEnObra;const esGestorM=esDuenoM||miRolM==="co_profesional";return(
         <div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p>
           {esGestorM&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setEditarObraForm({nombre:obraM?.nombre||"",direccion:obraM?.direccion||""});setModalEditarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={15}/>Editar datos de la obra</span></button>}
           {esGestorM&&misEmpresasComoMiembro.length>0&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setModalCompartirObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}>Compartir con equipo</span></button>}
           {esDuenoM&&<button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar obra</span></button>}
-          <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuObra(null)}>Cancelar</button>
+          <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setMenuObra(null)}>Cancelar</button>
         </div></div>
         );})()}
         {modalCompartirObra&&(()=>{const obraSel=obras.find(o=>o.id===modalCompartirObra);return(
           <div style={s.overlay} onClick={()=>setModalCompartirObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
             <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>Compartir "{obraSel?.nombre}"</p>
-            <p style={{margin:"0 0 16px",fontSize:12.5,color:"#8E8E93"}}>Elegí con qué empresa la ve el director. Por defecto, tus obras son privadas.</p>
+            <p style={{margin:"0 0 16px",fontSize:12.5,color:"#55555A"}}>Elegí con qué empresa la ve el director. Por defecto, tus obras son privadas.</p>
             {misEmpresasComoMiembro.map(em=>{
               const activo=obraSel?.empresa_id===em.empresa_id;
               return(
@@ -1933,10 +1933,10 @@ export default function App({ session }) {
                 </button>
               );
             })}
-            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:8}} onClick={()=>setModalCompartirObra(null)}>Listo</button>
+            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",marginTop:8}} onClick={()=>setModalCompartirObra(null)}>Listo</button>
           </div></div>
         );})()}
-        {confirmarEliminarObra&&<div style={s.overlay} onClick={()=>setConfirmarEliminarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta obra?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Se borrarán todas sus novedades. No se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarObra(confirmarEliminarObra)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarObra(null)}>Cancelar</button></div></div>}
+        {confirmarEliminarObra&&<div style={s.overlay} onClick={()=>setConfirmarEliminarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta obra?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Se borrarán todas sus novedades. No se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarObra(confirmarEliminarObra)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarObra(null)}>Cancelar</button></div></div>}
         {modalEditarObraJSX}
       </div>
     );
@@ -1959,14 +1959,14 @@ export default function App({ session }) {
           <div style={{background:"#fff",borderRadius:18,padding:"16px",display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:56,height:56,borderRadius:99,background:u.color||colorPastelDe(u.uid),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:"#fff"}}>{u.nombre?u.nombre[0].toUpperCase():""}</div>
             <div style={{flex:1}}><p style={{margin:0,fontWeight:800,fontSize:18,color:"#1C1C1E"}}>{u.nombre}</p>
-              <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:rolU.color,background:rolU.color+"15",padding:"2px 8px",borderRadius:99}}>{rolU.emoji} {rolU.label}</span>}<span style={{fontSize:13,color:"#8E8E93"}}>{u.especialidad}</span></div>
-              <p style={{margin:"6px 0 0",fontSize:12,color:"#8E8E93"}}>{esProfesional?"Resumen general de la obra":"Tareas asignadas a "+u.especialidad}</p>
+              <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:rolU.color,background:rolU.color+"15",padding:"2px 8px",borderRadius:99}}>{rolU.emoji} {rolU.label}</span>}<span style={{fontSize:13,color:"#55555A"}}>{u.especialidad}</span></div>
+              <p style={{margin:"6px 0 0",fontSize:12,color:"#55555A"}}>{esProfesional?"Resumen general de la obra":"Tareas asignadas a "+u.especialidad}</p>
             </div>
           </div>
           {/* TELÉFONO */}
           {u.telefono?(
             <div style={{background:"#fff",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
-              <Phone size={16} color="#8E8E93" style={{flexShrink:0}}/>
+              <Phone size={16} color="#55555A" style={{flexShrink:0}}/>
               <span style={{flex:1,fontSize:15,fontWeight:600,color:"#1C1C1E"}}>{u.telefono}</span>
               <button onClick={()=>window.open(`https://wa.me/${u.telefono.replace(/\D/g,"")}?text=${encodeURIComponent(`Hola ${u.nombre}! Te escribo por Fixgo.`)}`,"_blank")} style={{width:34,height:34,borderRadius:10,background:"#25D36615",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -1983,7 +1983,7 @@ export default function App({ session }) {
           )}
           <div style={{display:"flex",gap:10}}>
             {[["#FF6B00",pend.length,"Pendientes"],["#34C759",res.length,"Resueltas"],["#1C1C1E",tareasU.length,"Total"]].map(([col,val,lbl])=>(
-              <div key={lbl} style={{flex:1,background:"#fff",borderRadius:14,padding:"12px",textAlign:"center"}}><p style={{margin:0,fontSize:26,fontWeight:800,color:col}}>{val}</p><p style={{margin:0,fontSize:12,color:"#8E8E93"}}>{lbl}</p></div>
+              <div key={lbl} style={{flex:1,background:"#fff",borderRadius:14,padding:"12px",textAlign:"center"}}><p style={{margin:0,fontSize:26,fontWeight:800,color:col}}>{val}</p><p style={{margin:0,fontSize:12,color:"#55555A"}}>{lbl}</p></div>
             ))}
           </div>
           {puedeGestionar&&!esProfesional&&(
@@ -1993,7 +1993,7 @@ export default function App({ session }) {
             </div>
           )}
           {[["⏳ Pendientes",pend],["✅ Resueltas",res]].map(([titulo,lista])=>lista.length>0&&(
-            <div key={titulo}><p style={{margin:"4px 0 8px",fontSize:13,color:"#8E8E93",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>{titulo}</p>
+            <div key={titulo}><p style={{margin:"4px 0 8px",fontSize:13,color:"#55555A",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>{titulo}</p>
               {lista.map(nov=>{const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);return(
                 <button key={nov.id} style={{width:"100%",background:"#fff",borderRadius:16,border:"1px solid #ECECEF",padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",marginBottom:8,boxShadow:"0 1px 3px rgba(0,0,0,0.05)",opacity:nov.resuelta?0.65:1}}
                   onClick={()=>{setDetalleId(nov.id);setMiembroSel(null);setVistaEquipo(false);setVista("detalle");}}>
@@ -2008,7 +2008,7 @@ export default function App({ session }) {
                       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
                         <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
                         <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
-                        {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
+                        {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                       </div>
                       <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
                       <p style={{margin:0,fontSize:12,color:"#636366"}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {nov.sector}</p>
@@ -2019,7 +2019,7 @@ export default function App({ session }) {
               );})}
             </div>
           ))}
-          {tareasU.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:"#8E8E93"}}><p style={{fontSize:40,margin:0}}>🎉</p><p style={{fontSize:16,fontWeight:600,margin:"10px 0 4px"}}>{esProfesional?"La obra no tiene novedades":"Sin novedades asignadas"}</p></div>}
+          {tareasU.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:"#55555A"}}><p style={{fontSize:40,margin:0}}>🎉</p><p style={{fontSize:16,fontWeight:600,margin:"10px 0 4px"}}>{esProfesional?"La obra no tiene novedades":"Sin novedades asignadas"}</p></div>}
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
@@ -2029,32 +2029,32 @@ export default function App({ session }) {
             <div style={s.overlay} onClick={()=>setAsignarTareaMiembro(null)}>
               <div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
                 <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>Asignar novedad a {asignarTareaMiembro.nombre}</p>
-                <p style={{margin:"0 0 14px",fontSize:13,color:"#8E8E93"}}>Tareas pendientes sin responsable asignado</p>
+                <p style={{margin:"0 0 14px",fontSize:13,color:"#55555A"}}>Tareas pendientes sin responsable asignado</p>
                 <button style={{width:"100%",background:"#1C1C1E",color:"#fff",border:"none",borderRadius:14,padding:"12px 14px",marginBottom:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,fontWeight:700}}
                   onClick={()=>{const m=asignarTareaMiembro;setForm(f=>({...FORM_INICIAL,responsable:m.especialidad||RESPONSABLES[0],responsableUsuarioId:m.uid}));setAsignarTareaMiembro(null);setMiembroSel(null);setVistaEquipo(false);setVista("nueva");}}>
                   <Plus size={16}/>Cargar novedad nueva para {asignarTareaMiembro.nombre}
                 </button>
                 <div style={{overflowY:"auto",flex:1,margin:"0 -20px",padding:"0 20px"}}>
                   {sinAsignar.length===0
-                    ?<p style={{textAlign:"center",color:"#8E8E93",fontSize:14,padding:"20px 0"}}>Todas las novedades ya tienen un responsable asignado.</p>
+                    ?<p style={{textAlign:"center",color:"#55555A",fontSize:14,padding:"20px 0"}}>Todas las novedades ya tienen un responsable asignado.</p>
                     :sinAsignar.map(nov=>{const pri=PRIORIDADES[nov.prioridad];return(
                       <button key={nov.id} style={{width:"100%",background:"#fff",border:"1px solid #ECECEF",borderRadius:14,padding:"12px 14px",marginBottom:8,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}
                         onClick={()=>asignarRapido(nov.id,{responsable:asignarTareaMiembro.especialidad||"",usuarioId:asignarTareaMiembro.uid})}>
                         <span style={{width:8,height:8,borderRadius:"50%",background:pri.color,flexShrink:0,display:"inline-block"}}/>
                         <div style={{flex:1,minWidth:0}}>
                           <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E"}}>{nov.descripcion}</p>
-                          {nov.sector&&<p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{nov.sector}</p>}
+                          {nov.sector&&<p style={{margin:"2px 0 0",fontSize:12,color:"#55555A"}}>{nov.sector}</p>}
                         </div>
                         <ChevronRight size={16} color="#C7C7CC"/>
                       </button>
                     );})}
                 </div>
-                <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93",marginTop:12}} onClick={()=>setAsignarTareaMiembro(null)}>Cancelar</button>
+                <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",marginTop:12}} onClick={()=>setAsignarTareaMiembro(null)}>Cancelar</button>
               </div>
             </div>
           );
         })()}
-        {modalTelefono&&<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#8E8E93"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>}
+        {modalTelefono&&<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>}
       </div>
     );
   }
@@ -2070,15 +2070,15 @@ export default function App({ session }) {
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>setVistaEquipo(false)},{label:"Equipo"}]} />
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
           <div>
-            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Resumen de la obra</p>
+            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Resumen de la obra</p>
             <div style={{display:"flex",gap:10}}>
               {[["#FF6B00",obraPend,"Pendientes","pendientes"],["#34C759",obraRes,"Resueltas","resueltas"],["#1C1C1E",novedades.length,"Total","todas"]].map(([col,val,lbl,filtroVal])=>(
-                <div key={lbl} onClick={()=>{setFiltro(filtroVal);setVistaEquipo(false);setVista("lista");}} style={{flex:1,background:"#fff",borderRadius:14,padding:"14px 8px",textAlign:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.06)",cursor:"pointer"}}><p style={{margin:0,fontSize:24,fontWeight:800,color:col}}>{val}</p><p style={{margin:"2px 0 0",fontSize:11,color:"#8E8E93"}}>{lbl}</p></div>
+                <div key={lbl} onClick={()=>{setFiltro(filtroVal);setVistaEquipo(false);setVista("lista");}} style={{flex:1,background:"#fff",borderRadius:14,padding:"14px 8px",textAlign:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.06)",cursor:"pointer"}}><p style={{margin:0,fontSize:24,fontWeight:800,color:col}}>{val}</p><p style={{margin:"2px 0 0",fontSize:11,color:"#55555A"}}>{lbl}</p></div>
               ))}
             </div>
           </div>
           <div>
-            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Integrantes ({equipoObra.length})</p>
+            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Integrantes ({equipoObra.length})</p>
             <div style={{display:"flex",flexDirection:"column",gap:11}}>
               {equipoObra.map(u=>{
                 const esProf=u.rolEnObra==="profesional";
@@ -2097,11 +2097,11 @@ export default function App({ session }) {
                           <input autoFocus value={nombreEditado} onChange={e=>setNombreEditado(e.target.value)} placeholder="Nombre o empresa" maxLength={40}
                             style={{flex:1,padding:"8px 10px",borderRadius:10,border:"1.5px solid #0057FF",fontSize:15,outline:"none",fontFamily:"inherit",minWidth:0}}/>
                           <button onClick={()=>guardarNombreIntegrante(u.uid)} style={{background:"#34C759",border:"none",borderRadius:10,padding:"8px 10px",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>✓</button>
-                          <button onClick={()=>{setEditandoNombreId(null);setNombreEditado("");}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"8px 10px",color:"#8E8E93",cursor:"pointer",fontSize:13}}>✕</button>
+                          <button onClick={()=>{setEditandoNombreId(null);setNombreEditado("");}} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"8px 10px",color:"#55555A",cursor:"pointer",fontSize:13}}>✕</button>
                         </div>
                       ):(<>
                         <p onClick={()=>setMiembroSel(u)} style={{margin:0,fontWeight:700,fontSize:16,color:"#1C1C1E",display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}>{u.nombre}{puedeGestionar&&(u.rolEnObra!=="profesional"||u.uid===miId)&&<button onClick={e=>{e.stopPropagation();setEditandoNombreId(u.uid);setNombreEditado(u.nombre||"");}} style={{background:"none",border:"none",cursor:"pointer",color:"#0057FF",padding:0,display:"flex",alignItems:"center"}}><Edit2 size={13}/></button>}{u.uid===miId&&<span style={{fontSize:10,fontWeight:700,color:"#fff",background:"#1C1C1E",padding:"1px 7px",borderRadius:99}}>Vos</span>}</p>
-                        <p style={{margin:"3px 0 0",fontSize:13,color:"#8E8E93"}}>{r&&<span style={{color:colorRol,fontWeight:600}}>{r.label}</span>}{r&&" · "}{u.especialidad}{!esProf&&" · "}{!esProf&&<span style={{color:pend>0?"#FF8A3D":"#8E8E93",fontWeight:pend>0?600:400}}>{tareasTxt}</span>}</p>
+                        <p style={{margin:"3px 0 0",fontSize:13,color:"#55555A"}}>{r&&<span style={{color:colorRol,fontWeight:600}}>{r.label}</span>}{r&&" · "}{u.especialidad}{!esProf&&" · "}{!esProf&&<span style={{color:pend>0?"#FF8A3D":"#55555A",fontWeight:pend>0?600:400}}>{tareasTxt}</span>}</p>
                       </>)}
                     </div>
                     {!editando&&u.uid!==miId&&u.rolEnObra!=="profesional"&&(miRolEnObra==="profesional"||(miRolEnObra==="capataz"&&u.rolEnObra==="operario"&&u.invitadoPor===miId))&&<button onClick={()=>setConfirmarEliminarMiembro(u)} style={{background:"none",border:"none",cursor:"pointer",flexShrink:0,padding:8,display:"flex",alignItems:"center"}}><Trash2 size={17} color="#C7C7CC"/></button>}
@@ -2111,14 +2111,14 @@ export default function App({ session }) {
             </div>
           </div>
           {invitacionesPendientes.length>0&&<div>
-            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Invitaciones pendientes ({invitacionesPendientes.length})</p>
+            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Invitaciones pendientes ({invitacionesPendientes.length})</p>
             <div style={{display:"flex",flexDirection:"column",gap:11}}>
               {invitacionesPendientes.map(inv=>(
                 <div key={inv.codigo} style={{background:"#fff",borderRadius:16,padding:"12px 14px",boxShadow:"0 1px 3px rgba(0,0,0,0.06)",display:"flex",alignItems:"center",gap:12}}>
                   <div style={{width:40,height:40,borderRadius:"50%",background:"#FF950015",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:17}}>⏳</div>
                   <div style={{flex:1,minWidth:0}}>
                     <p style={{margin:0,fontSize:14.5,fontWeight:700,color:"#1C1C1E"}}>{inv.nombre||(inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":inv.especialidad)||"Sin nombre"}</p>
-                    <p style={{margin:"1px 0 0",fontSize:12,color:"#8E8E93"}}>{inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":`Operario · ${inv.especialidad}`} · Esperando que acepte</p>
+                    <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>{inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":`Operario · ${inv.especialidad}`} · Esperando que acepte</p>
                   </div>
                   <button onClick={()=>reenviarInvitacion(inv)} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",flexShrink:0}}><Share2 size={15} color="#1C1C1E"/></button>
                   <button onClick={()=>cancelarInvitacion(inv.codigo)} style={{background:"none",border:"none",cursor:"pointer",padding:6,display:"flex",alignItems:"center",flexShrink:0}}><Trash2 size={16} color="#C7C7CC"/></button>
@@ -2127,12 +2127,12 @@ export default function App({ session }) {
             </div>
           </div>}
           <button style={{width:"100%",border:"2px dashed #C7C7CC",background:"transparent",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}} onClick={()=>abrirModalInvitar()}>
-            <Plus size={22} color="#8E8E93"/><span style={{fontSize:16,fontWeight:600,color:"#8E8E93"}}>Invitar integrante</span>
+            <Plus size={22} color="#55555A"/><span style={{fontSize:16,fontWeight:600,color:"#55555A"}}>Invitar integrante</span>
           </button>
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
+        {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
@@ -2202,7 +2202,7 @@ export default function App({ session }) {
 
           {/* POR GREMIO */}
           <div style={{background:"#fff",borderRadius:20,padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Por gremio</p>
+            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Por gremio</p>
             {porGremioEnriquecido.length===0
               ?<div style={{background:"#EDFAF1",borderRadius:14,padding:"20px",textAlign:"center"}}><p style={{fontSize:28,margin:"0 0 8px"}}>✅</p><p style={{fontSize:14,fontWeight:600,color:"#34C759"}}>Sin problemas por gremio</p></div>
               :porGremioEnriquecido.map(g=>{
@@ -2219,7 +2219,7 @@ export default function App({ session }) {
                         <div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>
                           {tieneUrgVenc&&<span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:99,background:"#FF3B3015",color:"#FF3B30"}}>● {g.urgVenc} urgente{g.urgVenc!==1?"s":""} vencida{g.urgVenc!==1?"s":""}</span>}
                           {!tieneUrgVenc&&tieneUrg&&<span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:99,background:"#FF6B0015",color:"#FF6B00"}}>● {g.urgentes} urgente{g.urgentes!==1?"s":""}</span>}
-                          {!tieneUrgVenc&&!tieneUrg&&<span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:99,background:"#F2F2F7",color:"#8E8E93"}}>● {g.cant} pendiente{g.cant!==1?"s":""}</span>}
+                          {!tieneUrgVenc&&!tieneUrg&&<span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:99,background:"#F2F2F7",color:"#55555A"}}>● {g.cant} pendiente{g.cant!==1?"s":""}</span>}
                         </div>
                       </div>
                     </div>
@@ -2233,7 +2233,7 @@ export default function App({ session }) {
                           <button onClick={()=>window.open(`tel:${g.miembro.telefono.replace(/\s/g,"")}`,"_blank")} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",background:"#007AFF15",color:"#007AFF",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>📞 Llamar</button>
                         </>
                       ):(
-                        g.miembro&&<button onClick={()=>{setModalTelefono({uid:g.miembro.uid,nombre:g.miembro.nombre});setTelInput("");}} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",background:"#F2F2F7",color:"#8E8E93",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>+ Agregar teléfono</button>
+                        g.miembro&&<button onClick={()=>{setModalTelefono({uid:g.miembro.uid,nombre:g.miembro.nombre});setTelInput("");}} style={{flex:1,padding:"9px 6px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",background:"#F2F2F7",color:"#55555A",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>+ Agregar teléfono</button>
                       )}
                     </div>
                   </div>
@@ -2243,7 +2243,7 @@ export default function App({ session }) {
 
           {/* POR SECTOR */}
           {porSector.length>0&&<div style={{background:"#fff",borderRadius:20,padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Por sector</p>
+            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Por sector</p>
             {porSector.map((sec,i)=>{
               const novsS=novedades.filter(n=>!n.resuelta&&n.sector===sec.nombre);
               const urgS=novsS.filter(n=>n.prioridad===0).length;
@@ -2266,13 +2266,13 @@ export default function App({ session }) {
 
           {/* NIVEL DE RITMO */}
           <div style={{background:"#fff",borderRadius:20,padding:"20px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>Nivel de ritmo</p>
+            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Nivel de ritmo</p>
             {novedades.length===0?(
               <div style={{display:"flex",alignItems:"center",gap:14}}>
                 <div style={{width:56,height:56,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:26}}>📋</div>
                 <div>
-                  <p style={{margin:0,fontSize:16,fontWeight:800,color:"#8E8E93"}}>Todavía sin nivel</p>
-                  <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>Cargá tu primera novedad para empezar a medir tu ritmo</p>
+                  <p style={{margin:0,fontSize:16,fontWeight:800,color:"#55555A"}}>Todavía sin nivel</p>
+                  <p style={{margin:"2px 0 0",fontSize:12,color:"#55555A"}}>Cargá tu primera novedad para empezar a medir tu ritmo</p>
                 </div>
               </div>
             ):(<>
@@ -2282,13 +2282,13 @@ export default function App({ session }) {
                 </div>
                 <div>
                   <p style={{margin:0,fontSize:18,fontWeight:900,color:nivelActual.color}}>Nivel {nivelActual.label}</p>
-                  <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>{pendientes.length===0?"¡No tenés nada pendiente ahora mismo!":`Tus pendientes esperan ${antiguedadPromedio<1?"menos de 1 día":antiguedadPromedio.toFixed(1)+" días"} en promedio`}</p>
+                  <p style={{margin:"2px 0 0",fontSize:12,color:"#55555A"}}>{pendientes.length===0?"¡No tenés nada pendiente ahora mismo!":`Tus pendientes esperan ${antiguedadPromedio<1?"menos de 1 día":antiguedadPromedio.toFixed(1)+" días"} en promedio`}</p>
                 </div>
               </div>
               <div style={{height:10,background:"#F2F2F7",borderRadius:99,overflow:"hidden",marginBottom:6}}>
                 <div style={{height:"100%",width:`${progresoNivel}%`,background:nivelActual.color,borderRadius:99}}/>
               </div>
-              <p style={{margin:0,fontSize:11,color:"#8E8E93"}}>
+              <p style={{margin:0,fontSize:11,color:"#55555A"}}>
                 {nivelActual.siguiente===null
                   ?"¡Estás en el nivel más alto! Seguí así 🔥"
                   :`Bajá de ${nivelActual.siguiente} días de espera para subir de nivel`}
@@ -2300,7 +2300,7 @@ export default function App({ session }) {
           {(urgentesPend.length>0||contadores.vencidas>0)&&(
             <button onClick={()=>{setVistaStats(false);setTabActiva("alertas");irInicio();}} style={{background:"#FF3B3012",borderRadius:16,padding:"16px 18px",display:"flex",alignItems:"center",gap:12,border:"none",width:"100%",textAlign:"left",cursor:"pointer"}}>
               <span style={{width:40,height:40,borderRadius:11,background:"#FF3B3018",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><AlertTriangle size={22} color="#FF3B30"/></span>
-              <div style={{flex:1}}><p style={{margin:0,fontSize:15,fontWeight:800,color:"#FF3B30"}}>{urgentesPend.length>0?`${urgentesPend.length} urgente${urgentesPend.length!==1?"s":""} sin resolver`:`${contadores.vencidas} vencida${contadores.vencidas!==1?"s":""}`}</p><p style={{margin:"2px 0 0",fontSize:13,color:"#8E8E93"}}>Tocá para ver en Urgencias</p></div>
+              <div style={{flex:1}}><p style={{margin:0,fontSize:15,fontWeight:800,color:"#FF3B30"}}>{urgentesPend.length>0?`${urgentesPend.length} urgente${urgentesPend.length!==1?"s":""} sin resolver`:`${contadores.vencidas} vencida${contadores.vencidas!==1?"s":""}`}</p><p style={{margin:"2px 0 0",fontSize:13,color:"#55555A"}}>Tocá para ver en Urgencias</p></div>
               <ChevronRight size={20} color="#FF3B30" style={{flexShrink:0,opacity:0.6}}/>
             </button>
           )}
@@ -2311,7 +2311,7 @@ export default function App({ session }) {
               <div style={{width:44,height:44,borderRadius:14,background:"#0057FF15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><ClipboardList size={20} color="#0057FF"/></div>
               <div style={{flex:1}}>
                 <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>Generar informe</p>
-                <p style={{margin:"1px 0 0",fontSize:12,color:"#8E8E93"}}>Resumen del período con gráficos y fotos</p>
+                <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Resumen del período con gráficos y fotos</p>
               </div>
               <ChevronRight size={18} color="#C7C7CC"/>
             </button>
@@ -2325,8 +2325,8 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
-        {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#8E8E93"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
+        {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
+        {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
         {modalPeriodoJSX}
       </div>
     );
@@ -2349,18 +2349,18 @@ export default function App({ session }) {
                 </div>
               ))}
               <input ref={fileRefEdit} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotosEdit}/>
-              <button onClick={()=>fileRefEdit.current.click()} style={{width:80,height:80,flexShrink:0,borderRadius:12,border:"2px dashed #C7C7CC",background:"#F9F9FB",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",gap:3}}><Camera size={22} color="#8E8E93"/><span style={{fontSize:10,color:"#8E8E93"}}>Agregar</span></button>
+              <button onClick={()=>fileRefEdit.current.click()} style={{width:80,height:80,flexShrink:0,borderRadius:12,border:"2px dashed #C7C7CC",background:"#F9F9FB",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",gap:3}}><Camera size={22} color="#55555A"/><span style={{fontSize:10,color:"#55555A"}}>Agregar</span></button>
             </div>
           </div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={14}/>Descripción</span></p><textarea style={s.textarea} rows={3} value={formEdit.descripcion} onChange={e=>setFormEdit(f=>({...f,descripcion:e.target.value}))}/></div>
-          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Zap size={14}/>Prioridad</span></p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Zap size={14}/>Prioridad</span></p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><MapPin size={14}/>Sector</span></p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.sector===sec?"#007AFF":"#E5E5EA"}`,background:formEdit.sector===sec?"#007AFF15":"#fff",color:formEdit.sector===sec?"#007AFF":"#3A3A3C",fontWeight:formEdit.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{formEdit.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={formEdit.sectorCustom} onChange={e=>setFormEdit(f=>({...f,sectorCustom:e.target.value}))}/>}</div>
-          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={14}/>Responsable</span></p><p style={{margin:"-4px 0 8px",fontSize:12.5,color:"#8E8E93"}}>Elegí a alguien de tu equipo o un oficio genérico</p><SelectorResponsable value={formEdit.responsable} usuarioId={formEdit.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setFormEdit(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
-          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><p style={{margin:"0 0 6px",fontSize:13,color:"#8E8E93"}}>Seleccioná una fecha:</p><input type="date" style={s.inputDate} value={formEdit.fechaLimite} onChange={e=>setFormEdit(f=>({...f,fechaLimite:e.target.value}))}/></div>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={14}/>Responsable</span></p><p style={{margin:"-4px 0 8px",fontSize:12.5,color:"#55555A"}}>Elegí a alguien de tu equipo o un oficio genérico</p><SelectorResponsable value={formEdit.responsable} usuarioId={formEdit.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setFormEdit(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#55555A",fontWeight:400}}>(opcional)</span></p><p style={{margin:"0 0 6px",fontSize:13,color:"#55555A"}}>Seleccioná una fecha:</p><input type="date" style={s.inputDate} value={formEdit.fechaLimite} onChange={e=>setFormEdit(f=>({...f,fechaLimite:e.target.value}))}/></div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"#F2F2F7",borderRadius:14,padding:"14px 16px"}}>
             <div style={{flex:1}}>
               <p style={{margin:0,fontSize:15,fontWeight:600,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}><EyeOff size={15}/>Ocultar al capataz</p>
-              <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>Solo la verán vos y el responsable asignado.</p>
+              <p style={{margin:"2px 0 0",fontSize:12,color:"#55555A"}}>Solo la verán vos y el responsable asignado.</p>
             </div>
             <button onClick={()=>setFormEdit(f=>({...f,ocultoCapataz:!f.ocultoCapataz}))} style={{flexShrink:0,width:50,height:30,borderRadius:99,border:"none",cursor:"pointer",background:formEdit.ocultoCapataz?"#0057FF":"#C7C7CC",position:"relative",transition:"background 0.2s"}}>
               <span style={{position:"absolute",top:3,left:formEdit.ocultoCapataz?23:3,width:24,height:24,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
@@ -2385,7 +2385,7 @@ export default function App({ session }) {
   if(vista==="detalle"&&detalle){
     const pri=PRIORIDADES[detalle.prioridad];const badge=estadoBadge(detalle);
     const miembroDetalle=detalle.responsable_usuario_id?equipoObra.find(m=>m.uid===detalle.responsable_usuario_id):null;
-    const colorResp=miembroDetalle?miembroDetalle.color||colorPastelDe(miembroDetalle.uid):"#8E8E93";
+    const colorResp=miembroDetalle?miembroDetalle.color||colorPastelDe(miembroDetalle.uid):"#55555A";
     return(
       <div style={s.root}>
         <div style={{background:"#fff",padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #F0F0F0",flexShrink:0}}>
@@ -2411,7 +2411,7 @@ export default function App({ session }) {
           {detalle.fotos.length===0&&<div style={{background:detalle.resuelta?"#34C75912":detalle.estadoAprobacion==="pendiente"?"#9333EA12":pri.color+"12",borderRadius:"0 0 16px 16px",padding:"12px 16px",display:"flex",alignItems:"center",gap:8,marginBottom:0}}>
             <span style={{width:9,height:9,borderRadius:99,background:detalle.resuelta?"#34C759":detalle.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0}}/>
             <span style={{color:detalle.resuelta?"#34C759":detalle.estadoAprobacion==="pendiente"?"#9333EA":pri.color,fontSize:15,fontWeight:800}}>{detalle.resuelta?"RESUELTO":detalle.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
-            {badge&&!detalle.resuelta&&!detalle.estadoAprobacion&&<span style={{marginLeft:"auto",color:"#8E8E93",fontSize:13}}>{badge.label.replace(/^[^\s]+\s/,"")}</span>}
+            {badge&&!detalle.resuelta&&!detalle.estadoAprobacion&&<span style={{marginLeft:"auto",color:"#55555A",fontSize:13}}>{badge.label.replace(/^[^\s]+\s/,"")}</span>}
           </div>}
           <div style={{background:"#fff",borderRadius:detalle.fotos.length>0?"20px":"0 0 20px 20px",padding:"18px 18px 16px",marginBottom:12}}>
           <p style={{fontSize:21,fontWeight:800,color:"#1C1C1E",marginBottom:16,lineHeight:1.25}}>{detalle.descripcion}</p>
@@ -2424,9 +2424,9 @@ export default function App({ session }) {
               {miembroDetalle?miembroDetalle.nombre?.[0].toUpperCase():<Wrench size={16} color="#fff"/>}
             </div>
             <div style={{flex:1,minWidth:0}}>
-              <p style={{margin:0,fontSize:10,fontWeight:600,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.3}}>Responsable</p>
+              <p style={{margin:0,fontSize:10,fontWeight:600,color:"#55555A",textTransform:"uppercase",letterSpacing:0.3}}>Responsable</p>
               <p style={{margin:"1px 0 0",fontSize:15,fontWeight:700,color:"#1C1C1E"}}>{miembroDetalle?miembroDetalle.nombre:detalle.responsable}</p>
-              {miembroDetalle?.especialidad&&<p style={{margin:0,fontSize:12,color:"#8E8E93"}}>{miembroDetalle.especialidad}</p>}
+              {miembroDetalle?.especialidad&&<p style={{margin:0,fontSize:12,color:"#55555A"}}>{miembroDetalle.especialidad}</p>}
             </div>
             {miembroDetalle?.telefono&&<>
               <button onClick={()=>window.open(`https://wa.me/${miembroDetalle.telefono.replace(/\D/g,"")}?text=${encodeURIComponent(`Hola ${miembroDetalle.nombre}! Te escribo por Fixgo, sobre "${detalle.descripcion}".`)}`,"_blank")} style={{width:34,height:34,borderRadius:10,background:"#25D36615",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -2441,15 +2441,15 @@ export default function App({ session }) {
             </button>}
           </div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {detalle.sector&&<span style={{display:"flex",alignItems:"center",gap:5,background:"#F2F2F7",borderRadius:99,padding:"5px 10px",fontSize:12,fontWeight:600,color:"#636366"}}><MapPin size={11} color="#8E8E93"/>{detalle.sector}</span>}
-            {detalle.fechaLimite&&<span style={{display:"flex",alignItems:"center",gap:5,background:badge?"#FF3B3012":"#F2F2F7",borderRadius:99,padding:"5px 10px",fontSize:12,fontWeight:600,color:badge?"#FF3B30":"#636366"}}><Calendar size={11} color={badge?"#FF3B30":"#8E8E93"}/>{formatFecha(detalle.fechaLimite)}</span>}
-            <span style={{display:"flex",alignItems:"center",gap:5,background:"#F2F2F7",borderRadius:99,padding:"5px 10px",fontSize:12,fontWeight:600,color:"#636366"}}><Calendar size={11} color="#8E8E93"/>Cargada {detalle.fecha?formatFecha(detalle.fecha):"—"}</span>
+            {detalle.sector&&<span style={{display:"flex",alignItems:"center",gap:5,background:"#F2F2F7",borderRadius:99,padding:"5px 10px",fontSize:12,fontWeight:600,color:"#636366"}}><MapPin size={11} color="#55555A"/>{detalle.sector}</span>}
+            {detalle.fechaLimite&&<span style={{display:"flex",alignItems:"center",gap:5,background:badge?"#FF3B3012":"#F2F2F7",borderRadius:99,padding:"5px 10px",fontSize:12,fontWeight:600,color:badge?"#FF3B30":"#636366"}}><Calendar size={11} color={badge?"#FF3B30":"#55555A"}/>{formatFecha(detalle.fechaLimite)}</span>}
+            <span style={{display:"flex",alignItems:"center",gap:5,background:"#F2F2F7",borderRadius:99,padding:"5px 10px",fontSize:12,fontWeight:600,color:"#636366"}}><Calendar size={11} color="#55555A"/>Cargada {detalle.fecha?formatFecha(detalle.fecha):"—"}</span>
           </div>
           </div>
           
           <div style={{background:"#fff",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
           <p style={{margin:"0 0 12px",fontSize:15,fontWeight:700,color:"#1C1C1E"}}>Comentarios</p>
-          {detalle.comentarios.length===0&&<p style={{color:"#8E8E93",fontSize:14,margin:"0 0 12px"}}>Sin comentarios aún</p>}
+          {detalle.comentarios.length===0&&<p style={{color:"#55555A",fontSize:14,margin:"0 0 12px"}}>Sin comentarios aún</p>}
           {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===usuarioActivo.id;return(
             <div key={i} style={{background:esMio?"#1C1C1E":"#F9F9F9",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
@@ -2493,7 +2493,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
+        {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
         {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
         {modalFotoResolucionJSX}
         {asignacionRapidaJSX}
@@ -2509,21 +2509,21 @@ export default function App({ session }) {
       <div style={s.root}>
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setForm(FORM_INICIAL);setVista("lista");}},{label:"Novedades",onClick:()=>{setForm(FORM_INICIAL);setVista("lista");}},{label:"Nueva novedad"}]} />
         <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
-          <div><p style={s.label}>📷 Fotos <span style={{color:"#8E8E93",fontWeight:400}}>(podés agregar varias)</span></p>
+          <div><p style={s.label}>📷 Fotos <span style={{color:"#55555A",fontWeight:400}}>(podés agregar varias)</span></p>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotos}/>
             {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/><button style={s.quitarFoto} onClick={()=>quitarFoto(i)}><X size={12}/></button></div>)}</div>}
             <button style={s.fotoBtn} onClick={()=>fileRef.current.click()}><Camera size={32} color="#636366"/><span style={{color:"#636366",fontSize:14,marginTop:4}}>{form.fotos.length>0?"Agregar más fotos":"Tocá para sacar foto"}</span></button>
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
-          <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#8E8E93"}}>{p.label}</span></button>)}</div></div>
+          <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId})))} /></div>
           <button type="button" onClick={()=>setMasOpciones(o=>!o)} style={{width:"100%",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit"}}>
             <span style={{fontSize:15,fontWeight:600,color:"#1C1C1E"}}>⚙️ Más opciones</span>
-            <span style={{fontSize:13,color:"#8E8E93"}}>{masOpciones?"▲":"▼ sector, fecha, nota…"}</span>
+            <span style={{fontSize:13,color:"#55555A"}}>{masOpciones?"▲":"▼ sector, fecha, nota…"}</span>
           </button>
           {masOpciones && <>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><MapPin size={14}/>Sector</span></p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${form.sector===sec?"#007AFF":"#E5E5EA"}`,background:form.sector===sec?"#007AFF15":"#fff",color:form.sector===sec?"#007AFF":"#3A3A3C",fontWeight:form.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{form.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={form.sectorCustom} onChange={e=>setForm(f=>({...f,sectorCustom:e.target.value}))} autoFocus/>}</div>
-          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#55555A",fontWeight:400}}>(opcional)</span></p>
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               {[["Hoy",0],["Mañana",1],["En 1 semana",7]].map(([lbl,dias])=>{
                 const d=new Date();d.setDate(d.getDate()+dias);
@@ -2531,14 +2531,14 @@ export default function App({ session }) {
                 return <button key={lbl} style={{flex:1,padding:"8px 4px",borderRadius:12,border:`1.5px solid ${form.fechaLimite===iso?"#1C1C1E":"#E5E5EA"}`,background:form.fechaLimite===iso?"#1C1C1E":"#fff",color:form.fechaLimite===iso?"#fff":"#636366",fontSize:13,fontWeight:form.fechaLimite===iso?700:400,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,fechaLimite:iso}))}>{lbl}</button>;
               })}
             </div>
-            <p style={{margin:"0 0 6px",fontSize:13,color:"#8E8E93"}}>O elegí una fecha exacta:</p>
+            <p style={{margin:"0 0 6px",fontSize:13,color:"#55555A"}}>O elegí una fecha exacta:</p>
             <input type="date" style={s.inputDate} value={form.fechaLimite} onChange={e=>setForm(f=>({...f,fechaLimite:e.target.value}))}/>
           </div>
-          <div><p style={s.label}>💬 Nota inicial <span style={{color:"#8E8E93",fontWeight:400}}>(opcional)</span></p><input style={s.input} placeholder="Ej: Revisar antes del jueves..." value={form.comentario} onChange={e=>setForm(f=>({...f,comentario:e.target.value}))}/></div>
+          <div><p style={s.label}>💬 Nota inicial <span style={{color:"#55555A",fontWeight:400}}>(opcional)</span></p><input style={s.input} placeholder="Ej: Revisar antes del jueves..." value={form.comentario} onChange={e=>setForm(f=>({...f,comentario:e.target.value}))}/></div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"#F2F2F7",borderRadius:14,padding:"14px 16px"}}>
             <div style={{flex:1}}>
               <p style={{margin:0,fontSize:15,fontWeight:600,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}><EyeOff size={15}/>Ocultar al capataz</p>
-              <p style={{margin:"2px 0 0",fontSize:12,color:"#8E8E93"}}>Solo la verán vos y el responsable asignado.</p>
+              <p style={{margin:"2px 0 0",fontSize:12,color:"#55555A"}}>Solo la verán vos y el responsable asignado.</p>
             </div>
             <button onClick={()=>setForm(f=>({...f,ocultoCapataz:!f.ocultoCapataz}))} style={{flexShrink:0,width:50,height:30,borderRadius:99,border:"none",cursor:"pointer",background:form.ocultoCapataz?"#0057FF":"#C7C7CC",position:"relative",transition:"background 0.2s"}}>
               <span style={{position:"absolute",top:3,left:form.ocultoCapataz?23:3,width:24,height:24,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
@@ -2580,7 +2580,7 @@ export default function App({ session }) {
         </div>
       </div>
       <div style={{background:"#fff",borderBottom:"1px solid #F2F2F7",padding:"12px 16px 0",flexShrink:0}}>
-        <div style={{position:"relative",marginBottom:10}}><Search size={16} color="#8E8E93" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/><input style={{...s.input,background:"#F2F2F7",border:"none",paddingLeft:38}} placeholder="Buscar oficios o novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></div>
+        <div style={{position:"relative",marginBottom:10}}><Search size={16} color="#55555A" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/><input style={{...s.input,background:"#F2F2F7",border:"none",paddingLeft:38}} placeholder="Buscar oficios o novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></div>
         <div style={{display:"flex",gap:6,paddingBottom:12}}>
           {[["todas","Todas",contadores.todas,"#2E3A4B"],["pendientes","Pendientes",contadores.pendientes,"#2E3A4B"],["vencidas","Vencidas",contadores.vencidas,"#2E3A4B"],["resueltas","Resueltas",contadores.resueltas,"#2E3A4B"]].map(([key,lbl,val,col])=>(
             <button key={key} style={{flex:1,minWidth:0,padding:"8px 2px",borderRadius:12,border:`1.5px solid ${filtro===key?col:"#E5E5EA"}`,background:filtro===key?col:"#fff",color:filtro===key?"#fff":"#636366",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1}} onClick={()=>setFiltro(key)}>
@@ -2590,9 +2590,9 @@ export default function App({ session }) {
           ))}
         </div>
         <div style={{display:"flex",alignItems:"center",gap:6,paddingBottom:12}}>
-          <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:700,color:"#8E8E93",flexShrink:0}}><ArrowUpDown size={12}/>Ordenar:</span>
+          <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:700,color:"#55555A",flexShrink:0}}><ArrowUpDown size={12}/>Ordenar:</span>
           {[["urgencia","Urgencia"],["fecha","Fecha"],["sector","Sector"]].map(([key,lbl])=>(
-            <button key={key} onClick={()=>{if(orden===key)setOrdenDesc(d=>!d);else{setOrden(key);setOrdenDesc(false);}}} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${orden===key?"#0057FF":"#E5E5EA"}`,background:orden===key?"#0057FF12":"#fff",color:orden===key?"#0057FF":"#8E8E93",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+            <button key={key} onClick={()=>{if(orden===key)setOrdenDesc(d=>!d);else{setOrden(key);setOrdenDesc(false);}}} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${orden===key?"#0057FF":"#E5E5EA"}`,background:orden===key?"#0057FF12":"#fff",color:orden===key?"#0057FF":"#55555A",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
               {lbl}{orden===key&&<span style={{fontSize:13,fontWeight:900}}>{ordenDesc?"▼":"▲"}</span>}
             </button>
           ))}
@@ -2604,7 +2604,7 @@ export default function App({ session }) {
         </button>}
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
-        {novedadesFiltradas.length===0&&<div style={{textAlign:"center",padding:"50px 20px",color:"#8E8E93"}}>
+        {novedadesFiltradas.length===0&&<div style={{textAlign:"center",padding:"50px 20px",color:"#55555A"}}>
           <p style={{fontSize:44,margin:0}}>{filtro==="resueltas"?"🎉":filtro==="vencidas"?"✅":"📋"}</p>
           <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>{filtro==="resueltas"?"Todavía no hay resueltas":filtro==="vencidas"?"¡Todo al día!":busqueda?"Sin resultados":"Sin novedades aún"}</p>
           <p style={{fontSize:14,margin:"0 0 18px"}}>{filtro==="resueltas"?"Cuando marques una novedad como resuelta, aparece acá.":filtro==="vencidas"?"No tenés novedades vencidas. Buen trabajo.":busqueda?"Probá con otra palabra.":"Cargá la primera novedad de esta obra."}</p>
@@ -2629,12 +2629,12 @@ export default function App({ session }) {
                   <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
                     <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
                     <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
-                    {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#8E8E93"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
+                    {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                     {nov.pendienteSync&&<span style={{fontSize:9.5,fontWeight:800,color:"#FFB800",background:"#FFB80015",padding:"2px 7px",borderRadius:99,textTransform:"uppercase"}}>📡 Pendiente</span>}
                   </div>
                   <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
-                  <p style={{margin:0,fontSize:12,color:"#636366",display:"flex",alignItems:"center",gap:4,flexWrap:"nowrap",minWidth:0}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?<span style={{width:18,height:18,borderRadius:"50%",background:colorPastelDe(miembro.uid),flexShrink:0,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff"}}>{miembro.nombre?miembro.nombre[0].toUpperCase():""}</span>:<Wrench size={12} color="#8E8E93" style={{flexShrink:0}}/>;})()}<span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0,fontWeight:nov.responsable_usuario_id?700:400,color:nov.responsable_usuario_id?"#1C1C1E":"#636366"}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?miembro.nombre:nov.responsable;})()}</span><span style={{color:"#C7C7CC",margin:"0 2px",flexShrink:0}}>·</span><MapPin size={12} color="#8E8E93" style={{flexShrink:0}}/><span style={{whiteSpace:"nowrap",flexShrink:0}}>{nov.sector}</span></p>
-                  {nov.comentarios.length>0&&<span style={{marginTop:5,fontSize:11.5,color:"#8E8E93",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><MessageCircle size={12}/> {nov.comentarios.length} comentario{nov.comentarios.length!==1?"s":""}</span>}
+                  <p style={{margin:0,fontSize:12,color:"#636366",display:"flex",alignItems:"center",gap:4,flexWrap:"nowrap",minWidth:0}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?<span style={{width:18,height:18,borderRadius:"50%",background:colorPastelDe(miembro.uid),flexShrink:0,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff"}}>{miembro.nombre?miembro.nombre[0].toUpperCase():""}</span>:<Wrench size={12} color="#55555A" style={{flexShrink:0}}/>;})()}<span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0,fontWeight:nov.responsable_usuario_id?700:400,color:nov.responsable_usuario_id?"#1C1C1E":"#636366"}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?miembro.nombre:nov.responsable;})()}</span><span style={{color:"#C7C7CC",margin:"0 2px",flexShrink:0}}>·</span><MapPin size={12} color="#55555A" style={{flexShrink:0}}/><span style={{whiteSpace:"nowrap",flexShrink:0}}>{nov.sector}</span></p>
+                  {nov.comentarios.length>0&&<span style={{marginTop:5,fontSize:11.5,color:"#55555A",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><MessageCircle size={12}/> {nov.comentarios.length} comentario{nov.comentarios.length!==1?"s":""}</span>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
               </div>
@@ -2650,10 +2650,10 @@ export default function App({ session }) {
         {puedeReabrirOResolver&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{resolver(menuContextual.novId);setMenuContextual(null);}}>{nov?.resuelta?"↩ Reabrir":"✅ Marcar como resuelto"}</button>}
         {puedeAsignar&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setAsignacionRapida(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={15}/>Elegir responsable</span></button>}
         {puedeEliminar&&<button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminar(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar</span></button>}
-      </>);})()}<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
+      </>);})()}<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
       {null}
-      {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#8E8E93"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
-      {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#8E8E93"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#8E8E93"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
+      {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
+      {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
       {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
