@@ -15,6 +15,115 @@ const EMOJI_OFICIO = {
 const emojiDeOficio = (oficio) => EMOJI_OFICIO[oficio] || "👷";
 
 // ══════════════════════════════════════════════════════
+// EDITOR DE DIBUJO SOBRE FOTO (Pro) — punto 5 de pendientes
+// Lápiz libre a mano alzada + paleta básica de colores
+// ══════════════════════════════════════════════════════
+const PALETA_DIBUJO = [
+  { nombre: "Rojo",   color: "#FF3B30" },
+  { nombre: "Amarillo", color: "#FFCC00" },
+  { nombre: "Negro",  color: "#1C1C1E" },
+  { nombre: "Blanco", color: "#FFFFFF" },
+];
+const ModalEditorDibujo = ({ src, onGuardar, onCerrar }) => {
+  const canvasRef = useRef(null);
+  const imgRef = useRef(null);
+  const dibujandoRef = useRef(false);
+  const trazosRef = useRef([]); // [{color, puntos:[{x,y}]}]
+  const [colorActivo, setColorActivo] = useState(PALETA_DIBUJO[0].color);
+  const [listo, setListo] = useState(false);
+  const [, forceRender] = useState(0);
+
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      imgRef.current = img;
+      const canvas = canvasRef.current;
+      const maxW = Math.min(window.innerWidth - 32, 480);
+      const escala = maxW / img.width;
+      canvas.width = img.width * escala;
+      canvas.height = img.height * escala;
+      redibujar();
+      setListo(true);
+    };
+    img.src = src;
+  }, [src]);
+
+  const redibujar = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imgRef.current) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(imgRef.current, 0, 0, canvas.width, canvas.height);
+    trazosRef.current.forEach((trazo) => {
+      if (trazo.puntos.length < 2) return;
+      ctx.strokeStyle = trazo.color;
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(trazo.puntos[0].x, trazo.puntos[0].y);
+      trazo.puntos.forEach((p) => ctx.lineTo(p.x, p.y));
+      ctx.stroke();
+    });
+  };
+
+  const posDesdeEvento = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const cliente = e.touches ? e.touches[0] : e;
+    return { x: cliente.clientX - rect.left, y: cliente.clientY - rect.top };
+  };
+  const empezarTrazo = (e) => {
+    e.preventDefault();
+    dibujandoRef.current = true;
+    trazosRef.current = [...trazosRef.current, { color: colorActivo, puntos: [posDesdeEvento(e)] }];
+  };
+  const seguirTrazo = (e) => {
+    if (!dibujandoRef.current) return;
+    e.preventDefault();
+    const trazoActual = trazosRef.current[trazosRef.current.length - 1];
+    trazoActual.puntos.push(posDesdeEvento(e));
+    redibujar();
+  };
+  const terminarTrazo = () => { dibujandoRef.current = false; };
+  const deshacer = () => { trazosRef.current = trazosRef.current.slice(0, -1); redibujar(); forceRender(n=>n+1); };
+  const borrarTodo = () => { trazosRef.current = []; redibujar(); forceRender(n=>n+1); };
+  const guardar = () => {
+    const canvas = canvasRef.current;
+    onGuardar(canvas.toDataURL("image/jpeg", 0.85));
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 200, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
+        <button onClick={onCerrar} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={22} color="#fff" /></button>
+        <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>Marcar en la foto</span>
+        <button onClick={deshacer} style={{ background: "none", border: "none", cursor: "pointer" }}><RotateCcw size={20} color="#fff" /></button>
+      </div>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+        {!listo && <span style={{ color: "#fff", fontSize: 13 }}>Cargando foto…</span>}
+        <canvas
+          ref={canvasRef}
+          style={{ touchAction: "none", borderRadius: 12, display: listo ? "block" : "none", maxWidth: "100%", maxHeight: "100%" }}
+          onMouseDown={empezarTrazo} onMouseMove={seguirTrazo} onMouseUp={terminarTrazo} onMouseLeave={terminarTrazo}
+          onTouchStart={empezarTrazo} onTouchMove={seguirTrazo} onTouchEnd={terminarTrazo}
+        />
+      </div>
+      <div style={{ padding: "14px 16px 10px", display: "flex", justifyContent: "center", gap: 14 }}>
+        {PALETA_DIBUJO.map((p) => (
+          <button key={p.color} onClick={() => setColorActivo(p.color)} style={{ width: 34, height: 34, borderRadius: "50%", background: p.color, border: colorActivo === p.color ? "3px solid #fff" : "3px solid rgba(255,255,255,0.25)", cursor: "pointer" }} />
+        ))}
+      </div>
+      <div style={{ padding: "0 16px 24px", display: "flex", gap: 10 }}>
+        <button onClick={borrarTodo} style={{ flex: 1, padding: "13px", borderRadius: 14, border: "1.5px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Borrar todo</button>
+        <button onClick={guardar} style={{ flex: 2, padding: "13px", borderRadius: 14, border: "none", background: "#34C759", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><CheckCircle size={16} />Usar foto</button>
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════
 // BURBUJA DE AUDIO — reproductor simple para notas de voz en comentarios
 // ══════════════════════════════════════════════════════
 const BurbujaAudio = ({ src, duracion=0, esMio=false }) => {
@@ -425,6 +534,7 @@ export default function App({ session }) {
   const [busqueda,         setBusqueda]         = useState("");
   const [nuevoComentario,  setNuevoComentario]  = useState("");
   const [grabandoAudio,    setGrabandoAudio]    = useState(false);
+  const [editorDibujo,     setEditorDibujo]     = useState(null); // {src, origen:"nueva"|"editar"|"resolucion", idx}
   const [tiempoGrabacion,  setTiempoGrabacion]  = useState(0);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -992,6 +1102,24 @@ export default function App({ session }) {
   };
   const quitarFotoEdit=(idx)=>setFormEdit(f=>({...f,fotos:f.fotos.filter((_,i)=>i!==idx)}));
 
+  // ── EDITOR DE DIBUJO SOBRE FOTO (punto 5, Pro) ──
+  const abrirEditorDibujo=(src,origen,idx=null)=>{
+    if(!esVersionPro){setModalProObra(true);return;}
+    setEditorDibujo({src,origen,idx});
+  };
+  const guardarDesdeEditorDibujo=async(dataUrlFinal)=>{
+    const{origen,idx}=editorDibujo;
+    if(origen==="nueva"){
+      setForm(f=>({...f,fotos:f.fotos.map((foto,i)=>i===idx?dataUrlFinal:foto)}));
+    }else if(origen==="editar"){
+      setFormEdit(f=>({...f,fotos:(f.fotos||[]).map((foto,i)=>i===idx?dataUrlFinal:foto)}));
+    }else if(origen==="resolucion"){
+      const blob=await(await fetch(dataUrlFinal)).blob();
+      confirmarResolucionConFoto(modalFotoResolucion,blob);
+    }
+    setEditorDibujo(null);
+  };
+
   const guardar=async()=>{
     if(!form.descripcion.trim()||guardandoRef.current)return;
     guardandoRef.current=true;
@@ -1383,7 +1511,7 @@ export default function App({ session }) {
   const modalFotoResolucionJSX = modalFotoResolucion&&<div style={s.overlay} onClick={()=>{if(!subiendoFotoResolucion)setModalFotoResolucion(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>¿Cómo quedó resuelto?</p>
     <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Sacale una foto del resultado (opcional). Ayuda a mostrar el avance real.</p>
-    <input ref={fileRefResolucion} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)confirmarResolucionConFoto(modalFotoResolucion,f);}}/>
+    <input ref={fileRefResolucion} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f){if(esVersionPro){const url=URL.createObjectURL(f);setEditorDibujo({src:url,origen:"resolucion",idx:null});}else{confirmarResolucionConFoto(modalFotoResolucion,f);}}}}/>
     <button disabled={subiendoFotoResolucion} onClick={()=>fileRefResolucion.current.click()} style={{...s.btnPrincipal,background:"#34C759",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>
       <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{subiendoFotoResolucion?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Subiendo foto...</>:<><Camera size={16}/>Sacar foto y confirmar</>}</span>
     </button>
@@ -2340,6 +2468,7 @@ export default function App({ session }) {
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>setEditorDibujo(null)}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
@@ -2549,6 +2678,7 @@ export default function App({ session }) {
               {(formEdit.fotos||[]).map((f,i)=>(
                 <div key={i} style={{position:"relative",width:80,height:80,flexShrink:0}}>
                   <img src={f} alt="" onClick={()=>setFotoAmpliada(f)} style={{width:80,height:80,objectFit:"cover",borderRadius:12,cursor:"pointer"}}/>
+                  <button onClick={()=>abrirEditorDibujo(f,"editar",i)} style={{position:"absolute",bottom:-7,left:-7,width:24,height:24,borderRadius:"50%",background:esVersionPro?"#1C1C1E":"#8E8E93",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}>{esVersionPro?<Edit2 size={11} color="#fff"/>:<span style={{fontSize:10}}>🔒</span>}</button>
                   <button onClick={()=>quitarFotoEdit(i)} style={{position:"absolute",top:-7,right:-7,width:24,height:24,borderRadius:"50%",background:"#FF3B30",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><X size={13} color="#fff" strokeWidth={3}/></button>
                 </div>
               ))}
@@ -2720,6 +2850,7 @@ export default function App({ session }) {
         {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
         {modalFotoResolucionJSX}
         {asignacionRapidaJSX}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>setEditorDibujo(null)}/>}
       </div>
     );
   }
@@ -2734,7 +2865,7 @@ export default function App({ session }) {
         <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
           <div><p style={s.label}>📷 Fotos <span style={{color:"#55555A",fontWeight:400}}>(podés agregar varias)</span></p>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotos}/>
-            {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/><button style={s.quitarFoto} onClick={()=>quitarFoto(i)}><X size={12}/></button></div>)}</div>}
+            {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/><button onClick={()=>abrirEditorDibujo(f,"nueva",i)} style={{position:"absolute",bottom:-7,left:-7,width:24,height:24,borderRadius:"50%",background:esVersionPro?"#1C1C1E":"#8E8E93",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}>{esVersionPro?<Edit2 size={11} color="#fff"/>:<span style={{fontSize:10}}>🔒</span>}</button><button style={s.quitarFoto} onClick={()=>quitarFoto(i)}><X size={12}/></button></div>)}</div>}
             <button style={s.fotoBtn} onClick={()=>fileRef.current.click()}><Camera size={32} color="#636366"/><span style={{color:"#636366",fontSize:14,marginTop:4}}>{form.fotos.length>0?"Agregar más fotos":"Tocá para sacar foto"}</span></button>
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
@@ -2777,6 +2908,7 @@ export default function App({ session }) {
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>setEditorDibujo(null)}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
@@ -2882,6 +3014,7 @@ export default function App({ session }) {
       {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>setEditorDibujo(null)}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
     </div>
