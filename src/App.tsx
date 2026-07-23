@@ -145,7 +145,7 @@ const BurbujaAudio = ({ src, duracion=0, esMio=false }) => {
       <button type="button" onClick={alternar} style={{width:32,height:32,borderRadius:"50%",border:"none",background:esMio?"rgba(255,255,255,0.18)":"#E5E5EA",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
         {reproduciendo?<Pause size={14} color={esMio?"#fff":"#1C1C1E"}/>:<Play size={14} color={esMio?"#fff":"#1C1C1E"} style={{marginLeft:1}}/>}
       </button>
-      <div style={{display:"flex",alignItems:"center",gap:2,flex:1}}>
+      <div style={{display:"flex",alignItems:"center",gap:2,flex:1,justifyContent:"space-between"}}>
         {barras.map((h,i)=><div key={i} style={{width:2.5,height:h,borderRadius:2,background:esMio?"rgba(255,255,255,0.5)":"#C7C7CC",flexShrink:0}}/>)}
       </div>
       <span style={{fontSize:11,color:esMio?"rgba(255,255,255,0.7)":"#55555A",flexShrink:0}}>{mm}:{ss}</span>
@@ -1370,6 +1370,7 @@ export default function App({ session }) {
       const stream=await navigator.mediaDevices.getUserMedia({audio:true});
       grabacionCanceladaRef.current=false;
       audioChunksRef.current=[];
+      const inicioRef={ts:Date.now()};
       const mimeType=MediaRecorder.isTypeSupported("audio/webm")?"audio/webm":(MediaRecorder.isTypeSupported("audio/mp4")?"audio/mp4":"");
       const mr=mimeType?new MediaRecorder(stream,{mimeType}):new MediaRecorder(stream);
       mediaRecorderRef.current=mr;
@@ -1377,7 +1378,7 @@ export default function App({ session }) {
       mr.onstop=async()=>{
         stream.getTracks().forEach(t=>t.stop());
         clearInterval(grabacionIntervalRef.current);
-        const duracionFinal=Math.min(tiempoGrabacion,DURACION_MAX_AUDIO);
+        const duracionFinal=Math.min(Math.round((Date.now()-inicioRef.ts)/1000),DURACION_MAX_AUDIO);
         setGrabandoAudio(false);
         setTiempoGrabacion(0);
         if(grabacionCanceladaRef.current||audioChunksRef.current.length===0)return;
@@ -1388,11 +1389,9 @@ export default function App({ session }) {
       setGrabandoAudio(true);
       setTiempoGrabacion(0);
       grabacionIntervalRef.current=setInterval(()=>{
-        setTiempoGrabacion(t=>{
-          const next=t+1;
-          if(next>=DURACION_MAX_AUDIO){mr.stop();}
-          return next;
-        });
+        const transcurrido=Math.round((Date.now()-inicioRef.ts)/1000);
+        setTiempoGrabacion(Math.min(transcurrido,DURACION_MAX_AUDIO));
+        if(transcurrido>=DURACION_MAX_AUDIO)mr.stop();
       },1000);
     }catch(e){
       alert("No se pudo acceder al micrófono. Revisá los permisos de la app/navegador.");
