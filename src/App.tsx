@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, createPortal } from "react";
-import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, FileText, ClipboardList, Phone, ArrowUpDown } from "lucide-react";
+import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, FileText, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -13,6 +13,36 @@ const EMOJI_OFICIO = {
   "Albañil":"🧱","Demoledor":"🔨","Encofrador carpintero":"🪵","Fierrero / Armador de hierro":"⛓️","Hormigonero":"🏗️","Pilotero":"🛠️","Pocero / Excavador":"⛏️","Techista":"🏠","Calderista":"🔥","Electricista de obra":"⚡","Gasista":"🔧","Instalador de ascensores y montacargas":"🛗","Instalador de corrientes débiles":"🔌","Instalador de sistemas contra incendios":"🧯","Instalador de sistemas de climatización":"❄️","Instalador de sistemas solares / renovables":"☀️","Instalador sanitario":"🚿","Plomero / Fontanero":"🔧","Técnico en domótica y automatización":"🤖","Carpintero de obra / terminaciones":"🪚","Carpintero de obra gruesa":"🪵","Cerrajero de obra":"🔑","Herrero de obra":"⚒️","Instalador de aberturas de aluminio":"🪟","Instalador de aberturas de PVC":"🪟","Instalador de aberturas metálicas":"🪟","Montador de estructuras metálicas":"🏗️","Soldador":"🔥","Vidriero":"🪟","Zinguería":"🏠","Ceramista":"🧱","Colocador de pisos de madera / Parquetista":"🪵","Colocador de pisos vinílicos / Alfombrista":"🧶","Colocador revestimientos plásticos texturados":"🎨","Durlero / Montador de construcción en seco":"🧱","Enduido":"🪣","Impermeabilizador / Techista de membranas":"🏠","Marmolero":"🪨","Pintor de obra":"🖌️","Pintor industrial":"🎨","Pulidor de pisos":"✨","Yesero":"🪣","Armador de andamios / Andamiero":"🚧","Jardinero":"🌳","Operario de limpieza de obra (fin de obra)":"🧹","Proveedor de servicios":"📦","Restaurador":"🛠️","Riego":"💧","Sereno / Personal de vigilancia de obra":"👁️","Técnico en Higiene y Seguridad en el Trabajo":"🦺","Topógrafo / Agrimensor":"📐","Tunelero":"⛏️","Otro":"👷"
 };
 const emojiDeOficio = (oficio) => EMOJI_OFICIO[oficio] || "👷";
+
+// ══════════════════════════════════════════════════════
+// BURBUJA DE AUDIO — reproductor simple para notas de voz en comentarios
+// ══════════════════════════════════════════════════════
+const BurbujaAudio = ({ src, duracion=0, esMio=false }) => {
+  const [reproduciendo, setReproduciendo] = useState(false);
+  const audioRef = useRef(null);
+  const alTerminar = () => setReproduciendo(false);
+  const alternar = () => {
+    if(!audioRef.current)return;
+    if(reproduciendo){audioRef.current.pause();}
+    else{audioRef.current.play().catch(()=>{});}
+    setReproduciendo(r=>!r);
+  };
+  const mm = Math.floor(duracion/60);
+  const ss = String(Math.round(duracion%60)).padStart(2,"0");
+  const barras = [6,12,8,16,10,14,7,11,15,9,13,6,10,8,12];
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:10}}>
+      <audio ref={audioRef} src={src} onEnded={alTerminar} style={{display:"none"}}/>
+      <button type="button" onClick={alternar} style={{width:32,height:32,borderRadius:"50%",border:"none",background:esMio?"rgba(255,255,255,0.18)":"#E5E5EA",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+        {reproduciendo?<Pause size={14} color={esMio?"#fff":"#1C1C1E"}/>:<Play size={14} color={esMio?"#fff":"#1C1C1E"} style={{marginLeft:1}}/>}
+      </button>
+      <div style={{display:"flex",alignItems:"center",gap:2,flex:1}}>
+        {barras.map((h,i)=><div key={i} style={{width:2.5,height:h,borderRadius:2,background:esMio?"rgba(255,255,255,0.5)":"#C7C7CC",flexShrink:0}}/>)}
+      </div>
+      <span style={{fontSize:11,color:esMio?"rgba(255,255,255,0.7)":"#55555A",flexShrink:0}}>{mm}:{ss}</span>
+    </div>
+  );
+};
 
 // ══════════════════════════════════════════════════════
 // BÚSQUEDA INTELIGENTE DE OFICIOS — punto 4 de pendientes
@@ -394,6 +424,12 @@ export default function App({ session }) {
   const [filtroRespOpen,   setFiltroRespOpen]   = useState(false);
   const [busqueda,         setBusqueda]         = useState("");
   const [nuevoComentario,  setNuevoComentario]  = useState("");
+  const [grabandoAudio,    setGrabandoAudio]    = useState(false);
+  const [tiempoGrabacion,  setTiempoGrabacion]  = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const grabacionIntervalRef = useRef(null);
+  const grabacionCanceladaRef = useRef(false);
   const [modalNuevaObra,   setModalNuevaObra]   = useState(false);
   const [modalInvitar,     setModalInvitar]     = useState(false);
   const [invitarRol,       setInvitarRol]       = useState("operario");
@@ -634,7 +670,7 @@ export default function App({ session }) {
     if(document.getElementById("fixgo-spin-style"))return;
     const st=document.createElement("style");
     st.id="fixgo-spin-style";
-    st.textContent="@keyframes spin{to{transform:rotate(360deg)}}";
+    st.textContent="@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}";
     document.head.appendChild(st);
   },[]);
 
@@ -776,7 +812,7 @@ export default function App({ session }) {
         (data||[]).forEach((obra, idx)=>{
           setTimeout(async()=>{
             const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
           }, idx * 300);
         });
       }
@@ -820,9 +856,11 @@ export default function App({ session }) {
             const idx=lista.findIndex(x=>x.id===nuevo.novedad_id);
             if(idx===-1)continue;
             const nov=lista[idx];
-            const yaTiene=nov.comentarios.some(c=>c.autorId===nuevo.autor_id&&c.texto===nuevo.texto);
+            const yaTiene=nuevo.audio_url
+              ?nov.comentarios.some(c=>c.audioUrl===nuevo.audio_url)
+              :nov.comentarios.some(c=>c.autorId===nuevo.autor_id&&c.texto===nuevo.texto&&!c.audioUrl);
             if(yaTiene)continue;
-            const novActualizada={...nov,comentarios:[...nov.comentarios,{texto:nuevo.texto,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
+            const novActualizada={...nov,comentarios:[...nov.comentarios,{texto:nuevo.texto,audioUrl:nuevo.audio_url||null,audioDuracion:nuevo.audio_duracion||null,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
             next[obraId]=lista.map((x,i)=>i===idx?novActualizada:x);
             cambio=true;
             break;
@@ -1062,6 +1100,21 @@ export default function App({ session }) {
             return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.id?{...x,pendienteSync:false}:x)};
           });
           quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
+        } else if(item.tipo==="comentario_audio"){
+          const blob=await base64ABlob(item.audioBase64);
+          const nombreArchivo=`${item.novedadId}-${Date.now()}.webm`;
+          const{error:errorSubida}=await supabase.storage.from("audios-comentarios").upload(nombreArchivo,blob,{contentType:blob.type||"audio/webm"});
+          if(errorSubida)throw errorSubida;
+          const{data:urlData}=supabase.storage.from("audios-comentarios").getPublicUrl(nombreArchivo);
+          const audioUrl=urlData.publicUrl;
+          const{error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:"",audio_url:audioUrl,audio_duracion:item.duracionSeg});
+          if(errorInsert)throw errorInsert;
+          setNovedadesPorObra(p=>{
+            const obraKey=Object.keys(p).find(k=>(p[k]||[]).some(x=>x.id===item.novedadId));
+            if(!obraKey)return p;
+            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.audioUrl===item.audioBase64)?{...c,audioUrl,pendienteSync:false}:c)}:x)};
+          });
+          quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
         }
       }catch(e){
         console.error("Error sincronizando item offline:",e);
@@ -1083,6 +1136,84 @@ export default function App({ session }) {
   },[]);
 
   const agregarComentario=async(id)=>{if(!nuevoComentario.trim()||guardando)return;const texto=nuevoComentario.trim();setGuardando(true);if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});if(error){alert("No se pudo agregar el comentario: "+error.message);setGuardando(false);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId:usuarioReal?.id||usuarioActivo.id,ts:Date.now()}]}:x));setNuevoComentario("");setGuardando(false);mostrarToast("Comentario agregado");};
+
+  // ── NOTAS DE VOZ EN COMENTARIOS (punto 1) ──
+  const blobABase64=(blob)=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
+  const base64ABlob=async(base64)=>(await fetch(base64)).blob();
+  const agregarComentarioAudio=async(id,blob,duracionSeg)=>{
+    if(guardando)return;
+    setGuardando(true);
+    const autorId=usuarioReal?.id||usuarioActivo.id;
+    // ── SIN CONEXIÓN: guardar local (base64) y encolar para subir cuando vuelva la señal ──
+    if(usuarioReal&&typeof id==="string"&&!estaOnline){
+      const audioBase64=await blobABase64(blob);
+      setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto:"",audioUrl:audioBase64,audioDuracion:duracionSeg,autorId,ts:Date.now(),pendienteSync:true}]}:x));
+      setColaOffline(c=>[...c,{tipo:"comentario_audio",novedadId:id,audioBase64,duracionSeg,autorId}]);
+      setGuardando(false);
+      mostrarToast("📡 Audio guardado sin conexión — se sube solo cuando vuelva la señal");
+      return;
+    }
+    try{
+      const nombreArchivo=`${obraActual?.id||"local"}/${id}-${Date.now()}.webm`;
+      const{error:errorSubida}=await supabase.storage.from("audios-comentarios").upload(nombreArchivo,blob,{contentType:blob.type||"audio/webm"});
+      if(errorSubida)throw errorSubida;
+      const{data:urlData}=supabase.storage.from("audios-comentarios").getPublicUrl(nombreArchivo);
+      const audioUrl=urlData.publicUrl;
+      if(usuarioReal&&typeof id==="string"){
+        const{error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto:"",audio_url:audioUrl,audio_duracion:duracionSeg});
+        if(error)throw error;
+      }
+      setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto:"",audioUrl,audioDuracion:duracionSeg,autorId,ts:Date.now()}]}:x));
+      mostrarToast("Nota de voz enviada");
+    }catch(e){
+      alert("No se pudo enviar la nota de voz: "+(e.message||"error desconocido"));
+    }
+    setGuardando(false);
+  };
+
+  const DURACION_MAX_AUDIO=15;
+  const iniciarGrabacion=async(idNovedad)=>{
+    if(grabandoAudio)return;
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      grabacionCanceladaRef.current=false;
+      audioChunksRef.current=[];
+      const mimeType=MediaRecorder.isTypeSupported("audio/webm")?"audio/webm":(MediaRecorder.isTypeSupported("audio/mp4")?"audio/mp4":"");
+      const mr=mimeType?new MediaRecorder(stream,{mimeType}):new MediaRecorder(stream);
+      mediaRecorderRef.current=mr;
+      mr.ondataavailable=(e)=>{if(e.data.size>0)audioChunksRef.current.push(e.data);};
+      mr.onstop=async()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        clearInterval(grabacionIntervalRef.current);
+        const duracionFinal=Math.min(tiempoGrabacion,DURACION_MAX_AUDIO);
+        setGrabandoAudio(false);
+        setTiempoGrabacion(0);
+        if(grabacionCanceladaRef.current||audioChunksRef.current.length===0)return;
+        const blob=new Blob(audioChunksRef.current,{type:mimeType||"audio/webm"});
+        await agregarComentarioAudio(idNovedad,blob,duracionFinal||1);
+      };
+      mr.start();
+      setGrabandoAudio(true);
+      setTiempoGrabacion(0);
+      grabacionIntervalRef.current=setInterval(()=>{
+        setTiempoGrabacion(t=>{
+          const next=t+1;
+          if(next>=DURACION_MAX_AUDIO){mr.stop();}
+          return next;
+        });
+      },1000);
+    }catch(e){
+      alert("No se pudo acceder al micrófono. Revisá los permisos de la app/navegador.");
+    }
+  };
+  const detenerGrabacionYEnviar=()=>{
+    if(mediaRecorderRef.current&&mediaRecorderRef.current.state!=="inactive")mediaRecorderRef.current.stop();
+  };
+  const cancelarGrabacion=()=>{
+    grabacionCanceladaRef.current=true;
+    if(mediaRecorderRef.current&&mediaRecorderRef.current.state!=="inactive")mediaRecorderRef.current.stop();
+  };
+
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error:e1}=await supabase.from("novedades").delete().eq("obra_id",id);if(e1){alert("No se pudo eliminar: "+e1.message);return;}const{error:e2}=await supabase.from("obras").delete().eq("id",id);if(e2){alert("No se pudo eliminar la obra: "+e2.message);return;}}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
   const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
   const [modalEditarObra, setModalEditarObra] = useState<any>(null);
@@ -1244,7 +1375,7 @@ export default function App({ session }) {
     // Cargar novedades de esta obra si no están cargadas aún
     if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
       });
     }
   };
@@ -2531,12 +2662,29 @@ export default function App({ session }) {
                 <span style={{fontSize:12,fontWeight:700,color:esMio?"rgba(255,255,255,0.7)":"#636366"}}>{autor?.nombre||"Usuario"}</span>
                 <span style={{fontSize:10,color:esMio?"rgba(255,255,255,0.35)":"#C7C7CC",marginLeft:"auto"}}>{formatHora(c.ts)}</span>
               </div>
-              <p style={{margin:0,fontSize:14,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>
+              {c.audioUrl?<BurbujaAudio src={c.audioUrl} duracion={c.audioDuracion||0} esMio={esMio}/>:<p style={{margin:0,fontSize:14,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>}
             </div>
           );})}
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center",position:"sticky",bottom:-24,background:"#fff",paddingTop:10,paddingBottom:24,marginBottom:-24,zIndex:5}}>
-            <input style={{...s.input,flex:1,background:"#F2F2F7",border:"none"}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`} value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
-            <button style={{width:40,height:40,background:"#1C1C1E",border:"none",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}} onClick={()=>agregarComentario(detalle.id)}><Send size={16} color="#fff"/></button>
+            {grabandoAudio?(
+              <div style={{flex:1,display:"flex",alignItems:"center",gap:10,background:"#FFF3F0",border:"1.5px solid #FF3B30",borderRadius:12,padding:"9px 14px"}}>
+                <span style={{width:9,height:9,borderRadius:"50%",background:"#FF3B30",flexShrink:0,animation:"pulse 1s infinite"}}/>
+                <div style={{display:"flex",alignItems:"center",gap:2,flex:1}}>
+                  {[6,12,8,16,10,14,7,11,15,9,13,6,10].map((h,i)=><div key={i} style={{width:2.5,height:h,borderRadius:2,background:"#FF3B30",flexShrink:0,opacity:0.6+0.4*Math.sin(Date.now()/150+i)}}/>)}
+                </div>
+                <span style={{fontSize:13,fontWeight:700,color:"#FF3B30",flexShrink:0}}>0:{String(tiempoGrabacion).padStart(2,"0")} / 0:{DURACION_MAX_AUDIO}</span>
+                <button type="button" onClick={cancelarGrabacion} style={{width:28,height:28,borderRadius:"50%",border:"none",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><X size={14} color="#55555A"/></button>
+              </div>
+            ):(
+              <input style={{...s.input,flex:1,background:"#F2F2F7",border:"none"}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`} value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
+            )}
+            {grabandoAudio?(
+              <button type="button" onClick={detenerGrabacionYEnviar} style={{width:40,height:40,background:"#FF3B30",border:"none",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Send size={16} color="#fff"/></button>
+            ):nuevoComentario.trim()?(
+              <button style={{width:40,height:40,background:"#1C1C1E",border:"none",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}} onClick={()=>agregarComentario(detalle.id)}><Send size={16} color="#fff"/></button>
+            ):(
+              <button type="button" onClick={()=>iniciarGrabacion(detalle.id)} style={{width:40,height:40,background:"#1C1C1E",border:"none",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Mic size={16} color="#fff"/></button>
+            )}
           </div>
           </div>
           <div style={{background:"#fff",borderRadius:20,padding:"16px 18px",marginBottom:8}}>
