@@ -2679,6 +2679,6 @@ const s = {
   infoVal:     { fontSize:15, fontWeight:600, color:"#1C1C1E" },
   quitarFoto:  { position:"absolute", top:4, right:4, background:"#000000AA", color:"#fff", border:"none", borderRadius:20, width:24, height:24, fontSize:12, cursor:"pointer" },
   cardObra:    { background:"#fff", borderRadius:18, padding:"16px", border:"2px solid #1C1C1E", cursor:"pointer", textAlign:"left", boxShadow:"0 2px 8px #0000000A", width:"100%" },
-  overlay:     { position:"fixed", inset:0, background:"#00000060", display:"flex", alignItems:"flex-end", zIndex:100 },
-  modal:       { background:"#fff", borderRadius:"20px 20px 0 0", padding:"24px 20px 32px", width:"100%", boxSizing:"border-box" },
+  overlay:     { position:"fixed", top:0, left:0, right:0, height:"100dvh", background:"#00000060", display:"flex", alignItems:"flex-end", zIndex:100 },
+  modal:       { background:"#fff", borderRadius:"20px 20px 0 0", padding:"24px 20px 32px", width:"100%", boxSizing:"border-box", maxHeight:"92dvh", overflowY:"auto" },
 };
