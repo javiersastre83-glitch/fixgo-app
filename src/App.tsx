@@ -138,7 +138,7 @@ const BurbujaAudio = ({ src, duracion=0, esMio=false }) => {
   };
   const mm = Math.floor(duracion/60);
   const ss = String(Math.round(duracion%60)).padStart(2,"0");
-  const barras = [4,10,18,7,14,22,9,16,6,20,11,17,5,13,19,8,15,21,6,12,18,9,16,4];
+  const barras = [4,10,18,7,14,22,9,16,6,20,11,17,5,13,19,8,15,21,6,12,18,9,16,4,11,19,7,15,21,6,13,17,9,20,5,12];
   return (
     <div style={{display:"flex",alignItems:"center",gap:10}}>
       <audio ref={audioRef} src={src} onEnded={alTerminar} style={{display:"none"}}/>
@@ -448,7 +448,7 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
 const NavBar = ({ tabActiva, onTab, onPerfil }) => (
   <div style={{ background:"#fff", borderTop:"1px solid #E5E5EA", display:"flex", paddingBottom:"env(safe-area-inset-bottom)", flexShrink:0 }}>
     {[
-      {key:"obras",   Icon:Home,      label:"Obras"},
+      {key:"obras",   Icon:Home,      label:"Inicio"},
       {key:"alertas", Icon:Zap,       label:"Urgencias"},
       {key:"perfil",  Icon:User,      label:"Perfil"},
     ].map(({key,Icon,label})=>(
@@ -2984,6 +2984,7 @@ export default function App({ session }) {
   return(
     <div style={{...s.root,position:"relative"}}>
       <div style={{padding:"14px 12px 4px",flexShrink:0}}>
+        <button onClick={irInicio} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Inicio</button>
         <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"18px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
             <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
