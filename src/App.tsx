@@ -1793,14 +1793,14 @@ export default function App({ session }) {
               <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Plan Gratuito</p>
               <span style={{background:"#F2F2F7",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#636366",fontWeight:600}}>Actual</span>
             </div>
-            <p style={{margin:0,fontSize:13,color:"#55555A"}}>✅ 1 proyecto · ✅ Novedades ilimitadas · ❌ Estadísticas avanzadas</p>
+            <p style={{margin:0,fontSize:13,color:"#55555A"}}>✅ 1 obra · ✅ Novedades ilimitadas · ❌ Offline, Modo Director, dibujo sobre fotos</p>
           </div>
           <div style={{padding:"14px 16px",background:"#FFB80008"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Plan Pro</p>
               <span style={{background:"#FFB800",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#1C1C1E",fontWeight:800}}>✨ PRO</span>
             </div>
-            <p style={{margin:0,fontSize:13,color:"#55555A",marginBottom:10}}>✅ Proyectos ilimitados · ✅ Estadísticas avanzadas · ✅ Ranking · ✅ Filtros</p>
+            <p style={{margin:0,fontSize:13,color:"#55555A",marginBottom:10}}>✅ Obras ilimitadas · ✅ Offline · ✅ Modo Director · ✅ Dibujar sobre fotos</p>
             <button style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer"}}>🚀 Activar Plan Pro</button>
           </div>
         </div>
@@ -2236,7 +2236,7 @@ export default function App({ session }) {
         </div></div>}
         {modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
               <div style={{textAlign:"left",marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
-                {["Obras ilimitadas","Informes y reportes en PDF","Estadísticas avanzadas de cada obra","Soporte prioritario"].map(t=>(
+                {["Obras ilimitadas","Modo offline","Marcar y dibujar sobre fotos","Informe de novedades registradas","Gestión en equipo para una misma obra","Modo Director para estar al tanto de las obras que lleva tu equipo"].map(t=>(
                   <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><span style={{color:"#34C759",fontSize:16}}>✓</span>{t}</div>
                 ))}
               </div>
