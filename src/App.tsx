@@ -1089,7 +1089,11 @@ export default function App({ session }) {
     const files=Array.from(e.target.files);
     for(const f of files){
       const comprimida=await comprimirFoto(f);
-      setForm(ff=>({...ff,fotos:[...ff.fotos,comprimida]}));
+      let idxNuevo;
+      setForm(ff=>{idxNuevo=ff.fotos.length;return{...ff,fotos:[...ff.fotos,comprimida]};});
+      if(esVersionPro){
+        await new Promise(resolve=>setEditorDibujo({src:comprimida,origen:"nueva",idx:idxNuevo,onListo:resolve}));
+      }
     }
   };
   const quitarFoto=(idx)=>setForm(f=>({...f,fotos:f.fotos.filter((_,i)=>i!==idx)}));
@@ -1097,18 +1101,22 @@ export default function App({ session }) {
     const files=Array.from(e.target.files);
     for(const f of files){
       const comprimida=await comprimirFoto(f);
-      setFormEdit(ff=>({...ff,fotos:[...(ff.fotos||[]),comprimida]}));
+      let idxNuevo;
+      setFormEdit(ff=>{idxNuevo=(ff.fotos||[]).length;return{...ff,fotos:[...(ff.fotos||[]),comprimida]};});
+      if(esVersionPro){
+        await new Promise(resolve=>setEditorDibujo({src:comprimida,origen:"editar",idx:idxNuevo,onListo:resolve}));
+      }
     }
   };
   const quitarFotoEdit=(idx)=>setFormEdit(f=>({...f,fotos:f.fotos.filter((_,i)=>i!==idx)}));
 
-  // ── EDITOR DE DIBUJO SOBRE FOTO (punto 5, Pro) ──
+  // ── EDITOR DE DIBUJO SOBRE FOTO (punto 5, Pro) — se abre solo al agregar la foto; reeditar es opcional para Pro ──
   const abrirEditorDibujo=(src,origen,idx=null)=>{
-    if(!esVersionPro){setModalProObra(true);return;}
+    if(!esVersionPro)return;
     setEditorDibujo({src,origen,idx});
   };
   const guardarDesdeEditorDibujo=async(dataUrlFinal)=>{
-    const{origen,idx}=editorDibujo;
+    const{origen,idx,onListo}=editorDibujo;
     if(origen==="nueva"){
       setForm(f=>({...f,fotos:f.fotos.map((foto,i)=>i===idx?dataUrlFinal:foto)}));
     }else if(origen==="editar"){
@@ -1118,6 +1126,7 @@ export default function App({ session }) {
       confirmarResolucionConFoto(modalFotoResolucion,blob);
     }
     setEditorDibujo(null);
+    onListo?.();
   };
 
   const guardar=async()=>{
@@ -2468,7 +2477,7 @@ export default function App({ session }) {
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
-        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>setEditorDibujo(null)}/>}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;setEditorDibujo(null);cont?.();}}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
@@ -2678,7 +2687,7 @@ export default function App({ session }) {
               {(formEdit.fotos||[]).map((f,i)=>(
                 <div key={i} style={{position:"relative",width:80,height:80,flexShrink:0}}>
                   <img src={f} alt="" onClick={()=>setFotoAmpliada(f)} style={{width:80,height:80,objectFit:"cover",borderRadius:12,cursor:"pointer"}}/>
-                  <button onClick={()=>abrirEditorDibujo(f,"editar",i)} style={{position:"absolute",bottom:-7,left:-7,width:24,height:24,borderRadius:"50%",background:esVersionPro?"#1C1C1E":"#8E8E93",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}>{esVersionPro?<Edit2 size={11} color="#fff"/>:<span style={{fontSize:10}}>🔒</span>}</button>
+                  {esVersionPro&&<button onClick={()=>abrirEditorDibujo(f,"editar",i)} style={{position:"absolute",bottom:-7,left:-7,width:24,height:24,borderRadius:"50%",background:"#1C1C1E",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><Edit2 size={11} color="#fff"/></button>}
                   <button onClick={()=>quitarFotoEdit(i)} style={{position:"absolute",top:-7,right:-7,width:24,height:24,borderRadius:"50%",background:"#FF3B30",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><X size={13} color="#fff" strokeWidth={3}/></button>
                 </div>
               ))}
@@ -2850,7 +2859,7 @@ export default function App({ session }) {
         {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
         {modalFotoResolucionJSX}
         {asignacionRapidaJSX}
-        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>setEditorDibujo(null)}/>}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;setEditorDibujo(null);cont?.();}}/>}
       </div>
     );
   }
@@ -2865,7 +2874,7 @@ export default function App({ session }) {
         <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
           <div><p style={s.label}>📷 Fotos <span style={{color:"#55555A",fontWeight:400}}>(podés agregar varias)</span></p>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotos}/>
-            {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/><button onClick={()=>abrirEditorDibujo(f,"nueva",i)} style={{position:"absolute",bottom:-7,left:-7,width:24,height:24,borderRadius:"50%",background:esVersionPro?"#1C1C1E":"#8E8E93",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}>{esVersionPro?<Edit2 size={11} color="#fff"/>:<span style={{fontSize:10}}>🔒</span>}</button><button style={s.quitarFoto} onClick={()=>quitarFoto(i)}><X size={12}/></button></div>)}</div>}
+            {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/>{esVersionPro&&<button onClick={()=>abrirEditorDibujo(f,"nueva",i)} style={{position:"absolute",bottom:-7,left:-7,width:24,height:24,borderRadius:"50%",background:"#1C1C1E",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><Edit2 size={11} color="#fff"/></button>}<button style={s.quitarFoto} onClick={()=>quitarFoto(i)}><X size={12}/></button></div>)}</div>}
             <button style={s.fotoBtn} onClick={()=>fileRef.current.click()}><Camera size={32} color="#636366"/><span style={{color:"#636366",fontSize:14,marginTop:4}}>{form.fotos.length>0?"Agregar más fotos":"Tocá para sacar foto"}</span></button>
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
@@ -2908,7 +2917,7 @@ export default function App({ session }) {
         {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
-        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>setEditorDibujo(null)}/>}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;setEditorDibujo(null);cont?.();}}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
       </div>
@@ -3014,7 +3023,7 @@ export default function App({ session }) {
       {modalInvitarJSX}
         {avisoObraEliminadaJSX}
         {asignacionRapidaJSX}
-        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>setEditorDibujo(null)}/>}
+        {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;setEditorDibujo(null);cont?.();}}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
     </div>
