@@ -1467,15 +1467,36 @@ export default function App({ session }) {
     }
     mostrarToast("Nombre guardado");
   };
+  const comprimirLogo=(file)=>new Promise((resolve)=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=400;
+        let{width,height}=img;
+        if(width>height&&width>MAX){height=Math.round(height*MAX/width);width=MAX;}
+        else if(height>MAX){width=Math.round(width*MAX/height);height=MAX;}
+        const canvas=document.createElement("canvas");
+        canvas.width=width;canvas.height=height;
+        const ctx=canvas.getContext("2d");
+        ctx.drawImage(img,0,0,width,height);
+        canvas.toBlob(blob=>resolve(blob||file),"image/webp",0.85);
+      };
+      img.onerror=()=>resolve(file);
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
   const subirLogoEstudio=async(file)=>{
     if(!usuarioReal||!file)return;
     const LIMITE_BYTES=2*1024*1024; // 2MB
     if(file.size>LIMITE_BYTES){alert("La imagen pesa demasiado (máximo 2MB). Elegí una más liviana.");return;}
     setSubiendoLogo(true);
     try{
-      const ext=file.name.split(".").pop()||"png";
-      const nombreArchivo=`${usuarioReal.id}-${Date.now()}.${ext}`;
-      const{error:errorSubida}=await supabase.storage.from("logos-estudio").upload(nombreArchivo,file,{contentType:file.type});
+      const comprimido=await comprimirLogo(file);
+      const esWebp=comprimido.type==="image/webp";
+      const nombreArchivo=`${usuarioReal.id}-${Date.now()}.${esWebp?"webp":(file.name.split(".").pop()||"png")}`;
+      const{error:errorSubida}=await supabase.storage.from("logos-estudio").upload(nombreArchivo,comprimido,{contentType:comprimido.type||file.type});
       if(errorSubida)throw errorSubida;
       const{data:urlData}=supabase.storage.from("logos-estudio").getPublicUrl(nombreArchivo);
       const url=urlData.publicUrl;
