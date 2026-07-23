@@ -473,16 +473,20 @@ const Header = ({ migas=[], accionDerecha=null, dark=false }) => {
   const padre = migas.slice(0,-1);
   const actual = migas[migas.length-1];
   const volver = padre.length>0 ? padre[padre.length-1].onClick : null;
+  const volverLabel = padre.length>0 ? padre[padre.length-1].label : null;
   return (
-    <div style={{background:bg,borderBottom:dark?"none":"1px solid #E5E5EA",padding:"14px 16px 10px",flexShrink:0}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
-          {volver&&<button onClick={volver} aria-label="Volver"
-            style={{background:dark?"rgba(255,255,255,0.1)":"#F2F2F7",border:"none",borderRadius:99,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",color:dark?"#fff":"#007AFF",cursor:"pointer",flexShrink:0,padding:0}}><ChevronLeft size={20}/></button>}
-          <span style={{fontSize:16,color:col,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{actual?.label}</span>
-        </div>
+    <div style={{background:bg,borderBottom:dark?"none":"1px solid #E5E5EA",padding:"10px 16px 12px",flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",minHeight:26}}>
+        {volver?(
+          <button onClick={volver} aria-label={`Volver a ${volverLabel||""}`}
+            style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:dark?"#fff":"#007AFF",cursor:"pointer",flexShrink:1,minWidth:0,padding:0}}>
+            <ChevronLeft size={19}/>
+            <span style={{fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{volverLabel}</span>
+          </button>
+        ):<span/>}
         {accionDerecha&&<div style={{marginLeft:"auto",flexShrink:0}}>{accionDerecha}</div>}
       </div>
+      <span style={{display:"block",marginTop:4,fontSize:19,color:col,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{actual?.label}</span>
     </div>
   );
 };
