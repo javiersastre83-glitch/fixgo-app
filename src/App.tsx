@@ -2366,11 +2366,13 @@ export default function App({ session }) {
               <span style={{position:"absolute",top:3,left:formEdit.ocultoCapataz?23:3,width:24,height:24,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
             </button>
           </div>
+          <div style={{position:"sticky",bottom:-24,background:"#F2F2F7",paddingTop:14,paddingBottom:24,marginBottom:-24,zIndex:5}}>
           <button disabled={guardando||!formEdit.descripcion.trim()} style={{...s.btnPrincipal,background:"#34C759",opacity:(guardando||!formEdit.descripcion.trim())?0.55:1,cursor:guardando?"default":"pointer"}} onClick={()=>guardarEdicion(detalle.id)}>
             {guardando
               ?<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span style={{width:17,height:17,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Guardando…</span>
               :<span style={{display:"flex",alignItems:"center",gap:6}}><CheckCircle size={16}/>Guardar cambios</span>}
           </button>
+          </div>
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
@@ -2459,7 +2461,7 @@ export default function App({ session }) {
               <p style={{margin:0,fontSize:14,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>
             </div>
           );})}
-          <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center"}}>
+          <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center",position:"sticky",bottom:-24,background:"#fff",paddingTop:10,paddingBottom:24,marginBottom:-24,zIndex:5}}>
             <input style={{...s.input,flex:1,background:"#F2F2F7",border:"none"}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`} value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
             <button style={{width:40,height:40,background:"#1C1C1E",border:"none",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}} onClick={()=>agregarComentario(detalle.id)}><Send size={16} color="#fff"/></button>
           </div>
@@ -2545,7 +2547,9 @@ export default function App({ session }) {
             </button>
           </div>
           </>}
+          <div style={{position:"sticky",bottom:-24,background:"#F2F2F7",paddingTop:14,paddingBottom:24,marginBottom:-24,zIndex:5}}>
           <button style={{...s.btnPrincipal,opacity:(form.descripcion.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={guardar}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={16}/>Guardar novedad</>}</span></button>
+          </div>
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
