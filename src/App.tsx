@@ -138,15 +138,15 @@ const BurbujaAudio = ({ src, duracion=0, esMio=false }) => {
   };
   const mm = Math.floor(duracion/60);
   const ss = String(Math.round(duracion%60)).padStart(2,"0");
-  const barras = [6,12,8,16,10,14,7,11,15,9,13,6,10,8,12];
+  const barras = [4,10,18,7,14,22,9,16,6,20,11,17,5,13,19,8,15,21,6,12,18,9,16,4];
   return (
     <div style={{display:"flex",alignItems:"center",gap:10}}>
       <audio ref={audioRef} src={src} onEnded={alTerminar} style={{display:"none"}}/>
       <button type="button" onClick={alternar} style={{width:32,height:32,borderRadius:"50%",border:"none",background:esMio?"rgba(255,255,255,0.18)":"#E5E5EA",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
         {reproduciendo?<Pause size={14} color={esMio?"#fff":"#1C1C1E"}/>:<Play size={14} color={esMio?"#fff":"#1C1C1E"} style={{marginLeft:1}}/>}
       </button>
-      <div style={{display:"flex",alignItems:"center",gap:2,flex:1,justifyContent:"space-between"}}>
-        {barras.map((h,i)=><div key={i} style={{width:2.5,height:h,borderRadius:2,background:esMio?"rgba(255,255,255,0.5)":"#C7C7CC",flexShrink:0}}/>)}
+      <div style={{display:"flex",alignItems:"center",gap:1.5,flex:1,justifyContent:"space-between",height:22}}>
+        {barras.map((h,i)=><div key={i} style={{width:2,height:h,borderRadius:1,background:esMio?"rgba(255,255,255,0.55)":"#B0B0B5",flexShrink:0}}/>)}
       </div>
       <span style={{fontSize:11,color:esMio?"rgba(255,255,255,0.7)":"#55555A",flexShrink:0}}>{mm}:{ss}</span>
     </div>
