@@ -538,6 +538,7 @@ export default function App({ session }) {
   const [busqueda,         setBusqueda]         = useState("");
   const [nuevoComentario,  setNuevoComentario]  = useState("");
   const [grabandoAudio,    setGrabandoAudio]    = useState(false);
+  const [comentariosAbiertos, setComentariosAbiertos] = useState(false);
   const [editorDibujo,     setEditorDibujo]     = useState(null); // {src, origen:"nueva"|"editar"|"resolucion", idx}
   const [tiempoGrabacion,  setTiempoGrabacion]  = useState(0);
   const mediaRecorderRef = useRef(null);
@@ -2041,6 +2042,7 @@ export default function App({ session }) {
       setVistaRaiz("obra");
       setDetalleId(alerta.novId);
       setVista("detalle");
+      setComentariosAbiertos(false);
       setTabActiva("obras");
     };
 
@@ -2415,7 +2417,7 @@ export default function App({ session }) {
             <div key={titulo}><p style={{margin:"4px 0 8px",fontSize:13,color:"#55555A",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>{titulo}</p>
               {lista.map(nov=>{const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);return(
                 <button key={nov.id} style={{width:"100%",background:"#fff",borderRadius:16,border:"1px solid #ECECEF",padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",marginBottom:8,boxShadow:"0 1px 3px rgba(0,0,0,0.05)",opacity:nov.resuelta?0.65:1}}
-                  onClick={()=>{setDetalleId(nov.id);setMiembroSel(null);setVistaEquipo(false);setVista("detalle");}}>
+                  onClick={()=>{setDetalleId(nov.id);setMiembroSel(null);setVistaEquipo(false);setVista("detalle");setComentariosAbiertos(false);}}>
                   <div style={{display:"flex",alignItems:"center"}}>
                     {nov.fotos.length>0
                       ?<div style={{position:"relative",width:72,height:72,flexShrink:0,marginLeft:11}}>
@@ -2871,7 +2873,11 @@ export default function App({ session }) {
           </div>
           
           <div style={{background:"#fff",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
-          <p style={{margin:"0 0 12px",fontSize:15,fontWeight:700,color:"#1C1C1E"}}>Comentarios</p>
+          <div onClick={()=>setComentariosAbiertos(a=>!a)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:comentariosAbiertos?12:0}}>
+            <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E"}}>💬 Comentarios <span style={{color:"#B0B0B5",fontWeight:600}}>({detalle.comentarios.length})</span></p>
+            <span style={{color:"#55555A",fontSize:13,transition:"transform .2s",transform:comentariosAbiertos?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
+          </div>
+          {comentariosAbiertos&&<>
           {detalle.comentarios.length===0&&<p style={{color:"#55555A",fontSize:14,margin:"0 0 12px"}}>Sin comentarios aún</p>}
           {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===usuarioActivo.id;return(
             <div key={i} style={{background:esMio?"#1C1C1E":"#F9F9F9",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
@@ -2882,6 +2888,7 @@ export default function App({ session }) {
               {c.audioUrl?<BurbujaAudio src={c.audioUrl} duracion={c.audioDuracion||0} esMio={esMio}/>:<p style={{margin:0,fontSize:14,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>}
             </div>
           );})}
+          </>}
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center",position:"sticky",bottom:-24,background:"#fff",paddingTop:10,paddingBottom:24,marginBottom:-24,zIndex:5}}>
             {grabandoAudio?(
               <div style={{flex:1,display:"flex",alignItems:"center",gap:10,background:"#FFF3F0",border:"1.5px solid #FF3B30",borderRadius:12,padding:"9px 14px"}}>
@@ -3059,7 +3066,7 @@ export default function App({ session }) {
           const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);
           return(
             <button key={nov.id} style={{width:"100%",flexShrink:0,background:"#fff",borderRadius:16,border:"1px solid #ECECEF",padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.05)",opacity:nov.resuelta?0.65:1}}
-              onClick={()=>{setDetalleId(nov.id);setVista("detalle");}}
+              onClick={()=>{setDetalleId(nov.id);setVista("detalle");setComentariosAbiertos(false);}}
               onContextMenu={e=>{e.preventDefault();setMenuContextual({novId:nov.id});}}
               onPointerDown={e=>{const t=setTimeout(()=>setMenuContextual({novId:nov.id}),600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
               onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuContextual({novId:nov.id}),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
