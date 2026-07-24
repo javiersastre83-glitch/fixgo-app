@@ -2042,7 +2042,8 @@ export default function App({ session }) {
       setVistaRaiz("obra");
       setDetalleId(alerta.novId);
       setVista("detalle");
-      setComentariosAbiertos(false);
+      const novReal=(novedadesPorObra[alerta.obraId]||[]).find(n=>n.id===alerta.novId);
+      setComentariosAbiertos((novReal?.comentarios||[]).length>0);
       setTabActiva("obras");
     };
 
@@ -2417,7 +2418,7 @@ export default function App({ session }) {
             <div key={titulo}><p style={{margin:"4px 0 8px",fontSize:13,color:"#55555A",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>{titulo}</p>
               {lista.map(nov=>{const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);return(
                 <button key={nov.id} style={{width:"100%",background:"#fff",borderRadius:16,border:"1px solid #ECECEF",padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",marginBottom:8,boxShadow:"0 1px 3px rgba(0,0,0,0.05)",opacity:nov.resuelta?0.65:1}}
-                  onClick={()=>{setDetalleId(nov.id);setMiembroSel(null);setVistaEquipo(false);setVista("detalle");setComentariosAbiertos(false);}}>
+                  onClick={()=>{setDetalleId(nov.id);setMiembroSel(null);setVistaEquipo(false);setVista("detalle");setComentariosAbiertos((nov.comentarios||[]).length>0);}}>
                   <div style={{display:"flex",alignItems:"center"}}>
                     {nov.fotos.length>0
                       ?<div style={{position:"relative",width:72,height:72,flexShrink:0,marginLeft:11}}>
@@ -3066,7 +3067,7 @@ export default function App({ session }) {
           const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);
           return(
             <button key={nov.id} style={{width:"100%",flexShrink:0,background:"#fff",borderRadius:16,border:"1px solid #ECECEF",padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.05)",opacity:nov.resuelta?0.65:1}}
-              onClick={()=>{setDetalleId(nov.id);setVista("detalle");setComentariosAbiertos(false);}}
+              onClick={()=>{setDetalleId(nov.id);setVista("detalle");setComentariosAbiertos((nov.comentarios||[]).length>0);}}
               onContextMenu={e=>{e.preventDefault();setMenuContextual({novId:nov.id});}}
               onPointerDown={e=>{const t=setTimeout(()=>setMenuContextual({novId:nov.id}),600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
               onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuContextual({novId:nov.id}),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
