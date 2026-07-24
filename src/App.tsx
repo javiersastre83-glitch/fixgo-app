@@ -682,6 +682,13 @@ export default function App({ session }) {
   const [invitarCallback,  setInvitarCallback]  = useState<((datos:{responsable:string,usuarioId:null})=>void)|null>(null);
   const [invitacionesPendientes, setInvitacionesPendientes] = useState<any[]>([]);
   const [empresaPropia,        setEmpresaPropia]        = useState<any>(null);
+  const [bitacoraItems,        setBitacoraItems]        = useState<any[]>([]);
+  const [notasBitacora,        setNotasBitacora]        = useState<any>({});
+  const [vistaBitacora,        setVistaBitacora]        = useState(false);
+  const [buscarBitacora,       setBuscarBitacora]       = useState("");
+  const [ordenBitacora,        setOrdenBitacora]        = useState("reciente");
+  const [notaEditando,         setNotaEditando]         = useState<any>(null); // {bitacoraId,notaId,texto}
+  const [nuevaNotaTexto,       setNuevaNotaTexto]       = useState("");
   const [miembrosEmpresa,      setMiembrosEmpresa]      = useState<any[]>([]);
   const [obrasEmpresa,         setObrasEmpresa]         = useState<any[]>([]);
   const [modalCrearEmpresa,    setModalCrearEmpresa]    = useState(false);
@@ -855,6 +862,7 @@ export default function App({ session }) {
   },[usuarioReal]);
 
   useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarEmpresa();},[usuarioReal,invitacionProcesada]);
+  useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarBitacora();},[usuarioReal,invitacionProcesada]);
   useEffect(()=>{
     if(!usuarioReal||!invitacionProcesada)return;
     (async()=>{
@@ -1336,6 +1344,61 @@ export default function App({ session }) {
   // ── NOTAS DE VOZ EN COMENTARIOS (punto 1) ──
   const blobABase64=(blob)=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
   const base64ABlob=async(base64)=>(await fetch(base64)).blob();
+  const cargarBitacora=async()=>{
+    if(!usuarioReal)return;
+    const{data:items,error}=await supabase.from("bitacora_director").select("*").eq("director_id",usuarioReal.id).order("created_at",{ascending:false});
+    if(error){console.error("No se pudo cargar la Bitácora:",error.message);return;}
+    setBitacoraItems(items||[]);
+    if(items&&items.length>0){
+      const ids=items.map(i=>i.id);
+      const{data:notas,error:errorNotas}=await supabase.from("bitacora_notas").select("*").in("bitacora_id",ids).order("created_at",{ascending:true});
+      if(errorNotas){console.error("No se pudieron cargar las notas:",errorNotas.message);return;}
+      const agrupadas:any={};
+      (notas||[]).forEach(n=>{(agrupadas[n.bitacora_id]||=[]).push(n);});
+      setNotasBitacora(agrupadas);
+    }else{
+      setNotasBitacora({});
+    }
+  };
+  const guardarEnBitacora=async(novedadId)=>{
+    if(!usuarioReal)return;
+    const{data,error}=await supabase.from("bitacora_director").insert({director_id:usuarioReal.id,novedad_id:novedadId}).select().single();
+    if(error){alert("No se pudo guardar en la Bitácora: "+error.message);return;}
+    setBitacoraItems(b=>[data,...b]);
+    mostrarToast("Guardada en tu Bitácora");
+  };
+  const sacarDeBitacora=async(bitacoraId)=>{
+    const{error}=await supabase.from("bitacora_director").delete().eq("id",bitacoraId);
+    if(error){alert("No se pudo sacar de la Bitácora: "+error.message);return;}
+    setBitacoraItems(b=>b.filter(x=>x.id!==bitacoraId));
+    setNotasBitacora(n=>{const c={...n};delete c[bitacoraId];return c;});
+    mostrarToast("Sacada de tu Bitácora");
+  };
+  const toggleHabladoBitacora=async(bitacoraId,valor)=>{
+    setBitacoraItems(b=>b.map(x=>x.id===bitacoraId?{...x,hablado:valor}:x));
+    const{error}=await supabase.from("bitacora_director").update({hablado:valor}).eq("id",bitacoraId);
+    if(error){alert("No se pudo actualizar: "+error.message);setBitacoraItems(b=>b.map(x=>x.id===bitacoraId?{...x,hablado:!valor}:x));}
+  };
+  const agregarNotaBitacora=async(bitacoraId,texto)=>{
+    if(!texto.trim())return;
+    const{data,error}=await supabase.from("bitacora_notas").insert({bitacora_id:bitacoraId,texto:texto.trim()}).select().single();
+    if(error){alert("No se pudo agregar la nota: "+error.message);return;}
+    setNotasBitacora(n=>({...n,[bitacoraId]:[...(n[bitacoraId]||[]),data]}));
+    setNuevaNotaTexto("");
+  };
+  const editarNotaBitacora=async(bitacoraId,notaId,textoNuevo)=>{
+    if(!textoNuevo.trim())return;
+    const{error}=await supabase.from("bitacora_notas").update({texto:textoNuevo.trim(),updated_at:new Date().toISOString()}).eq("id",notaId);
+    if(error){alert("No se pudo editar la nota: "+error.message);return;}
+    setNotasBitacora(n=>({...n,[bitacoraId]:(n[bitacoraId]||[]).map(x=>x.id===notaId?{...x,texto:textoNuevo.trim()}:x)}));
+    setNotaEditando(null);
+  };
+  const borrarNotaBitacora=async(bitacoraId,notaId)=>{
+    const{error}=await supabase.from("bitacora_notas").delete().eq("id",notaId);
+    if(error){alert("No se pudo borrar la nota: "+error.message);return;}
+    setNotasBitacora(n=>({...n,[bitacoraId]:(n[bitacoraId]||[]).filter(x=>x.id!==notaId)}));
+  };
+
   const marcarSelloDirector=async(id,valor)=>{
     const nuevoValor=detalle?.selloDirector===valor?null:valor; // tocar de nuevo el mismo = sacarlo
     setNovedades(n=>n.map(x=>x.id===id?{...x,selloDirector:nuevoValor}:x));
@@ -1541,12 +1604,13 @@ export default function App({ session }) {
   const generarInvitacionEmpresa=async()=>{
     if(!usuarioReal||!empresaPropia?.id||generandoLinkEmpresa)return;
     setGenerandoLinkEmpresa(true);
+    await supabase.from("invitaciones_empresa").delete().eq("empresa_id",empresaPropia.id).eq("usada",false);
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
     const{error}=await supabase.from("invitaciones_empresa").insert({codigo,empresa_id:empresaPropia.id});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLinkEmpresa(false);return;}
     setLinkEmpresaGenerado(`https://www.fixgo.ar/?empresa=${codigo}`);
     setGenerandoLinkEmpresa(false);
-    setInvitacionesEmpresaPendientes(p=>[{codigo,created_at:new Date().toISOString()},...p]);
+    setInvitacionesEmpresaPendientes(()=>[{codigo,created_at:new Date().toISOString()}]);
   };
   const cancelarInvitacionEmpresa=async(codigo)=>{
     const{error}=await supabase.from("invitaciones_empresa").delete().eq("codigo",codigo);
@@ -1926,6 +1990,58 @@ export default function App({ session }) {
   // ─────────────────────────────
   // PERFIL
   // ─────────────────────────────
+  if(vistaBitacora){
+    // Arma la lista combinando lo que ya está en memoria (novedades/obras) con las entradas de bitacora_director
+    const entradas=bitacoraItems.map(b=>{
+      let novEncontrada=null,obraEncontrada=null;
+      for(const oid in novedadesPorObra){
+        const n=(novedadesPorObra[oid]||[]).find(x=>x.id===b.novedad_id);
+        if(n){novEncontrada=n;obraEncontrada=obras.find(o=>o.id===oid);break;}
+      }
+      return{...b,novedad:novEncontrada,obra:obraEncontrada};
+    }).filter(e=>e.novedad);
+    const filtradas=entradas.filter(e=>{
+      if(!buscarBitacora.trim())return true;
+      const t=buscarBitacora.toLowerCase();
+      return e.novedad.descripcion?.toLowerCase().includes(t)||e.obra?.nombre?.toLowerCase().includes(t)||(notasBitacora[e.id]||[]).some(n=>n.texto.toLowerCase().includes(t));
+    }).sort((a,b)=>ordenBitacora==="reciente"?new Date(b.created_at).getTime()-new Date(a.created_at).getTime():new Date(a.created_at).getTime()-new Date(b.created_at).getTime());
+    const porObra:any={};
+    filtradas.forEach(e=>{const key=e.obra?.nombre||"Sin obra";(porObra[key]||=[]).push(e);});
+
+    return(
+      <div style={{...s.root}}>
+        <div style={{padding:"14px 16px 4px",flexShrink:0}}>
+          <button onClick={()=>setVistaBitacora(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
+          <h1 style={{fontSize:20,margin:0,fontWeight:800,display:"flex",alignItems:"center",gap:8}}>📔 Mi Bitácora</h1>
+        </div>
+        <div style={{padding:"12px 16px",display:"flex",gap:8,flexShrink:0}}>
+          <input value={buscarBitacora} onChange={e=>setBuscarBitacora(e.target.value)} placeholder="Buscar en mis notas..." style={{flex:1,background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:12,padding:"10px 14px",fontSize:14}}/>
+          <button onClick={()=>setOrdenBitacora(o=>o==="reciente"?"vieja":"reciente")} style={{background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:12,padding:"10px 12px",fontSize:13,fontWeight:600,color:"#55555A",whiteSpace:"nowrap"}}>{ordenBitacora==="reciente"?"↓ Reciente":"↑ Vieja"}</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"0 0 24px"}}>
+          {filtradas.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:30}}>Todavía no guardaste nada en tu Bitácora.</p>}
+          {Object.keys(porObra).map(nombreObra=>(
+            <div key={nombreObra}>
+              <p style={{margin:"18px 16px 8px",fontSize:12,fontWeight:800,color:"#7C5CFC",textTransform:"uppercase",letterSpacing:0.5}}>🏗️ {nombreObra}</p>
+              {porObra[nombreObra].map(e=>(
+                <div key={e.id} onClick={()=>{setObraActual(e.obra);setDetalleId(e.novedad.id);setVista("detalle");setVistaBitacora(false);}}
+                  style={{background:"#fff",borderRadius:16,padding:"13px 15px",margin:"0 16px 10px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",opacity:e.hablado?0.6:1}}>
+                  <div style={{width:24,height:24,borderRadius:8,border:"2px solid "+(e.hablado?"#34C759":"#D9D9DE"),background:e.hablado?"#34C759":"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff",marginTop:2}}>{e.hablado?"✓":""}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <p style={{margin:0,fontSize:14.5,fontWeight:700,textDecoration:e.hablado?"line-through":"none",color:e.hablado?"#55555A":"#1C1C1E"}}>{e.novedad.descripcion}</p>
+                    <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{e.novedad.fecha?formatFecha(e.novedad.fecha):""}</p>
+                    <p style={{margin:"5px 0 0",fontSize:12.5,color:"#7A7A80"}}>💬 {(notasBitacora[e.id]||[]).length} nota{(notasBitacora[e.id]||[]).length!==1?"s":""}{(notasBitacora[e.id]||[]).length>0?` · última: "${(notasBitacora[e.id]||[]).slice(-1)[0].texto.slice(0,40)}${(notasBitacora[e.id]||[]).slice(-1)[0].texto.length>40?"...":""}"`:""}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);setVistaBitacora(false);irInicio();}} onPerfil={()=>{setVistaBitacora(false);setVistaPerfil(true);}} />
+      </div>
+    );
+  }
+
   if(vistaPerfil){
     const rolInfo2=ROLES_SISTEMA.find(r=>r.id===usuarioActivo.rolSistema);
     return(
@@ -2144,6 +2260,7 @@ export default function App({ session }) {
             <>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
                 <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E",flex:1}}>{nombreEstudio||empresaPropia.nombre}</p>
+                <button onClick={()=>setVistaBitacora(true)} style={{background:"#F7F5FF",color:"#7C5CFC",border:"1.5px solid #D9CFFF",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>📔 Bitácora</button>
                 <button onClick={()=>setModalInvitarArq(true)} style={{background:"#2E3A4B",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Invitar</button>
               </div>
               {miembrosEmpresa.map(m=>{
@@ -2893,6 +3010,50 @@ export default function App({ session }) {
               {detalle.selloDirector==="like"?"👍 Tu Director destacó esta novedad":"⚠️ Tu Director marcó esta novedad para prestarle atención"}
             </div>
           ):null}
+
+          {(empresaPropia&&obraActual?.empresa_id===empresaPropia.id)&&(()=>{
+            const miEntrada=bitacoraItems.find(b=>b.novedad_id===detalle.id);
+            const notas=miEntrada?(notasBitacora[miEntrada.id]||[]):[];
+            return(
+              <div style={{background:"linear-gradient(135deg,#F7F5FF,#FBFAFF)",border:"1.5px dashed #D9CFFF",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
+                <p style={{margin:"0 0 10px",fontSize:15,fontWeight:800,color:"#7C5CFC",display:"flex",alignItems:"center",gap:7}}>📔 Mi Bitácora</p>
+                {!miEntrada?(
+                  <button onClick={()=>guardarEnBitacora(detalle.id)} style={{width:"100%",background:"#7C5CFC",color:"#fff",border:"none",borderRadius:14,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer"}}>+ Guardar en mi Bitácora</button>
+                ):(<>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:miEntrada.hablado?"#EAFBEF":"#fff",borderRadius:12,padding:"9px 12px",marginBottom:12,border:"1.5px solid "+(miEntrada.hablado?"#34C759":"#E5E5EA")}}>
+                    <span onClick={()=>toggleHabladoBitacora(miEntrada.id,!miEntrada.hablado)} style={{fontSize:12.5,fontWeight:700,color:miEntrada.hablado?"#1a8a3d":"#55555A",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                      {miEntrada.hablado?"✓ Hablado con el equipo":"○ Marcar como hablado"}
+                    </span>
+                    <span onClick={()=>{if(confirm("¿Sacar esta novedad de tu Bitácora? Se borran también las notas."))sacarDeBitacora(miEntrada.id);}} style={{fontSize:11,color:"#D0342C",fontWeight:600,cursor:"pointer"}}>Quitar</span>
+                  </div>
+
+                  {notas.map(nota=>(
+                    <div key={nota.id} style={{background:"#fff",borderRadius:12,padding:"10px 12px",marginBottom:8}}>
+                      {notaEditando?.notaId===nota.id?(<>
+                        <textarea autoFocus value={notaEditando.texto} onChange={e=>setNotaEditando(x=>({...x,texto:e.target.value}))} style={{width:"100%",border:"1px solid #E5E5EA",borderRadius:8,padding:8,fontSize:13.5,fontFamily:"inherit",resize:"none",minHeight:44}}/>
+                        <div style={{display:"flex",gap:10,marginTop:6}}>
+                          <span onClick={()=>editarNotaBitacora(miEntrada.id,nota.id,notaEditando.texto)} style={{fontSize:11,color:"#34C759",fontWeight:700,cursor:"pointer"}}>Guardar</span>
+                          <span onClick={()=>setNotaEditando(null)} style={{fontSize:11,color:"#55555A",fontWeight:600,cursor:"pointer"}}>Cancelar</span>
+                        </div>
+                      </>):(<>
+                        <p style={{margin:"0 0 4px",fontSize:10,color:"#B0B0B5"}}>{formatHora(new Date(nota.created_at).getTime())}</p>
+                        <p style={{margin:0,fontSize:13.5,lineHeight:1.4}}>{nota.texto}</p>
+                        <div style={{display:"flex",gap:12,marginTop:6}}>
+                          <span onClick={()=>setNotaEditando({bitacoraId:miEntrada.id,notaId:nota.id,texto:nota.texto})} style={{fontSize:11,color:"#55555A",fontWeight:600,cursor:"pointer"}}>Editar</span>
+                          <span onClick={()=>borrarNotaBitacora(miEntrada.id,nota.id)} style={{fontSize:11,color:"#D0342C",fontWeight:600,cursor:"pointer"}}>Eliminar</span>
+                        </div>
+                      </>)}
+                    </div>
+                  ))}
+
+                  <div style={{display:"flex",gap:8,marginTop:4}}>
+                    <input value={nuevaNotaTexto} onChange={e=>setNuevaNotaTexto(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarNotaBitacora(miEntrada.id,nuevaNotaTexto)} placeholder="Agregar nota..." style={{flex:1,background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:12,padding:"10px 13px",fontSize:13.5}}/>
+                    <button onClick={()=>agregarNotaBitacora(miEntrada.id,nuevaNotaTexto)} style={{width:40,height:40,background:"#7C5CFC",border:"none",borderRadius:12,color:"#fff",fontSize:16,flexShrink:0,cursor:"pointer"}}>＋</button>
+                  </div>
+                </>)}
+              </div>
+            );
+          })()}
 
           <div style={{background:"#fff",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
           <div onClick={()=>setComentariosAbiertos(a=>!a)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:comentariosAbiertos?12:0}}>
