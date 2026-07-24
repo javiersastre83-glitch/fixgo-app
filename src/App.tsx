@@ -936,7 +936,7 @@ export default function App({ session }) {
         (data||[]).forEach((obra, idx)=>{
           setTimeout(async()=>{
             const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
           }, idx * 300);
         });
       }
@@ -948,7 +948,7 @@ export default function App({ session }) {
 
   useEffect(()=>{
     if(!usuarioReal)return;
-    const mapNov=(n)=>({...n,fotos:n.fotos||[],fotoResolucion:n.foto_resolucion||null,ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",resueltaAt:n.resuelta_at||null,comentarios:[]});
+    const mapNov=(n)=>({...n,fotos:n.fotos||[],fotoResolucion:n.foto_resolucion||null,ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",resueltaAt:n.resuelta_at||null,comentarios:[]});
     const canal=supabase.channel(`fixgo-realtime-${usuarioReal.id}`)
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"novedades"},(payload)=>{
         const obraId=payload.new.obra_id;
@@ -1336,6 +1336,15 @@ export default function App({ session }) {
   // ── NOTAS DE VOZ EN COMENTARIOS (punto 1) ──
   const blobABase64=(blob)=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
   const base64ABlob=async(base64)=>(await fetch(base64)).blob();
+  const marcarSelloDirector=async(id,valor)=>{
+    const nuevoValor=detalle?.selloDirector===valor?null:valor; // tocar de nuevo el mismo = sacarlo
+    setNovedades(n=>n.map(x=>x.id===id?{...x,selloDirector:nuevoValor}:x));
+    if(usuarioReal&&typeof id==="string"){
+      const{error}=await supabase.from("novedades").update({sello_director:nuevoValor}).eq("id",id);
+      if(error){alert("No se pudo guardar el sello: "+error.message);setNovedades(n=>n.map(x=>x.id===id?{...x,selloDirector:detalle?.selloDirector||null}:x));}
+    }
+  };
+
   const agregarComentarioAudio=async(id,blob,duracionSeg)=>{
     if(guardando)return;
     setGuardando(true);
@@ -1591,7 +1600,7 @@ export default function App({ session }) {
     // Cargar novedades de esta obra si no están cargadas aún
     if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
       });
     }
   };
@@ -2873,6 +2882,18 @@ export default function App({ session }) {
           </div>
           </div>
           
+          {(empresaPropia&&obraActual?.empresa_id===empresaPropia.id)?(
+            <div style={{display:"flex",gap:8,margin:"0 0 12px",alignItems:"center",flexWrap:"wrap"}}>
+              <div onClick={()=>marcarSelloDirector(detalle.id,"like")} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:99,border:detalle.selloDirector==="like"?"1.5px solid #34C759":"1.5px solid #E5E5EA",background:detalle.selloDirector==="like"?"#EAFBEF":"#fff",cursor:"pointer",fontSize:12,fontWeight:700,color:detalle.selloDirector==="like"?"#1a8a3d":"#55555A"}}><span style={{fontSize:14}}>👍</span>Destacar</div>
+              <div onClick={()=>marcarSelloDirector(detalle.id,"atencion")} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:99,border:detalle.selloDirector==="atencion"?"1.5px solid #FFB800":"1.5px solid #E5E5EA",background:detalle.selloDirector==="atencion"?"#FFF8E5":"#fff",cursor:"pointer",fontSize:12,fontWeight:700,color:detalle.selloDirector==="atencion"?"#9a6b00":"#55555A"}}><span style={{fontSize:14}}>⚠️</span>Atención</div>
+              <span style={{fontSize:10.5,color:"#B0B0B5"}}>👁️ {getUserById(detalle.responsable_usuario_id)?.nombre||"El responsable"} lo ve</span>
+            </div>
+          ):detalle.selloDirector?(
+            <div style={{display:"flex",alignItems:"center",gap:6,margin:"0 0 12px",padding:"8px 12px",borderRadius:12,background:detalle.selloDirector==="like"?"#EAFBEF":"#FFF8E5",fontSize:12.5,fontWeight:600,color:detalle.selloDirector==="like"?"#1a8a3d":"#9a6b00"}}>
+              {detalle.selloDirector==="like"?"👍 Tu Director destacó esta novedad":"⚠️ Tu Director marcó esta novedad para prestarle atención"}
+            </div>
+          ):null}
+
           <div style={{background:"#fff",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
           <div onClick={()=>setComentariosAbiertos(a=>!a)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:comentariosAbiertos?12:0}}>
             <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E"}}>💬 Comentarios <span style={{color:"#B0B0B5",fontWeight:600}}>({detalle.comentarios.length})</span></p>
@@ -3136,4 +3157,3 @@ const s = {
   overlay:     { position:"fixed", top:0, left:0, right:0, height:"100dvh", background:"#00000060", display:"flex", alignItems:"flex-end", zIndex:100 },
   modal:       { background:"#fff", borderRadius:"20px 20px 0 0", padding:"24px 20px 32px", width:"100%", boxSizing:"border-box", maxHeight:"92dvh", overflowY:"auto" },
 };
-
