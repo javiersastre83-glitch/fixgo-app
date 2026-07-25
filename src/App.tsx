@@ -15,6 +15,38 @@ const EMOJI_OFICIO = {
 const emojiDeOficio = (oficio) => EMOJI_OFICIO[oficio] || "👷";
 
 // ══════════════════════════════════════════════════════
+// NÚMERO ANIMADO — cuenta desde 0 hasta el valor real (Dashboard Director)
+// ══════════════════════════════════════════════════════
+const NumeroAnimado = ({ valor, decimales=0, style }) => {
+  const [mostrado, setMostrado] = useState(0);
+  useEffect(() => {
+    const target = valor;
+    const duracion = 750;
+    const inicio = performance.now();
+    const desdeArriba = target === 0 ? 3 : 0;
+    let activo = true;
+    function frame(ahora) {
+      if(!activo)return;
+      const t = Math.min((ahora - inicio) / duracion, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      let v;
+      if (target === 0) {
+        v = t < 0.4 ? (desdeArriba * (t/0.4)) : (desdeArriba * (1 - ((t-0.4)/0.6)));
+        v = Math.max(v, 0);
+      } else {
+        v = target * ease;
+      }
+      setMostrado(v);
+      if (t < 1) requestAnimationFrame(frame);
+      else setMostrado(target);
+    }
+    requestAnimationFrame(frame);
+    return () => { activo = false; };
+  }, [valor]);
+  return <span style={style}>{mostrado.toFixed(decimales)}</span>;
+};
+
+// ══════════════════════════════════════════════════════
 // EDITOR DE DIBUJO SOBRE FOTO (Pro) — punto 5 de pendientes
 // Lápiz libre a mano alzada + paleta básica de colores
 // ══════════════════════════════════════════════════════
@@ -700,6 +732,9 @@ export default function App({ session }) {
   const [vistaHome,            setVistaHome]            = useState("mias");
   const [misEmpresasComoMiembro, setMisEmpresasComoMiembro] = useState<any[]>([]);
   const [modalCompartirObra,   setModalCompartirObra]   = useState(null);
+  const [metricasAyerEmpresa,  setMetricasAyerEmpresa]  = useState<any>(null);
+  const [vistaDirectorCategoria, setVistaDirectorCategoria] = useState<string|null>(null); // "urgencias"|"pendientes"|"resueltas"
+  const [vistaTuEquipo,        setVistaTuEquipo]        = useState(false);
   const cargarEmpresa=async()=>{
     if(!usuarioReal)return;
     const{data:emp}=await supabase.from("empresas").select("id,nombre").eq("director_id",usuarioReal.id).limit(1).maybeSingle();
@@ -709,12 +744,14 @@ export default function App({ session }) {
     setMiembrosEmpresa(miembros||[]);
     const{data:obrasEmp}=await supabase.from("obras").select("*").eq("empresa_id",emp.id);
     const conNovedades=await Promise.all((obrasEmp||[]).map(async o=>{
-      const{data:novs}=await supabase.from("novedades").select("resuelta,fecha_limite").eq("obra_id",o.id);
+      const{data:novs}=await supabase.from("novedades").select("id,descripcion,prioridad,resuelta,estado_aprobacion,responsable,responsable_usuario_id,fecha_limite,created_at,resuelta_at").eq("obra_id",o.id);
       return{...o,novedades:novs||[]};
     }));
     setObrasEmpresa(conNovedades);
     const{data:invsEmp}=await supabase.from("invitaciones_empresa").select("codigo,usada,created_at").eq("empresa_id",emp.id).eq("usada",false);
     setInvitacionesEmpresaPendientes(invsEmp||[]);
+    const{data:metricasAyer}=await supabase.from("metricas_diarias_empresa").select("*").eq("empresa_id",emp.id).lt("fecha",new Date().toISOString().slice(0,10)).order("fecha",{ascending:false}).limit(1).maybeSingle();
+    setMetricasAyerEmpresa(metricasAyer||null);
   };
   const compartirObraConEmpresa=async(obraId,empresaId)=>{
     const{error}=await supabase.from("obras").update({empresa_id:empresaId}).eq("id",obraId);
@@ -1344,6 +1381,66 @@ export default function App({ session }) {
   // ── NOTAS DE VOZ EN COMENTARIOS (punto 1) ──
   const blobABase64=(blob)=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
   const base64ABlob=async(base64)=>(await fetch(base64)).blob();
+  // ══════════════════════════════════════════════════════
+  // ESTADÍSTICAS DEL DASHBOARD DEL DIRECTOR
+  // ══════════════════════════════════════════════════════
+  const calcularStatsEmpresa=()=>{
+    const hoy=new Date().toISOString().slice(0,10);
+    const esUrgente=(n)=>!n.resuelta&&n.estado_aprobacion!=="pendiente"&&n.prioridad===0;
+    const esPendienteAprob=(n)=>!n.resuelta&&n.estado_aprobacion==="pendiente";
+    const esVencida=(n)=>!n.resuelta&&n.fecha_limite&&n.fecha_limite<hoy;
+
+    let totalUrgentes=0,totalPendientes=0,totalResueltas=0,totalVencidas=0;
+    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[];
+
+    obrasEmpresa.forEach(obra=>{
+      const novs=obra.novedades||[];
+      const u=novs.filter(esUrgente).length;
+      const p=novs.filter(esPendienteAprob).length;
+      const r=novs.filter(n=>n.resuelta).length;
+      totalUrgentes+=u;totalPendientes+=p;totalResueltas+=r;
+      totalVencidas+=novs.filter(esVencida).length;
+      const nombreResponsable=miembrosEmpresa.find(m=>m.usuario_id===obra.propietario_id)?.usuarios?.nombre||"Profesional";
+      if(u>0)porObraUrgentes.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:u});
+      if(p>0){
+        const pendientesObra=novs.filter(esPendienteAprob);
+        const masVieja=pendientesObra.reduce((min,n)=>!min||n.created_at<min.created_at?n:min,null);
+        const dias=masVieja?Math.floor((Date.now()-new Date(masVieja.created_at).getTime())/86400000):0;
+        porObraPendientes.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:p,diasMasVieja:dias});
+      }
+      if(r>0)porObraResueltas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:r});
+    });
+
+    // Ranking por profesional
+    const porProfesional=miembrosEmpresa.map(m=>{
+      const obrasDeEste=obrasEmpresa.filter(o=>o.propietario_id===m.usuario_id);
+      const todasNovs=obrasDeEste.flatMap(o=>o.novedades||[]);
+      const urgentes=todasNovs.filter(esUrgente).length;
+      const vencidas=todasNovs.filter(esVencida).length;
+      const resueltas=todasNovs.filter(n=>n.resuelta).length;
+      const total=todasNovs.length;
+      const pctResuelto=total>0?Math.round((resueltas/total)*100):0;
+      const resueltasConFecha=todasNovs.filter(n=>n.resuelta&&n.resuelta_at&&n.created_at);
+      const diasProm=resueltasConFecha.length>0?(resueltasConFecha.reduce((sum,n)=>sum+((new Date(n.resuelta_at).getTime()-new Date(n.created_at).getTime())/86400000),0)/resueltasConFecha.length):0;
+      // Gremio crítico: oficio con más urgentes+vencidas
+      const problemasPorGremio:any={};
+      todasNovs.filter(n=>esUrgente(n)||esVencida(n)).forEach(n=>{problemasPorGremio[n.responsable]=(problemasPorGremio[n.responsable]||0)+1;});
+      const gremioCritico=Object.entries(problemasPorGremio).sort((a:any,b:any)=>b[1]-a[1])[0];
+      // Obra con más atrasos
+      const problemasPorObra:any={};
+      obrasDeEste.forEach(o=>{const c=(o.novedades||[]).filter(n=>esUrgente(n)||esVencida(n)).length;if(c>0)problemasPorObra[o.nombre]=c;});
+      const obraCritica=Object.entries(problemasPorObra).sort((a:any,b:any)=>b[1]-a[1])[0];
+      const estado=vencidas>0||urgentes>=3?"critico":urgentes>0?"atencion":"aldia";
+      return{usuario_id:m.usuario_id,nombre:m.usuarios?.nombre||m.usuarios?.email||"Profesional",obras:obrasDeEste,urgentes,vencidas,resueltas,total,pctResuelto,diasProm,gremioCritico,obraCritica,estado};
+    }).sort((a,b)=>{
+      const orden:any={critico:0,atencion:1,aldia:2};
+      return orden[a.estado]-orden[b.estado]||b.urgentes-a.urgentes;
+    });
+
+    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,porObraUrgentes,porObraPendientes,porObraResueltas,porProfesional,
+      diasPromEmpresa:porProfesional.filter(p=>p.diasProm>0).length>0?(porProfesional.reduce((s,p)=>s+p.diasProm,0)/porProfesional.filter(p=>p.diasProm>0).length):0};
+  };
+
   const cargarBitacora=async()=>{
     if(!usuarioReal)return;
     const{data:items,error}=await supabase.from("bitacora_director").select("*").eq("director_id",usuarioReal.id).order("created_at",{ascending:false});
@@ -1988,6 +2085,124 @@ export default function App({ session }) {
   );
 
   // ─────────────────────────────
+  // DASHBOARD DEL DIRECTOR — nivel 1 por categoría
+  // ─────────────────────────────
+  if(vistaDirectorCategoria){
+    const stats=calcularStatsEmpresa();
+    const CONFIG:any={
+      urgencias:{titulo:"Urgencias",emoji:"🔥",color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",badgeBg:"#FFEDEC",valor:stats.totalUrgentes,lista:stats.porObraUrgentes,filtroDestino:"pendientes",unidad:"urg."},
+      pendientes:{titulo:"Pendientes de aprobación",emoji:"🗂️",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalPendientes,lista:stats.porObraPendientes,filtroDestino:"pendientes",unidad:"pend."},
+      resueltas:{titulo:"Resueltas",emoji:"✓",color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",badgeBg:"#E9F9EE",valor:stats.totalResueltas,lista:stats.porObraResueltas,filtroDestino:"resueltas",unidad:"res."},
+    };
+    const cfg=CONFIG[vistaDirectorCategoria];
+    return(
+      <div style={{...s.root}}>
+        <div style={{padding:"16px 16px 4px",flexShrink:0}}>
+          <button onClick={()=>setVistaDirectorCategoria(null)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"0 0 24px"}}>
+          <div style={{borderRadius:22,padding:18,margin:"0 16px 16px",border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E",background:cfg.bg}}>
+            <p style={{margin:"0 0 4px",fontSize:13,fontWeight:800,textTransform:"uppercase",letterSpacing:0.4,color:cfg.color}}>{cfg.emoji} {cfg.titulo}</p>
+            <p style={{margin:0,fontSize:46,fontWeight:800,letterSpacing:-1.5,lineHeight:1,color:cfg.color}}><NumeroAnimado valor={cfg.valor}/></p>
+            <p style={{margin:"6px 0 0",fontSize:12,color:"#55555A",fontWeight:600}}>repartidas en {cfg.lista.length} obra{cfg.lista.length!==1?"s":""}</p>
+          </div>
+          <p style={{margin:"0 16px 8px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Por obra</p>
+          {cfg.lista.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:20}}>Nada por acá 🎉</p>}
+          {cfg.lista.map(item=>(
+            <div key={item.obraId} onClick={()=>{const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);if(obra){irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}}}
+              style={{background:"#fff",borderRadius:16,padding:"13px 15px",margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 0 #1C1C1E",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <p style={{margin:0,fontSize:14.5,fontWeight:700}}>{item.obraNombre}</p>
+                <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{item.responsable}{item.diasMasVieja!==undefined?` · la más vieja: ${item.diasMasVieja} día${item.diasMasVieja!==1?"s":""}`:""}</p>
+              </div>
+              <div style={{background:cfg.badgeBg,borderRadius:14,padding:"6px 12px",textAlign:"center",flexShrink:0}}>
+                <p style={{margin:0,fontSize:19,fontWeight:800,color:cfg.color,lineHeight:1}}>{item.count}</p>
+                <p style={{margin:"1px 0 0",fontSize:8.5,textTransform:"uppercase",fontWeight:700,color:cfg.color}}>{cfg.unidad}</p>
+              </div>
+              <span style={{color:"#8E8E93",fontSize:16}}>›</span>
+            </div>
+          ))}
+        </div>
+        <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);setVistaDirectorCategoria(null);irInicio();}} onPerfil={()=>{setVistaDirectorCategoria(null);setVistaPerfil(true);}} />
+      </div>
+    );
+  }
+
+  // ─────────────────────────────
+  // DASHBOARD DEL DIRECTOR — Tu equipo (ranking)
+  // ─────────────────────────────
+  if(vistaTuEquipo){
+    const stats=calcularStatsEmpresa();
+    const ESTADO_CFG:any={
+      critico:{emoji:"🔴",label:"Crítico",bg:"#FFEDEC",color:"#D0342C"},
+      atencion:{emoji:"🟡",label:"Atención",bg:"#FFF6E0",color:"#9a6b00"},
+      aldia:{emoji:"🟢",label:"Al día",bg:"#E9F9EE",color:"#1a8a3d"},
+    };
+    return(
+      <div style={{...s.root}}>
+        <div style={{padding:"16px 16px 4px",flexShrink:0}}>
+          <button onClick={()=>setVistaTuEquipo(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
+          <p style={{fontSize:24,margin:0,fontWeight:800,letterSpacing:-0.4}}>Tu equipo</p>
+          <p style={{fontSize:12.5,color:"#55555A",margin:"4px 0 0"}}>{miembrosEmpresa.length} profesional{miembrosEmpresa.length!==1?"es":""} en {nombreEstudio||empresaPropia?.nombre}</p>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"0 0 24px"}}>
+          <div style={{display:"flex",gap:10,margin:"16px 16px"}}>
+            <div style={{flex:1,background:"#fff",border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E",borderRadius:18,padding:14}}>
+              <p style={{margin:"0 0 6px",fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:0.3,color:"#55555A"}}>Tiempo prom. de resolución</p>
+              <p style={{margin:0,fontSize:26,fontWeight:800,letterSpacing:-0.5,color:"#7C5CFC"}}><NumeroAnimado valor={stats.diasPromEmpresa} decimales={1}/> <span style={{fontSize:14,fontWeight:600,color:"#55555A"}}>días</span></p>
+            </div>
+            <div style={{flex:1,background:"#fff",border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E",borderRadius:18,padding:14}}>
+              <p style={{margin:"0 0 6px",fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:0.3,color:"#55555A"}}>Vencidas ahora</p>
+              <p style={{margin:0,fontSize:26,fontWeight:800,letterSpacing:-0.5,color:"#FF3B30"}}><NumeroAnimado valor={stats.totalVencidas}/></p>
+            </div>
+          </div>
+
+          <div style={{height:1.5,background:"#E5E5EA",margin:"6px 16px 18px"}}/>
+
+          <p style={{margin:"0 16px 10px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Profesionales</p>
+          {stats.porProfesional.map(p=>{
+            const ec=ESTADO_CFG[p.estado];
+            const circ=2*Math.PI*27;
+            return(
+              <div key={p.usuario_id} style={{background:"#fff",borderRadius:18,padding:15,margin:"0 16px 10px",border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E"}}>
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+                  <div style={{width:44,height:44,borderRadius:"50%",background:ec.bg,color:ec.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800,flexShrink:0,border:`3px solid ${ec.color}`}}>{p.nombre[0]?.toUpperCase()}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <p style={{margin:0,fontSize:15,fontWeight:800}}>{p.nombre}</p>
+                    <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{p.obras.length} obra{p.obras.length!==1?"s":""}{p.obras.length>0?` · ${p.obras.map(o=>o.nombre).join(", ")}`:""}</p>
+                  </div>
+                  <span style={{fontSize:11,fontWeight:800,padding:"5px 11px",borderRadius:99,background:ec.bg,color:ec.color,whiteSpace:"nowrap"}}>{ec.emoji} {ec.label}</span>
+                </div>
+                <div style={{display:"flex",gap:16,alignItems:"center",borderTop:"1px solid #F0F0F2",paddingTop:14}}>
+                  <div style={{position:"relative",width:64,height:64,flexShrink:0}}>
+                    <svg width="64" height="64" viewBox="0 0 64 64">
+                      <circle cx="32" cy="32" r="27" fill="none" stroke="#F2F2F7" strokeWidth="7"/>
+                      <circle cx="32" cy="32" r="27" fill="none" stroke={ec.color} strokeWidth="7" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ-(circ*p.pctResuelto/100)} transform="rotate(-90 32 32)"/>
+                    </svg>
+                    <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                      <span style={{fontSize:15,fontWeight:800,lineHeight:1}}>{p.pctResuelto}%</span>
+                      <span style={{fontSize:7,color:"#8E8E93",textTransform:"uppercase",fontWeight:700}}>Resuelto</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p style={{margin:0,fontSize:24,fontWeight:800,letterSpacing:-0.4}}>{p.diasProm.toFixed(1)}</p>
+                    <p style={{margin:"2px 0 0",fontSize:9.5,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.3}}>Días prom. de resolución</p>
+                  </div>
+                </div>
+                {(p.gremioCritico||p.obraCritica)&&<div style={{display:"flex",flexDirection:"column",gap:6,marginTop:12}}>
+                  {p.gremioCritico&&<div style={{display:"flex",alignItems:"center",gap:8,background:"#FFF6E0",borderRadius:11,padding:"8px 11px"}}><span style={{fontSize:14}}>🔧</span><span style={{fontSize:12,fontWeight:700,color:"#9a6b00"}}>Gremio con más atrasos: <b style={{color:"#7a5400"}}>{p.gremioCritico[0]}</b> ({p.gremioCritico[1]})</span></div>}
+                  {p.obraCritica&&<div style={{display:"flex",alignItems:"center",gap:8,background:"#FFF6E0",borderRadius:11,padding:"8px 11px"}}><span style={{fontSize:14}}>📍</span><span style={{fontSize:12,fontWeight:700,color:"#9a6b00"}}>Obra con más atrasos: <b style={{color:"#7a5400"}}>{p.obraCritica[0]}</b> ({p.obraCritica[1]})</span></div>}
+                </div>}
+              </div>
+            );
+          })}
+        </div>
+        <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);setVistaTuEquipo(false);irInicio();}} onPerfil={()=>{setVistaTuEquipo(false);setVistaPerfil(true);}} />
+      </div>
+    );
+  }
+
+  // ─────────────────────────────
   // PERFIL
   // ─────────────────────────────
   if(vistaBitacora){
@@ -2259,36 +2474,27 @@ export default function App({ session }) {
           ):(
             <>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E",flex:1}}>{nombreEstudio||empresaPropia.nombre}</p>
+                <p onClick={()=>setVistaTuEquipo(true)} style={{margin:0,fontSize:19,fontWeight:800,color:"#007AFF",flex:1,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>{nombreEstudio||empresaPropia.nombre} <span style={{fontSize:15}}>›</span></p>
                 <button onClick={()=>setVistaBitacora(true)} style={{background:"#F7F5FF",color:"#7C5CFC",border:"1.5px solid #D9CFFF",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>📔 Bitácora</button>
                 <button onClick={()=>setModalInvitarArq(true)} style={{background:"#2E3A4B",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Invitar</button>
               </div>
-              {miembrosEmpresa.map(m=>{
-                const obrasDeEste=obrasEmpresa.filter(o=>o.propietario_id===m.usuario_id);
-                const todasNovs=obrasDeEste.flatMap(o=>o.novedades||[]);
-                const pend=todasNovs.filter(n=>!n.resuelta).length;
-                const venc=todasNovs.filter(n=>!n.resuelta&&diasRestantes(n.fecha_limite)<0).length;
-                const res=todasNovs.filter(n=>n.resuelta).length;
-                const nombre=m.usuarios?.nombre||m.usuarios?.email||"Profesional";
-                return(
-                  <div key={m.usuario_id} style={{background:"#fff",borderRadius:18,padding:"16px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-                      <div style={{width:38,height:38,borderRadius:"50%",background:"#2E3A4B",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:15,flexShrink:0}}>{nombre[0]?.toUpperCase()}</div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <p style={{margin:0,fontSize:14,fontWeight:800,color:"#1C1C1E"}}>{nombre}</p>
-                        <p style={{margin:0,fontSize:11,color:"#55555A"}}>{obrasDeEste.length} obra{obrasDeEste.length!==1?"s":""}</p>
-                      </div>
-                      {venc>0?<span style={{fontSize:11,fontWeight:700,color:"#FF3B30",background:"#FFF0EE",padding:"4px 10px",borderRadius:99}}>🔴 Atención</span>:pend===0?<span style={{fontSize:11,fontWeight:700,color:"#34C759",background:"#EDFAF1",padding:"4px 10px",borderRadius:99}}>✅ Al día</span>:null}
-                    </div>
-                    <div style={{display:"flex",gap:6}}>
-                      <div style={{flex:1,background:"#FFF3E8",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:15,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
-                      <div style={{flex:1,background:"#FFF0EE",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:15,fontWeight:900,color:"#FF3B30"}}>{venc}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF6B60",textTransform:"uppercase"}}>Venc.</p></div>
-                      <div style={{flex:1,background:"#EDFAF1",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:15,fontWeight:900,color:"#28A745"}}>{res}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#34C759",textTransform:"uppercase"}}>Res.</p></div>
-                    </div>
-                    {obrasDeEste.length===0&&<p style={{margin:"10px 0 0",fontSize:11,color:"#C7C7CC",textAlign:"center"}}>Todavía no cargó ninguna obra</p>}
+
+              {(()=>{
+                const stats=calcularStatsEmpresa();
+                const PASTILLAS=[
+                  {key:"urgencias",emoji:"🔥",label:"Urgencias",valor:stats.totalUrgentes,color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",sub:`en ${stats.porObraUrgentes.length} obra${stats.porObraUrgentes.length!==1?"s":""}`},
+                  {key:"pendientes",emoji:"🗂️",label:"Pendientes de aprobación",valor:stats.totalPendientes,color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",sub:stats.porObraPendientes.length>0?`la más vieja: ${Math.max(...stats.porObraPendientes.map(o=>o.diasMasVieja))} días`:"nada esperando"},
+                  {key:"resueltas",emoji:"✓",label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`},
+                ];
+                return PASTILLAS.map(p=>(
+                  <div key={p.key} onClick={()=>setVistaDirectorCategoria(p.key)} style={{borderRadius:22,padding:18,border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E",background:p.bg,cursor:"pointer"}}>
+                    <p style={{margin:"0 0 4px",fontSize:12.5,fontWeight:800,textTransform:"uppercase",letterSpacing:0.4,color:p.color}}>{p.emoji} {p.label}</p>
+                    <p style={{margin:0,fontSize:42,fontWeight:800,letterSpacing:-1.5,lineHeight:1,color:p.color}}><NumeroAnimado valor={p.valor}/></p>
+                    <p style={{margin:"6px 0 0",fontSize:11.5,color:"#55555A",fontWeight:600}}>{p.sub}</p>
                   </div>
-                );
-              })}
+                ));
+              })()}
+
               {invitacionesEmpresaPendientes.length>0&&<div style={{background:"#FFF9E8",borderRadius:14,padding:"12px 14px"}}>
                 <p style={{margin:"0 0 6px",fontSize:12,fontWeight:700,color:"#B8860B"}}>⏳ {invitacionesEmpresaPendientes.length} invitación{invitacionesEmpresaPendientes.length!==1?"es":""} pendiente{invitacionesEmpresaPendientes.length!==1?"s":""}</p>
                 {invitacionesEmpresaPendientes.map(inv=>(
