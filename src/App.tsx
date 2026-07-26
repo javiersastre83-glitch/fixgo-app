@@ -737,6 +737,7 @@ export default function App({ session }) {
   const [filtroObraAlertas,      setFiltroObraAlertas]      = useState<any>(null); // {id,nombre} o null = todas
   const [origenDirectorCategoria,setOrigenDirectorCategoria]= useState<string|null>(null); // para que "volver" desde una obra vuelva a la pastilla correcta
   const [vistaTuEquipo,        setVistaTuEquipo]        = useState(false);
+  const [vistaProfesionales,   setVistaProfesionales]   = useState(false);
   const cargarEmpresa=async()=>{
     if(!usuarioReal)return;
     const{data:emp}=await supabase.from("empresas").select("id,nombre").eq("director_id",usuarioReal.id).limit(1).maybeSingle();
@@ -2112,7 +2113,7 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>setVistaDirectorCategoria(null)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
+          <button onClick={()=>{setVistaDirectorCategoria(null);setTabActiva("obras");irInicio();}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"0 0 24px"}}>
           <div style={{borderRadius:18,padding:18,margin:"0 16px 16px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:cfg.bg}}>
@@ -2128,7 +2129,7 @@ export default function App({ session }) {
                 const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);
                 if(obra){setOrigenDirectorCategoria(vistaDirectorCategoria);irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}
               }}
-              style={{background:"#fff",borderRadius:16,padding:"13px 15px",margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 0 #1C1C1E",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+              style={{background:"#fff",borderRadius:16,padding:"13px 15px",margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
               <div style={{flex:1,minWidth:0}}>
                 <p style={{margin:0,fontSize:14.5,fontWeight:700}}>{item.obraNombre}</p>
                 <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{item.responsable}{item.diasMasVieja!==undefined?` · la más vieja: ${item.diasMasVieja} día${item.diasMasVieja!==1?"s":""}`:""}</p>
@@ -2149,6 +2150,44 @@ export default function App({ session }) {
   // ─────────────────────────────
   // DASHBOARD DEL DIRECTOR — Tu equipo (ranking)
   // ─────────────────────────────
+  // ─────────────────────────────
+  // DASHBOARD DEL DIRECTOR — Profesionales (directorio de contacto)
+  // ─────────────────────────────
+  if(vistaProfesionales){
+    return(
+      <div style={{...s.root}}>
+        <div style={{padding:"16px 16px 4px",flexShrink:0}}>
+          <button onClick={()=>setVistaProfesionales(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
+          <p style={{fontSize:24,margin:0,fontWeight:800,letterSpacing:-0.4}}>Profesionales</p>
+          <p style={{fontSize:12.5,color:"#55555A",margin:"4px 0 0"}}>{miembrosEmpresa.length} en {nombreEstudio||empresaPropia?.nombre}</p>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"16px 0 24px"}}>
+          {miembrosEmpresa.map(m=>{
+            const obrasDeEste=obrasEmpresa.filter(o=>o.propietario_id===m.usuario_id);
+            const nombre=m.usuarios?.nombre||m.usuarios?.email||"Profesional";
+            const email=m.usuarios?.email;
+            return(
+              <div key={m.usuario_id} style={{background:"#fff",borderRadius:18,padding:15,margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A"}}>
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:email?12:0}}>
+                  <div style={{width:44,height:44,borderRadius:"50%",background:"#EFE9FF",color:"#7C5CFC",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800,flexShrink:0}}>{nombre[0]?.toUpperCase()}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <p style={{margin:0,fontSize:15,fontWeight:800}}>{nombre}</p>
+                    <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{obrasDeEste.length} obra{obrasDeEste.length!==1?"s":""} a cargo{obrasDeEste.length>0?`: ${obrasDeEste.map(o=>o.nombre).join(", ")}`:""}</p>
+                  </div>
+                </div>
+                {email&&<a href={`mailto:${email}`} style={{display:"flex",alignItems:"center",gap:8,background:"#F2F2F7",borderRadius:12,padding:"9px 12px",textDecoration:"none"}}>
+                  <span style={{fontSize:14}}>✉️</span><span style={{fontSize:12.5,fontWeight:600,color:"#1C1C1E"}}>{email}</span>
+                </a>}
+              </div>
+            );
+          })}
+          {miembrosEmpresa.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:30}}>Todavía no invitaste a nadie.</p>}
+        </div>
+        <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);setVistaProfesionales(false);irInicio();}} onPerfil={()=>{setVistaProfesionales(false);setVistaPerfil(true);}} />
+      </div>
+    );
+  }
+
   if(vistaTuEquipo){
     const stats=calcularStatsEmpresa();
     const ESTADO_CFG:any={
@@ -2495,7 +2534,7 @@ export default function App({ session }) {
           ):(
             <>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                <p style={{margin:0,fontSize:19,fontWeight:800,color:"#1C1C1E",flex:1}}>{nombreEstudio||empresaPropia.nombre}</p>
+                <p onClick={()=>setVistaProfesionales(true)} style={{margin:0,fontSize:19,fontWeight:800,color:"#007AFF",flex:1,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>{nombreEstudio||empresaPropia.nombre} <span style={{fontSize:15}}>›</span></p>
                 <button onClick={()=>setVistaBitacora(true)} style={{background:"#F7F5FF",color:"#7C5CFC",border:"1.5px solid #D9CFFF",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>📔 Bitácora</button>
                 <button onClick={()=>setModalInvitarArq(true)} style={{background:"#2E3A4B",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Invitar</button>
               </div>
@@ -2524,7 +2563,7 @@ export default function App({ session }) {
                 ))}
 
                 <div onClick={()=>setVistaTuEquipo(true)} style={{borderRadius:18,padding:18,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:"#fff",cursor:"pointer"}}>
-                  <p style={{margin:"0 0 12px",fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"space-between"}}>📈 Tu equipo <span style={{color:"#8E8E93",fontSize:16}}>›</span></p>
+                  <p style={{margin:"0 0 12px",fontSize:15,fontWeight:800,color:"#007AFF",display:"flex",alignItems:"center",justifyContent:"space-between"}}>📈 Tu equipo <span style={{fontSize:16}}>›</span></p>
                   <div style={{display:"flex",gap:10,marginBottom:stats.porProfesional.filter(p=>p.estado!=="aldia").length>0?12:0}}>
                     <div style={{flex:1,background:"#F7F5FF",borderRadius:12,padding:10}}>
                       <p style={{margin:0,fontSize:9.5,color:"#7C5CFC",textTransform:"uppercase",letterSpacing:0.3,fontWeight:800}}>Tiempo prom.</p>
