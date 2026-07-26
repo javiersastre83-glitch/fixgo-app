@@ -1390,15 +1390,16 @@ export default function App({ session }) {
     const esPendienteAprob=(n)=>!n.resuelta&&n.estado_aprobacion==="pendiente";
     const esVencida=(n)=>!n.resuelta&&n.fecha_limite&&n.fecha_limite<hoy;
 
-    let totalUrgentes=0,totalPendientes=0,totalResueltas=0,totalVencidas=0;
-    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[];
+    let totalUrgentes=0,totalPendientes=0,totalResueltas=0,totalVencidas=0,totalNovedades=0;
+    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[],porObraNovedades:any[]=[];
+    const previewUrgentes:any[]=[],previewNovedades:any[]=[],previewResueltas:any[]=[];
 
     obrasEmpresa.forEach(obra=>{
       const novs=obra.novedades||[];
       const u=novs.filter(esUrgente).length;
       const p=novs.filter(esPendienteAprob).length;
       const r=novs.filter(n=>n.resuelta).length;
-      totalUrgentes+=u;totalPendientes+=p;totalResueltas+=r;
+      totalUrgentes+=u;totalPendientes+=p;totalResueltas+=r;totalNovedades+=novs.length;
       totalVencidas+=novs.filter(esVencida).length;
       const nombreResponsable=miembrosEmpresa.find(m=>m.usuario_id===obra.propietario_id)?.usuarios?.nombre||"Profesional";
       if(u>0)porObraUrgentes.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:u});
@@ -1409,6 +1410,10 @@ export default function App({ session }) {
         porObraPendientes.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:p,diasMasVieja:dias});
       }
       if(r>0)porObraResueltas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:r});
+      if(novs.length>0)porObraNovedades.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:novs.length});
+      novs.filter(esUrgente).forEach(n=>previewUrgentes.push({texto:n.descripcion,obraNombre:obra.nombre}));
+      novs.forEach(n=>previewNovedades.push({texto:n.descripcion,obraNombre:obra.nombre}));
+      novs.filter(n=>n.resuelta).forEach(n=>previewResueltas.push({texto:n.descripcion,obraNombre:obra.nombre}));
     });
 
     // Ranking por profesional
@@ -1437,7 +1442,7 @@ export default function App({ session }) {
       return orden[a.estado]-orden[b.estado]||b.urgentes-a.urgentes;
     });
 
-    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,porObraUrgentes,porObraPendientes,porObraResueltas,porProfesional,
+    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,previewUrgentes,previewNovedades,previewResueltas,porProfesional,
       diasPromEmpresa:porProfesional.filter(p=>p.diasProm>0).length>0?(porProfesional.reduce((s,p)=>s+p.diasProm,0)/porProfesional.filter(p=>p.diasProm>0).length):0};
   };
 
@@ -1458,11 +1463,18 @@ export default function App({ session }) {
     }
   };
   const guardarEnBitacora=async(novedadId)=>{
-    if(!usuarioReal)return;
+    if(!usuarioReal)return null;
     const{data,error}=await supabase.from("bitacora_director").insert({director_id:usuarioReal.id,novedad_id:novedadId}).select().single();
-    if(error){alert("No se pudo guardar en la Bitácora: "+error.message);return;}
+    if(error){alert("No se pudo guardar en la Bitácora: "+error.message);return null;}
     setBitacoraItems(b=>[data,...b]);
-    mostrarToast("Guardada en tu Bitácora");
+    return data;
+  };
+  const agregarNotaBitacoraAuto=async(novedadId,miEntrada,texto)=>{
+    if(!texto.trim())return;
+    let entrada=miEntrada;
+    if(!entrada)entrada=await guardarEnBitacora(novedadId);
+    if(!entrada)return;
+    await agregarNotaBitacora(entrada.id,texto);
   };
   const sacarDeBitacora=async(bitacoraId)=>{
     const{error}=await supabase.from("bitacora_director").delete().eq("id",bitacoraId);
@@ -2090,8 +2102,7 @@ export default function App({ session }) {
   if(vistaDirectorCategoria){
     const stats=calcularStatsEmpresa();
     const CONFIG:any={
-      urgencias:{titulo:"Urgencias",emoji:"🔥",color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",badgeBg:"#FFEDEC",valor:stats.totalUrgentes,lista:stats.porObraUrgentes,filtroDestino:"pendientes",unidad:"urg."},
-      pendientes:{titulo:"Pendientes de aprobación",emoji:"🗂️",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalPendientes,lista:stats.porObraPendientes,filtroDestino:"pendientes",unidad:"pend."},
+      novedades:{titulo:"Novedades",emoji:"📋",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalNovedades,lista:stats.porObraNovedades,filtroDestino:"todas",unidad:"nov."},
       resueltas:{titulo:"Resueltas",emoji:"✓",color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",badgeBg:"#E9F9EE",valor:stats.totalResueltas,lista:stats.porObraResueltas,filtroDestino:"resueltas",unidad:"res."},
     };
     const cfg=CONFIG[vistaDirectorCategoria];
@@ -2348,8 +2359,9 @@ export default function App({ session }) {
   if(tabActiva==="alertas"&&vistaRaiz==="inicio"){
     // Generar alertas dinámicas desde todas las obras
     const alertasDinamicas = [];
-    obras.forEach(obra => {
-      const novs = novedadesPorObra[obra.id] || [];
+    const obrasParaAlertas=[...obras,...obrasEmpresa.filter(oe=>!obras.some(o=>o.id===oe.id)).map(oe=>({...oe,novedades:(oe.novedades||[]).map(n=>({...n,fechaLimite:n.fecha_limite}))}))];
+    obrasParaAlertas.forEach(obra => {
+      const novs = obra.novedades||novedadesPorObra[obra.id] || [];
       novs.forEach(nov => {
         if (nov.resuelta) return;
         const d = diasRestantes(nov.fechaLimite);
@@ -2376,7 +2388,7 @@ export default function App({ session }) {
     alertasDinamicas.sort((a,b)=>a.orden-b.orden);
 
     const irAAlerta = (alerta) => {
-      const obra = obras.find(o=>o.id===alerta.obraId);
+      const obra = obras.find(o=>o.id===alerta.obraId)||obrasEmpresa.find(o=>o.id===alerta.obraId);
       if (!obra) return;
       setObraActual(obra);
       setVistaRaiz("obra");
@@ -2474,7 +2486,7 @@ export default function App({ session }) {
           ):(
             <>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                <p onClick={()=>setVistaTuEquipo(true)} style={{margin:0,fontSize:19,fontWeight:800,color:"#007AFF",flex:1,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>{nombreEstudio||empresaPropia.nombre} <span style={{fontSize:15}}>›</span></p>
+                <p style={{margin:0,fontSize:19,fontWeight:800,color:"#1C1C1E",flex:1}}>{nombreEstudio||empresaPropia.nombre}</p>
                 <button onClick={()=>setVistaBitacora(true)} style={{background:"#F7F5FF",color:"#7C5CFC",border:"1.5px solid #D9CFFF",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>📔 Bitácora</button>
                 <button onClick={()=>setModalInvitarArq(true)} style={{background:"#2E3A4B",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Invitar</button>
               </div>
@@ -2482,17 +2494,47 @@ export default function App({ session }) {
               {(()=>{
                 const stats=calcularStatsEmpresa();
                 const PASTILLAS=[
-                  {key:"urgencias",emoji:"🔥",label:"Urgencias",valor:stats.totalUrgentes,color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",sub:`en ${stats.porObraUrgentes.length} obra${stats.porObraUrgentes.length!==1?"s":""}`},
-                  {key:"pendientes",emoji:"🗂️",label:"Pendientes de aprobación",valor:stats.totalPendientes,color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",sub:stats.porObraPendientes.length>0?`la más vieja: ${Math.max(...stats.porObraPendientes.map(o=>o.diasMasVieja))} días`:"nada esperando"},
-                  {key:"resueltas",emoji:"✓",label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`},
+                  {key:"urgencias",emoji:"🔥",label:"Urgencias",valor:stats.totalUrgentes,color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",sub:`en ${stats.porObraUrgentes.length} obra${stats.porObraUrgentes.length!==1?"s":""}`,preview:stats.previewUrgentes,onTap:()=>setTabActiva("alertas")},
+                  {key:"novedades",emoji:"📋",label:"Novedades",valor:stats.totalNovedades,color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",sub:`en ${stats.porObraNovedades.length} obra${stats.porObraNovedades.length!==1?"s":""}`,preview:stats.previewNovedades,onTap:()=>setVistaDirectorCategoria("novedades")},
+                  {key:"resueltas",emoji:"✓",label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`,preview:stats.previewResueltas,onTap:()=>setVistaDirectorCategoria("resueltas")},
                 ];
-                return PASTILLAS.map(p=>(
-                  <div key={p.key} onClick={()=>setVistaDirectorCategoria(p.key)} style={{borderRadius:18,padding:18,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:p.bg,cursor:"pointer"}}>
+                return<>
+                {PASTILLAS.map(p=>(
+                  <div key={p.key} onClick={p.onTap} style={{borderRadius:18,padding:18,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:p.bg,cursor:"pointer"}}>
                     <p style={{margin:"0 0 4px",fontSize:12.5,fontWeight:800,textTransform:"uppercase",letterSpacing:0.4,color:p.color}}>{p.emoji} {p.label}</p>
                     <p style={{margin:0,fontSize:42,fontWeight:800,letterSpacing:-1.5,lineHeight:1,color:p.color}}><NumeroAnimado valor={p.valor}/></p>
                     <p style={{margin:"6px 0 0",fontSize:11.5,color:"#55555A",fontWeight:600}}>{p.sub}</p>
+                    {p.preview.slice(0,3).map((it,i)=>(
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 2px 0",marginTop:9,borderTop:i===0?"1px solid rgba(0,0,0,0.07)":"none"}}>
+                        <span style={{width:6,height:6,borderRadius:"50%",background:p.color,flexShrink:0}}/>
+                        <span style={{fontSize:12.5,fontWeight:600,color:"#1C1C1E",flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{it.texto}</span>
+                        <span style={{fontSize:10.5,color:"#55555A",fontWeight:600,flexShrink:0}}>{it.obraNombre}</span>
+                      </div>
+                    ))}
                   </div>
-                ));
+                ))}
+
+                <div onClick={()=>setVistaTuEquipo(true)} style={{borderRadius:18,padding:18,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:"#fff",cursor:"pointer"}}>
+                  <p style={{margin:"0 0 12px",fontSize:15,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"space-between"}}>📈 Tu equipo <span style={{color:"#8E8E93",fontSize:16}}>›</span></p>
+                  <div style={{display:"flex",gap:10,marginBottom:stats.porProfesional.filter(p=>p.estado!=="aldia").length>0?12:0}}>
+                    <div style={{flex:1,background:"#F7F5FF",borderRadius:12,padding:10}}>
+                      <p style={{margin:0,fontSize:9.5,color:"#7C5CFC",textTransform:"uppercase",letterSpacing:0.3,fontWeight:800}}>Tiempo prom.</p>
+                      <p style={{margin:"3px 0 0",fontSize:18,fontWeight:800}}>{stats.diasPromEmpresa.toFixed(1)} <span style={{fontSize:11,fontWeight:600,color:"#55555A"}}>días</span></p>
+                    </div>
+                    <div style={{flex:1,background:"#FFEDEC",borderRadius:12,padding:10}}>
+                      <p style={{margin:0,fontSize:9.5,color:"#D0342C",textTransform:"uppercase",letterSpacing:0.3,fontWeight:800}}>Vencidas</p>
+                      <p style={{margin:"3px 0 0",fontSize:18,fontWeight:800,color:"#D0342C"}}>{stats.totalVencidas}</p>
+                    </div>
+                  </div>
+                  {stats.porProfesional.filter(p=>p.estado!=="aldia").slice(0,2).map(p=>(
+                    <div key={p.usuario_id} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 0"}}>
+                      <span style={{width:22,height:22,borderRadius:"50%",background:p.estado==="critico"?"#FFEDEC":"#FFF6E0",color:p.estado==="critico"?"#D0342C":"#9a6b00",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0}}>{p.nombre[0]?.toUpperCase()}</span>
+                      <span style={{fontSize:12.5,fontWeight:700,flex:1}}>{p.nombre}</span>
+                      <span style={{fontSize:11.5,fontWeight:700,color:p.estado==="critico"?"#D0342C":"#9a6b00"}}>{p.urgentes} urgente{p.urgentes!==1?"s":""}</span>
+                    </div>
+                  ))}
+                </div>
+                </>;
               })()}
 
               {invitacionesEmpresaPendientes.length>0&&<div style={{background:"#FFF9E8",borderRadius:14,padding:"12px 14px"}}>
@@ -3217,50 +3259,6 @@ export default function App({ session }) {
             </div>
           ):null}
 
-          {(empresaPropia&&obraActual?.empresa_id===empresaPropia.id)&&(()=>{
-            const miEntrada=bitacoraItems.find(b=>b.novedad_id===detalle.id);
-            const notas=miEntrada?(notasBitacora[miEntrada.id]||[]):[];
-            return(
-              <div style={{background:"linear-gradient(135deg,#F7F5FF,#FBFAFF)",border:"1.5px dashed #D9CFFF",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
-                <p style={{margin:"0 0 10px",fontSize:15,fontWeight:800,color:"#7C5CFC",display:"flex",alignItems:"center",gap:7}}>📔 Mi Bitácora</p>
-                {!miEntrada?(
-                  <button onClick={()=>guardarEnBitacora(detalle.id)} style={{width:"100%",background:"#7C5CFC",color:"#fff",border:"none",borderRadius:14,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer"}}>+ Guardar en mi Bitácora</button>
-                ):(<>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:miEntrada.hablado?"#EAFBEF":"#fff",borderRadius:12,padding:"9px 12px",marginBottom:12,border:"1.5px solid "+(miEntrada.hablado?"#34C759":"#E5E5EA")}}>
-                    <span onClick={()=>toggleHabladoBitacora(miEntrada.id,!miEntrada.hablado)} style={{fontSize:12.5,fontWeight:700,color:miEntrada.hablado?"#1a8a3d":"#55555A",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-                      {miEntrada.hablado?"✓ Hablado con el equipo":"○ Marcar como hablado"}
-                    </span>
-                    <span onClick={()=>{if(confirm("¿Sacar esta novedad de tu Bitácora? Se borran también las notas."))sacarDeBitacora(miEntrada.id);}} style={{fontSize:11,color:"#D0342C",fontWeight:600,cursor:"pointer"}}>Quitar</span>
-                  </div>
-
-                  {notas.map(nota=>(
-                    <div key={nota.id} style={{background:"#fff",borderRadius:12,padding:"10px 12px",marginBottom:8}}>
-                      {notaEditando?.notaId===nota.id?(<>
-                        <textarea autoFocus value={notaEditando.texto} onChange={e=>setNotaEditando(x=>({...x,texto:e.target.value}))} style={{width:"100%",border:"1px solid #E5E5EA",borderRadius:8,padding:8,fontSize:13.5,fontFamily:"inherit",resize:"none",minHeight:44}}/>
-                        <div style={{display:"flex",gap:10,marginTop:6}}>
-                          <span onClick={()=>editarNotaBitacora(miEntrada.id,nota.id,notaEditando.texto)} style={{fontSize:11,color:"#34C759",fontWeight:700,cursor:"pointer"}}>Guardar</span>
-                          <span onClick={()=>setNotaEditando(null)} style={{fontSize:11,color:"#55555A",fontWeight:600,cursor:"pointer"}}>Cancelar</span>
-                        </div>
-                      </>):(<>
-                        <p style={{margin:"0 0 4px",fontSize:10,color:"#B0B0B5"}}>{formatHora(new Date(nota.created_at).getTime())}</p>
-                        <p style={{margin:0,fontSize:13.5,lineHeight:1.4}}>{nota.texto}</p>
-                        <div style={{display:"flex",gap:12,marginTop:6}}>
-                          <span onClick={()=>setNotaEditando({bitacoraId:miEntrada.id,notaId:nota.id,texto:nota.texto})} style={{fontSize:11,color:"#55555A",fontWeight:600,cursor:"pointer"}}>Editar</span>
-                          <span onClick={()=>borrarNotaBitacora(miEntrada.id,nota.id)} style={{fontSize:11,color:"#D0342C",fontWeight:600,cursor:"pointer"}}>Eliminar</span>
-                        </div>
-                      </>)}
-                    </div>
-                  ))}
-
-                  <div style={{display:"flex",gap:8,marginTop:4}}>
-                    <input value={nuevaNotaTexto} onChange={e=>setNuevaNotaTexto(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarNotaBitacora(miEntrada.id,nuevaNotaTexto)} placeholder="Agregar nota..." style={{flex:1,background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:12,padding:"10px 13px",fontSize:13.5}}/>
-                    <button onClick={()=>agregarNotaBitacora(miEntrada.id,nuevaNotaTexto)} style={{width:40,height:40,background:"#7C5CFC",border:"none",borderRadius:12,color:"#fff",fontSize:16,flexShrink:0,cursor:"pointer"}}>＋</button>
-                  </div>
-                </>)}
-              </div>
-            );
-          })()}
-
           <div style={{background:"#fff",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
           <div onClick={()=>setComentariosAbiertos(a=>!a)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:comentariosAbiertos?12:0}}>
             <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E"}}>💬 Comentarios <span style={{color:"#B0B0B5",fontWeight:600}}>({detalle.comentarios.length})</span></p>
@@ -3300,6 +3298,52 @@ export default function App({ session }) {
             )}
           </div>
           </div>
+
+          {(empresaPropia&&obraActual?.empresa_id===empresaPropia.id)&&(()=>{
+            const miEntrada=bitacoraItems.find(b=>b.novedad_id===detalle.id);
+            const notas=miEntrada?(notasBitacora[miEntrada.id]||[]):[];
+            return(
+              <div style={{background:"linear-gradient(135deg,#F7F5FF,#FBFAFF)",border:"1.5px dashed #D9CFFF",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                  <p style={{margin:0,fontSize:15,fontWeight:800,color:"#7C5CFC",display:"flex",alignItems:"center",gap:7}}>📔 Mi Bitácora</p>
+                  {miEntrada&&<span onClick={()=>{if(confirm("¿Sacar esta novedad de tu Bitácora? Se borran también las notas."))sacarDeBitacora(miEntrada.id);}} style={{fontSize:11,color:"#D0342C",fontWeight:600,cursor:"pointer"}}>Quitar</span>}
+                </div>
+
+                {miEntrada&&<div style={{display:"flex",alignItems:"center",background:miEntrada.hablado?"#EAFBEF":"#fff",borderRadius:12,padding:"9px 12px",marginBottom:12,border:"1.5px solid "+(miEntrada.hablado?"#34C759":"#E5E5EA")}}>
+                  <span onClick={()=>toggleHabladoBitacora(miEntrada.id,!miEntrada.hablado)} style={{fontSize:12.5,fontWeight:700,color:miEntrada.hablado?"#1a8a3d":"#55555A",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                    {miEntrada.hablado?"✓ Hablado con el equipo":"○ Marcar como hablado"}
+                  </span>
+                </div>}
+
+                {notas.map(nota=>(
+                  <div key={nota.id} style={{background:"#fff",borderRadius:12,padding:"10px 12px",marginBottom:8}}>
+                    {notaEditando?.notaId===nota.id?(<>
+                      <textarea autoFocus value={notaEditando.texto} onChange={e=>setNotaEditando(x=>({...x,texto:e.target.value}))} style={{width:"100%",border:"1px solid #E5E5EA",borderRadius:8,padding:8,fontSize:13.5,fontFamily:"inherit",resize:"none",minHeight:44}}/>
+                      <div style={{display:"flex",gap:10,marginTop:6}}>
+                        <span onClick={()=>editarNotaBitacora(miEntrada.id,nota.id,notaEditando.texto)} style={{fontSize:11,color:"#34C759",fontWeight:700,cursor:"pointer"}}>Guardar</span>
+                        <span onClick={()=>setNotaEditando(null)} style={{fontSize:11,color:"#55555A",fontWeight:600,cursor:"pointer"}}>Cancelar</span>
+                      </div>
+                    </>):(<>
+                      <p style={{margin:"0 0 4px",fontSize:10,color:"#B0B0B5"}}>{formatHora(new Date(nota.created_at).getTime())}</p>
+                      <p style={{margin:0,fontSize:13.5,lineHeight:1.4}}>{nota.texto}</p>
+                      <div style={{display:"flex",gap:12,marginTop:6}}>
+                        <span onClick={()=>setNotaEditando({bitacoraId:miEntrada.id,notaId:nota.id,texto:nota.texto})} style={{fontSize:11,color:"#55555A",fontWeight:600,cursor:"pointer"}}>Editar</span>
+                        <span onClick={()=>borrarNotaBitacora(miEntrada.id,nota.id)} style={{fontSize:11,color:"#D0342C",fontWeight:600,cursor:"pointer"}}>Eliminar</span>
+                      </div>
+                    </>)}
+                  </div>
+                ))}
+
+                {!notas.length&&!miEntrada&&<p style={{margin:"0 0 10px",fontSize:12.5,color:"#8E8E93"}}>Escribí algo para guardarla en tu Bitácora.</p>}
+
+                <div style={{display:"flex",gap:8,marginTop:4}}>
+                  <input value={nuevaNotaTexto} onChange={e=>setNuevaNotaTexto(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarNotaBitacoraAuto(detalle.id,miEntrada,nuevaNotaTexto)} placeholder="Agregar nota..." style={{flex:1,background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:12,padding:"10px 13px",fontSize:13.5}}/>
+                  <button onClick={()=>agregarNotaBitacoraAuto(detalle.id,miEntrada,nuevaNotaTexto)} style={{width:40,height:40,background:"#7C5CFC",border:"none",borderRadius:12,color:"#fff",fontSize:16,flexShrink:0,cursor:"pointer"}}>＋</button>
+                </div>
+              </div>
+            );
+          })()}
+
           <div style={{background:"#fff",borderRadius:20,padding:"16px 18px",marginBottom:8}}>
           {detalle.resuelta?(
             (detalle.autorId===miId||puedeGestionar)?<button style={{...s.btnPrincipal,background:"#636366",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>{resolver(detalle.id);setVista("lista");}}><RotateCcw size={18}/>Reabrir novedad</button>:null
