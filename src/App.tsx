@@ -733,7 +733,9 @@ export default function App({ session }) {
   const [misEmpresasComoMiembro, setMisEmpresasComoMiembro] = useState<any[]>([]);
   const [modalCompartirObra,   setModalCompartirObra]   = useState(null);
   const [metricasAyerEmpresa,  setMetricasAyerEmpresa]  = useState<any>(null);
-  const [vistaDirectorCategoria, setVistaDirectorCategoria] = useState<string|null>(null); // "urgencias"|"pendientes"|"resueltas"
+  const [vistaDirectorCategoria, setVistaDirectorCategoria] = useState<string|null>(null); // "urgencias"|"novedades"|"resueltas"
+  const [filtroObraAlertas,      setFiltroObraAlertas]      = useState<any>(null); // {id,nombre} o null = todas
+  const [origenDirectorCategoria,setOrigenDirectorCategoria]= useState<string|null>(null); // para que "volver" desde una obra vuelva a la pastilla correcta
   const [vistaTuEquipo,        setVistaTuEquipo]        = useState(false);
   const cargarEmpresa=async()=>{
     if(!usuarioReal)return;
@@ -1768,7 +1770,7 @@ export default function App({ session }) {
   const detalle=novedades.find(n=>n.id===detalleId);
 
   // helpers de navegación
-  const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);};
+  const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);setOrigenDirectorCategoria(null);setFiltroObraAlertas(null);};
   const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setOrden("urgencia");setOrdenDesc(false);setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);setModalEditarObra(null);setMenuObra(null);setModalCompartirObra(null);
     // Cargar novedades de esta obra si no están cargadas aún
     if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
@@ -2102,6 +2104,7 @@ export default function App({ session }) {
   if(vistaDirectorCategoria){
     const stats=calcularStatsEmpresa();
     const CONFIG:any={
+      urgencias:{titulo:"Urgencias",emoji:"🔥",color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",badgeBg:"#FFEDEC",valor:stats.totalUrgentes,lista:stats.porObraUrgentes,unidad:"urg.",esAlertas:true},
       novedades:{titulo:"Novedades",emoji:"📋",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalNovedades,lista:stats.porObraNovedades,filtroDestino:"todas",unidad:"nov."},
       resueltas:{titulo:"Resueltas",emoji:"✓",color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",badgeBg:"#E9F9EE",valor:stats.totalResueltas,lista:stats.porObraResueltas,filtroDestino:"resueltas",unidad:"res."},
     };
@@ -2120,7 +2123,11 @@ export default function App({ session }) {
           <p style={{margin:"0 16px 8px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Por obra</p>
           {cfg.lista.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:20}}>Nada por acá 🎉</p>}
           {cfg.lista.map(item=>(
-            <div key={item.obraId} onClick={()=>{const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);if(obra){irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}}}
+            <div key={item.obraId} onClick={()=>{
+                if(cfg.esAlertas){setFiltroObraAlertas({id:item.obraId,nombre:item.obraNombre});setOrigenDirectorCategoria(vistaDirectorCategoria);setTabActiva("alertas");setVistaDirectorCategoria(null);return;}
+                const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);
+                if(obra){setOrigenDirectorCategoria(vistaDirectorCategoria);irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}
+              }}
               style={{background:"#fff",borderRadius:16,padding:"13px 15px",margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 0 #1C1C1E",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
               <div style={{flex:1,minWidth:0}}>
                 <p style={{margin:0,fontSize:14.5,fontWeight:700}}>{item.obraNombre}</p>
@@ -2386,6 +2393,7 @@ export default function App({ session }) {
       });
     });
     alertasDinamicas.sort((a,b)=>a.orden-b.orden);
+    const alertasFiltradas=filtroObraAlertas?alertasDinamicas.filter(a=>a.obraId===filtroObraAlertas.id):alertasDinamicas;
 
     const irAAlerta = (alerta) => {
       const obra = obras.find(o=>o.id===alerta.obraId)||obrasEmpresa.find(o=>o.id===alerta.obraId);
@@ -2402,22 +2410,23 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <div style={{padding:"14px 12px 4px",flexShrink:0}}>
+          {filtroObraAlertas&&<button onClick={()=>{setFiltroObraAlertas(null);if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{setTabActiva("obras");}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>}
           <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"20px 18px"}}>
             <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff",display:"flex",alignItems:"center",gap:9}}><Bell size={22}/>Urgencias</p>
             <p style={{margin:"5px 0 0",fontSize:13,color:"rgba(255,255,255,0.6)"}}>
-              {alertasDinamicas.length > 0 ? `${alertasDinamicas.length} ${alertasDinamicas.length===1?"urgencia":"urgencias"}` : "Todo en orden"}
+              {filtroObraAlertas?`${filtroObraAlertas.nombre} · `:""}{alertasFiltradas.length > 0 ? `${alertasFiltradas.length} ${alertasFiltradas.length===1?"urgencia":"urgencias"}` : "Todo en orden"}
             </p>
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:10}}>
-          {alertasDinamicas.length===0&&(
+          {alertasFiltradas.length===0&&(
             <div style={{textAlign:"center",padding:"60px 20px",color:"#55555A"}}>
               <p style={{fontSize:44,margin:0}}>✅</p> 
               <p style={{fontSize:17,fontWeight:600,margin:"12px 0 6px",color:"#3A3A3C"}}>Todo al dia</p> 
               <p style={{fontSize:14,margin:0}}>No hay novedades urgentes ni vencidas</p>
             </div>
           )}
-          {alertasDinamicas.map(a=>(
+          {alertasFiltradas.map(a=>(
             <button key={a.key} onClick={()=>irAAlerta(a)}
               style={{background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",gap:12,
                 alignItems:"center",
@@ -2494,7 +2503,7 @@ export default function App({ session }) {
               {(()=>{
                 const stats=calcularStatsEmpresa();
                 const PASTILLAS=[
-                  {key:"urgencias",emoji:"🔥",label:"Urgencias",valor:stats.totalUrgentes,color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",sub:`en ${stats.porObraUrgentes.length} obra${stats.porObraUrgentes.length!==1?"s":""}`,preview:stats.previewUrgentes,onTap:()=>setTabActiva("alertas")},
+                  {key:"urgencias",emoji:"🔥",label:"Urgencias",valor:stats.totalUrgentes,color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",sub:`en ${stats.porObraUrgentes.length} obra${stats.porObraUrgentes.length!==1?"s":""}`,preview:stats.previewUrgentes,onTap:()=>setVistaDirectorCategoria("urgencias")},
                   {key:"novedades",emoji:"📋",label:"Novedades",valor:stats.totalNovedades,color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",sub:`en ${stats.porObraNovedades.length} obra${stats.porObraNovedades.length!==1?"s":""}`,preview:stats.previewNovedades,onTap:()=>setVistaDirectorCategoria("novedades")},
                   {key:"resueltas",emoji:"✓",label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`,preview:stats.previewResueltas,onTap:()=>setVistaDirectorCategoria("resueltas")},
                 ];
@@ -3448,7 +3457,7 @@ export default function App({ session }) {
   return(
     <div style={{...s.root,position:"relative"}}>
       <div style={{padding:"14px 12px 4px",flexShrink:0}}>
-        <button onClick={irInicio} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Inicio</button>
+        <button onClick={()=>{if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{irInicio();}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>{origenDirectorCategoria?"Director":"Inicio"}</button>
         <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"18px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
             <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
