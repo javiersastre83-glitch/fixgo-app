@@ -2101,7 +2101,7 @@ export default function App({ session }) {
           <button onClick={()=>setVistaDirectorCategoria(null)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"0 0 24px"}}>
-          <div style={{borderRadius:22,padding:18,margin:"0 16px 16px",border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E",background:cfg.bg}}>
+          <div style={{borderRadius:18,padding:18,margin:"0 16px 16px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:cfg.bg}}>
             <p style={{margin:"0 0 4px",fontSize:13,fontWeight:800,textTransform:"uppercase",letterSpacing:0.4,color:cfg.color}}>{cfg.emoji} {cfg.titulo}</p>
             <p style={{margin:0,fontSize:46,fontWeight:800,letterSpacing:-1.5,lineHeight:1,color:cfg.color}}><NumeroAnimado valor={cfg.valor}/></p>
             <p style={{margin:"6px 0 0",fontSize:12,color:"#55555A",fontWeight:600}}>repartidas en {cfg.lista.length} obra{cfg.lista.length!==1?"s":""}</p>
@@ -2147,11 +2147,11 @@ export default function App({ session }) {
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"0 0 24px"}}>
           <div style={{display:"flex",gap:10,margin:"16px 16px"}}>
-            <div style={{flex:1,background:"#fff",border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E",borderRadius:18,padding:14}}>
+            <div style={{flex:1,background:"#fff",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",borderRadius:18,padding:14}}>
               <p style={{margin:"0 0 6px",fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:0.3,color:"#55555A"}}>Tiempo prom. de resolución</p>
               <p style={{margin:0,fontSize:26,fontWeight:800,letterSpacing:-0.5,color:"#7C5CFC"}}><NumeroAnimado valor={stats.diasPromEmpresa} decimales={1}/> <span style={{fontSize:14,fontWeight:600,color:"#55555A"}}>días</span></p>
             </div>
-            <div style={{flex:1,background:"#fff",border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E",borderRadius:18,padding:14}}>
+            <div style={{flex:1,background:"#fff",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",borderRadius:18,padding:14}}>
               <p style={{margin:"0 0 6px",fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:0.3,color:"#55555A"}}>Vencidas ahora</p>
               <p style={{margin:0,fontSize:26,fontWeight:800,letterSpacing:-0.5,color:"#FF3B30"}}><NumeroAnimado valor={stats.totalVencidas}/></p>
             </div>
@@ -2164,7 +2164,7 @@ export default function App({ session }) {
             const ec=ESTADO_CFG[p.estado];
             const circ=2*Math.PI*27;
             return(
-              <div key={p.usuario_id} style={{background:"#fff",borderRadius:18,padding:15,margin:"0 16px 10px",border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E"}}>
+              <div key={p.usuario_id} style={{background:"#fff",borderRadius:18,padding:15,margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A"}}>
                 <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
                   <div style={{width:44,height:44,borderRadius:"50%",background:ec.bg,color:ec.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800,flexShrink:0,border:`3px solid ${ec.color}`}}>{p.nombre[0]?.toUpperCase()}</div>
                   <div style={{flex:1,minWidth:0}}>
@@ -2487,7 +2487,7 @@ export default function App({ session }) {
                   {key:"resueltas",emoji:"✓",label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`},
                 ];
                 return PASTILLAS.map(p=>(
-                  <div key={p.key} onClick={()=>setVistaDirectorCategoria(p.key)} style={{borderRadius:22,padding:18,border:"2.5px solid #1C1C1E",boxShadow:"0 3px 0 #1C1C1E",background:p.bg,cursor:"pointer"}}>
+                  <div key={p.key} onClick={()=>setVistaDirectorCategoria(p.key)} style={{borderRadius:18,padding:18,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:p.bg,cursor:"pointer"}}>
                     <p style={{margin:"0 0 4px",fontSize:12.5,fontWeight:800,textTransform:"uppercase",letterSpacing:0.4,color:p.color}}>{p.emoji} {p.label}</p>
                     <p style={{margin:0,fontSize:42,fontWeight:800,letterSpacing:-1.5,lineHeight:1,color:p.color}}><NumeroAnimado valor={p.valor}/></p>
                     <p style={{margin:"6px 0 0",fontSize:11.5,color:"#55555A",fontWeight:600}}>{p.sub}</p>
