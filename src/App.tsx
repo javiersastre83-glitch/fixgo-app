@@ -2503,7 +2503,7 @@ export default function App({ session }) {
                 </button>
                 <p style={{margin:0,fontSize:30,fontWeight:900,color:"#fff",letterSpacing:-0.5}}>Fixgo</p>
               </div>
-              <p style={{margin:0,fontSize:14,color:"rgba(255,255,255,0.5)"}}>Gestión de obras</p>
+              <p style={{margin:0,fontSize:14,color:"rgba(255,255,255,0.5)"}}>Gestión simple de novedades</p>
             </div>
             <div style={{background:"rgba(255,255,255,0.15)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
               <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p></div>
