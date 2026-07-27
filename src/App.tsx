@@ -576,6 +576,7 @@ export default function App({ session }) {
   const [tiempoGrabacion,  setTiempoGrabacion]  = useState(0);
   const mediaRecorderRef = useRef(null);
   const swipeInicioRef = useRef({x:0,y:0});
+  const [direccionTab, setDireccionTab] = useState(1);
   const audioChunksRef = useRef([]);
   const grabacionIntervalRef = useRef(null);
   const grabacionCanceladaRef = useRef(false);
@@ -866,7 +867,7 @@ export default function App({ session }) {
     if(document.getElementById("fixgo-spin-style"))return;
     const st=document.createElement("style");
     st.id="fixgo-spin-style";
-    st.textContent="@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}";
+    st.textContent="@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}@keyframes slideInDcha{from{transform:translateX(38px);opacity:0.4}to{transform:translateX(0);opacity:1}}@keyframes slideInIzq{from{transform:translateX(-38px);opacity:0.4}to{transform:translateX(0);opacity:1}}";
     document.head.appendChild(st);
   },[]);
 
@@ -1801,6 +1802,12 @@ export default function App({ session }) {
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);setOrigenDirectorCategoria(null);setFiltroObraAlertas(null);};
   const TABS_INICIO=["mias","tareas",...(esVersionPro?["director"]:[])];
+  const cambiarVistaHome=(nueva)=>{
+    const idxViejo=TABS_INICIO.indexOf(vistaHome);
+    const idxNuevo=TABS_INICIO.indexOf(nueva);
+    if(idxViejo!==-1&&idxNuevo!==-1)setDireccionTab(idxNuevo>idxViejo?1:-1);
+    setVistaHome(nueva);
+  };
   const onSwipeInicioStart=(e)=>{const t=e.touches[0];swipeInicioRef.current={x:t.clientX,y:t.clientY};};
   const onSwipeInicioEnd=(e)=>{
     const t=e.changedTouches[0];
@@ -1810,7 +1817,7 @@ export default function App({ session }) {
     const idxActual=TABS_INICIO.indexOf(vistaHome);
     if(idxActual===-1)return;
     const siguiente=dx<0?idxActual+1:idxActual-1;
-    if(siguiente>=0&&siguiente<TABS_INICIO.length)setVistaHome(TABS_INICIO[siguiente]);
+    if(siguiente>=0&&siguiente<TABS_INICIO.length)cambiarVistaHome(TABS_INICIO[siguiente]);
   };
   const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setOrden("urgencia");setOrdenDesc(false);setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);setModalEditarObra(null);setMenuObra(null);setModalCompartirObra(null);
     // Cargar novedades de esta obra si no están cargadas aún
@@ -2586,12 +2593,12 @@ export default function App({ session }) {
           </div>
         </div>
         <div style={{padding:"10px 16px 14px",flexShrink:0,display:"flex",gap:8}}>
-          <button onClick={()=>setVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
-          <button onClick={()=>setVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
-          {esVersionPro&&<button onClick={()=>setVistaHome("director")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>Director</button>}
+          <button onClick={()=>cambiarVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
+          <button onClick={()=>cambiarVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
+          {esVersionPro&&<button onClick={()=>cambiarVistaHome("director")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>Director</button>}
         </div>
         {vistaHome==="director"?(
-        <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
+        <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
           {!empresaPropia?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
               <p style={{fontSize:38,margin:"0 0 10px"}}>🧭</p>
@@ -2673,13 +2680,25 @@ export default function App({ session }) {
           )}
         </div>
         ):(
-        <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
+        <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
           {cargandoDatos?(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,padding:"48px 16px"}}>
               <span style={{width:28,height:28,border:"3px solid #E5E5EA",borderTopColor:"#2E3A4B",borderRadius:"50%",display:"inline-block",animation:"spin 0.8s linear infinite"}}/>
               <p style={{margin:0,fontSize:14,fontWeight:600,color:"#55555A"}}>Cargando tus obras…</p>
             </div>
           ):(<>
+          {vistaHome==="tareas"&&obras.filter(obra=>{
+            const esDuenoF=usuarioReal?obra.propietario_id===usuarioReal.id:true;
+            const miRolObraF=esDuenoF?"profesional":((obra.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||"operario");
+            const esGestorObraF=esDuenoF||miRolObraF==="co_profesional";
+            return !esGestorObraF;
+          }).length===0&&(
+            <div style={{textAlign:"center",padding:"50px 20px",color:"#55555A"}}>
+              <p style={{fontSize:44,margin:0}}>📋</p>
+              <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>Aún no tenés tareas asignadas</p>
+              <p style={{fontSize:14,margin:0}}>Cuando un profesional te sume a una obra, la vas a ver acá.</p>
+            </div>
+          )}
           {obras.filter(obra=>{
             const esDuenoF=usuarioReal?obra.propietario_id===usuarioReal.id:true;
             const miRolObraF=esDuenoF?"profesional":((obra.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||"operario");
