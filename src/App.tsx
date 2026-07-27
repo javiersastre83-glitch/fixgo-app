@@ -574,6 +574,7 @@ export default function App({ session }) {
   const [editorDibujo,     setEditorDibujo]     = useState(null); // {src, origen:"nueva"|"editar"|"resolucion", idx}
   const [tiempoGrabacion,  setTiempoGrabacion]  = useState(0);
   const mediaRecorderRef = useRef(null);
+  const swipeInicioRef = useRef({x:0,y:0});
   const audioChunksRef = useRef([]);
   const grabacionIntervalRef = useRef(null);
   const grabacionCanceladaRef = useRef(false);
@@ -1772,6 +1773,18 @@ export default function App({ session }) {
 
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);setOrigenDirectorCategoria(null);setFiltroObraAlertas(null);};
+  const TABS_INICIO=["mias","tareas",...(esVersionPro?["director"]:[])];
+  const onSwipeInicioStart=(e)=>{const t=e.touches[0];swipeInicioRef.current={x:t.clientX,y:t.clientY};};
+  const onSwipeInicioEnd=(e)=>{
+    const t=e.changedTouches[0];
+    const dx=t.clientX-swipeInicioRef.current.x;
+    const dy=t.clientY-swipeInicioRef.current.y;
+    if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.4)return;
+    const idxActual=TABS_INICIO.indexOf(vistaHome);
+    if(idxActual===-1)return;
+    const siguiente=dx<0?idxActual+1:idxActual-1;
+    if(siguiente>=0&&siguiente<TABS_INICIO.length)setVistaHome(TABS_INICIO[siguiente]);
+  };
   const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setOrden("urgencia");setOrdenDesc(false);setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);setModalEditarObra(null);setMenuObra(null);setModalCompartirObra(null);
     // Cargar novedades de esta obra si no están cargadas aún
     if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
@@ -2493,7 +2506,7 @@ export default function App({ session }) {
     const totalPend=Object.values(novedadesPorObra).flat().filter(n=>!n.resuelta).length;
     const totalVenc=Object.values(novedadesPorObra).flat().filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length;
     return(
-      <div style={s.root}>
+      <div style={s.root} onTouchStart={onSwipeInicioStart} onTouchEnd={onSwipeInicioEnd}>
         <div style={{padding:"14px 12px 4px",flexShrink:0}}>
           <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"22px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
