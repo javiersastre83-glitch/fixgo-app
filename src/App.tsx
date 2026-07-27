@@ -749,7 +749,9 @@ export default function App({ session }) {
     const{data:obrasEmp}=await supabase.from("obras").select("*").eq("empresa_id",emp.id);
     const conNovedades=await Promise.all((obrasEmp||[]).map(async o=>{
       const{data:novs}=await supabase.from("novedades").select("id,descripcion,prioridad,resuelta,estado_aprobacion,responsable,responsable_usuario_id,fecha_limite,created_at,resuelta_at").eq("obra_id",o.id);
-      return{...o,novedades:novs||[]};
+      const{data:equipoObraData}=await supabase.from("equipo_obra").select("usuario_id,telefono,email_contacto").eq("obra_id",o.id);
+      const equipo=(equipoObraData||[]).map(m=>({uid:m.usuario_id,telefono:m.telefono||null,emailContacto:m.email_contacto||null}));
+      return{...o,novedades:novs||[],equipo};
     }));
     setObrasEmpresa(conNovedades);
     const{data:invsEmp}=await supabase.from("invitaciones_empresa").select("codigo,usada,created_at").eq("empresa_id",emp.id).eq("usada",false);
@@ -781,7 +783,31 @@ export default function App({ session }) {
     const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
-  const guardarTelefono=async()=>{if(!modalTelefono||!obraActual)return;const{error}=await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraActual.id).eq("usuario_id",modalTelefono.uid);if(error){alert("No se pudo guardar el teléfono: "+error.message);return;}const tel=telInput.trim()||null;setObras(obs=>obs.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:o));setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:oa);if(miembroSel&&miembroSel.uid===modalTelefono.uid)setMiembroSel(ms=>ms?{...ms,telefono:tel}:ms);setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");};
+  const guardarTelefono=async()=>{
+    if(!modalTelefono)return;
+    const obraId=modalTelefono.obraId||obraActual?.id;
+    if(!obraId)return;
+    const{error}=await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraId).eq("usuario_id",modalTelefono.uid);
+    if(error){alert("No se pudo guardar el teléfono: "+error.message);return;}
+    const tel=telInput.trim()||null;
+    setObras(obs=>obs.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:o));
+    setObraActual(oa=>oa&&oa.id===obraId?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:oa);
+    setObrasEmpresa(oe=>oe.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:o));
+    if(miembroSel&&miembroSel.uid===modalTelefono.uid)setMiembroSel(ms=>ms?{...ms,telefono:tel}:ms);
+    setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");
+  };
+  const [modalEmailContacto,setModalEmailContacto]=useState<any>(null); // {uid,nombre,obraId}
+  const [emailContactoInput,setEmailContactoInput]=useState("");
+  const guardarEmailContacto=async()=>{
+    if(!modalEmailContacto)return;
+    const obraId=modalEmailContacto.obraId;
+    if(!obraId)return;
+    const{error}=await supabase.from("equipo_obra").update({email_contacto:emailContactoInput.trim()||null}).eq("obra_id",obraId).eq("usuario_id",modalEmailContacto.uid);
+    if(error){alert("No se pudo guardar el mail: "+error.message);return;}
+    const mail=emailContactoInput.trim()||null;
+    setObrasEmpresa(oe=>oe.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalEmailContacto.uid?{...m,emailContacto:mail}:m)}:o));
+    setModalEmailContacto(null);setEmailContactoInput("");mostrarToast("Mail de contacto guardado");
+  };
   const [confirmarEliminar,setConfirmarEliminar]= useState(null);
   const [menuObra,         setMenuObra]         = useState(null);
   const [confirmarEliminarObra,setConfirmarEliminarObra]=useState(null);
@@ -2178,24 +2204,51 @@ export default function App({ session }) {
           {miembrosEmpresa.map(m=>{
             const obrasDeEste=obrasEmpresa.filter(o=>o.propietario_id===m.usuario_id);
             const nombre=m.usuarios?.nombre||m.usuarios?.email||"Profesional";
-            const email=m.usuarios?.email;
+            const emailCuenta=m.usuarios?.email;
+            const primeraObra=obrasDeEste[0];
+            const miembroEnObra=primeraObra?.equipo?.find(eq=>eq.uid===m.usuario_id);
+            const telefono=miembroEnObra?.telefono;
+            const emailContacto=miembroEnObra?.emailContacto;
             return(
               <div key={m.usuario_id} style={{background:"#fff",borderRadius:18,padding:15,margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A"}}>
-                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:email?12:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
                   <div style={{width:44,height:44,borderRadius:"50%",background:"#EFE9FF",color:"#7C5CFC",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800,flexShrink:0}}>{nombre[0]?.toUpperCase()}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <p style={{margin:0,fontSize:15,fontWeight:800}}>{nombre}</p>
                     <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{obrasDeEste.length} obra{obrasDeEste.length!==1?"s":""} a cargo{obrasDeEste.length>0?`: ${obrasDeEste.map(o=>o.nombre).join(", ")}`:""}</p>
                   </div>
                 </div>
-                {email&&<a href={`mailto:${email}`} style={{display:"flex",alignItems:"center",gap:8,background:"#F2F2F7",borderRadius:12,padding:"9px 12px",textDecoration:"none"}}>
-                  <span style={{fontSize:14}}>✉️</span><span style={{fontSize:12.5,fontWeight:600,color:"#1C1C1E"}}>{email}</span>
-                </a>}
+
+                {/* Teléfono: llamar / WhatsApp / editar */}
+                <div style={{display:"flex",alignItems:"center",gap:8,background:"#F2F2F7",borderRadius:12,padding:"9px 12px",marginBottom:8}}>
+                  <span style={{fontSize:14}}>📞</span>
+                  <span style={{flex:1,fontSize:12.5,fontWeight:600,color:telefono?"#1C1C1E":"#8E8E93"}}>{telefono||"Sin teléfono cargado"}</span>
+                  {telefono&&primeraObra&&<>
+                    <button onClick={()=>window.open(`https://wa.me/${telefono.replace(/\D/g,"")}?text=${encodeURIComponent(`Hola ${nombre}! Te escribo por Fixgo.`)}`,"_blank")} style={{width:28,height:28,borderRadius:8,background:"#25D36615",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>💬</button>
+                    <button onClick={()=>window.open(`tel:${telefono.replace(/\s/g,"")}`,"_blank")} style={{width:28,height:28,borderRadius:8,background:"#007AFF15",border:"none",cursor:"pointer",fontSize:13,flexShrink:0}}>📞</button>
+                  </>}
+                  {primeraObra&&<button onClick={()=>{setModalTelefono({uid:m.usuario_id,nombre,obraId:primeraObra.id});setTelInput(telefono||"");}} style={{width:28,height:28,borderRadius:8,background:"#fff",border:"1px solid #E5E5EA",cursor:"pointer",fontSize:12,flexShrink:0}}>✏️</button>}
+                </div>
+
+                {/* Mail de contacto (aparte del mail de la cuenta) */}
+                <div style={{display:"flex",alignItems:"center",gap:8,background:"#F2F2F7",borderRadius:12,padding:"9px 12px"}}>
+                  <span style={{fontSize:14}}>✉️</span>
+                  <a href={`mailto:${emailContacto||emailCuenta}`} style={{flex:1,fontSize:12.5,fontWeight:600,color:"#1C1C1E",textDecoration:"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{emailContacto||emailCuenta||"Sin mail"}</a>
+                  {primeraObra&&<button onClick={()=>{setModalEmailContacto({uid:m.usuario_id,nombre,obraId:primeraObra.id});setEmailContactoInput(emailContacto||"");}} style={{width:28,height:28,borderRadius:8,background:"#fff",border:"1px solid #E5E5EA",cursor:"pointer",fontSize:12,flexShrink:0}}>✏️</button>}
+                </div>
               </div>
             );
           })}
           {miembrosEmpresa.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:30}}>Todavía no invitaste a nadie.</p>}
         </div>
+        {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p><input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
+        {modalEmailContacto&&<div style={s.overlay} onClick={()=>setModalEmailContacto(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+          <p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Mail de contacto de {modalEmailContacto.nombre}</p>
+          <p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>No cambia su cuenta, es solo para que vos lo tengas a mano.</p>
+          <input style={{...s.input,marginBottom:16}} type="email" placeholder="mail@ejemplo.com" value={emailContactoInput} onChange={e=>setEmailContactoInput(e.target.value)}/>
+          <button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarEmailContacto}>Guardar</button>
+          <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalEmailContacto(null)}>Cancelar</button>
+        </div></div>}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);setVistaProfesionales(false);irInicio();}} onPerfil={()=>{setVistaProfesionales(false);setVistaPerfil(true);}} />
       </div>
     );
