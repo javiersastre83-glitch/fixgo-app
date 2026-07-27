@@ -2220,16 +2220,24 @@ export default function App({ session }) {
                   </div>
                 </div>
 
-                {/* Teléfono: llamar / WhatsApp / editar */}
-                <div style={{display:"flex",alignItems:"center",gap:8,background:"#F2F2F7",borderRadius:12,padding:"9px 12px",marginBottom:8}}>
-                  <span style={{fontSize:14}}>📞</span>
-                  <span style={{flex:1,fontSize:12.5,fontWeight:600,color:telefono?"#1C1C1E":"#8E8E93"}}>{telefono||"Sin teléfono cargado"}</span>
-                  {telefono&&primeraObra&&<>
-                    <button onClick={()=>window.open(`https://wa.me/${telefono.replace(/\D/g,"")}?text=${encodeURIComponent(`Hola ${nombre}! Te escribo por Fixgo.`)}`,"_blank")} style={{width:28,height:28,borderRadius:8,background:"#25D36615",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>💬</button>
-                    <button onClick={()=>window.open(`tel:${telefono.replace(/\s/g,"")}`,"_blank")} style={{width:28,height:28,borderRadius:8,background:"#007AFF15",border:"none",cursor:"pointer",fontSize:13,flexShrink:0}}>📞</button>
-                  </>}
-                  {primeraObra&&<button onClick={()=>{setModalTelefono({uid:m.usuario_id,nombre,obraId:primeraObra.id});setTelInput(telefono||"");}} style={{width:28,height:28,borderRadius:8,background:"#fff",border:"1px solid #E5E5EA",cursor:"pointer",fontSize:12,flexShrink:0}}>✏️</button>}
-                </div>
+                {/* Teléfono: llamar / WhatsApp / editar — mismo estilo que en Equipo */}
+                {telefono?(
+                  <div style={{background:"#F2F2F7",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+                    <Phone size={16} color="#55555A" style={{flexShrink:0}}/>
+                    <span style={{flex:1,fontSize:15,fontWeight:600,color:"#1C1C1E"}}>{telefono}</span>
+                    <button onClick={()=>window.open(`https://wa.me/${telefono.replace(/\D/g,"")}?text=${encodeURIComponent(`Hola ${nombre}! Te escribo por Fixgo.`)}`,"_blank")} style={{width:34,height:34,borderRadius:10,background:"#25D36615",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    </button>
+                    <button onClick={()=>window.open(`tel:${telefono.replace(/\s/g,"")}`,"_blank")} style={{width:34,height:34,borderRadius:10,background:"#007AFF15",border:"none",cursor:"pointer",fontSize:16}}>📞</button>
+                    {primeraObra&&<button onClick={()=>{setModalTelefono({uid:m.usuario_id,nombre,obraId:primeraObra.id});setTelInput(telefono||"");}} style={{width:34,height:34,borderRadius:10,background:"#F2F2F7",border:"1px solid #E5E5EA",cursor:"pointer",fontSize:14}}>✏️</button>}
+                  </div>
+                ):(
+                  primeraObra&&<button onClick={()=>{setModalTelefono({uid:m.usuario_id,nombre,obraId:primeraObra.id});setTelInput("");}} style={{width:"100%",background:"#FFF3E8",border:"none",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>
+                    <Phone size={16} color="#FF6B00" style={{flexShrink:0}}/>
+                    <span style={{flex:1,fontSize:14,fontWeight:600,color:"#FF6B00",textAlign:"left"}}>Sin teléfono — Agregar para contacto rápido</span>
+                    <span style={{fontSize:12,fontWeight:700,color:"#fff",background:"#FF6B00",padding:"3px 10px",borderRadius:99}}>+ Agregar</span>
+                  </button>
+                )}
 
                 {/* Mail de contacto (aparte del mail de la cuenta) */}
                 <div style={{display:"flex",alignItems:"center",gap:8,background:"#F2F2F7",borderRadius:12,padding:"9px 12px"}}>
@@ -2242,7 +2250,7 @@ export default function App({ session }) {
           })}
           {miembrosEmpresa.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:30}}>Todavía no invitaste a nadie.</p>}
         </div>
-        {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p><input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
+        {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
         {modalEmailContacto&&<div style={s.overlay} onClick={()=>setModalEmailContacto(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Mail de contacto de {modalEmailContacto.nombre}</p>
           <p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>No cambia su cuenta, es solo para que vos lo tengas a mano.</p>
