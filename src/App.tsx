@@ -1102,6 +1102,16 @@ export default function App({ session }) {
         setObras(os=>os.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).filter(x=>x.uid!==uidBorrado)}:o));
         setObraActual(oa=>(oa&&oa.id===obraId)?{...oa,equipo:(oa.equipo||[]).filter(x=>x.uid!==uidBorrado)}:oa);
       })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"invitaciones"},(payload)=>{
+        // Se aceptó la invitación (usada pasó a true): sacarla de la lista de pendientes en vivo
+        if(payload.new.usada){
+          setInvitacionesPendientes(p=>p.filter(i=>i.codigo!==payload.new.codigo));
+        }
+      })
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"invitaciones"},(payload)=>{
+        // Se canceló la invitación: sacarla de la lista de pendientes en vivo
+        setInvitacionesPendientes(p=>p.filter(i=>i.codigo!==payload.old.codigo));
+      })
       .subscribe();
     return()=>{supabase.removeChannel(canal);};
   },[usuarioReal?.id]);
@@ -2042,7 +2052,7 @@ export default function App({ session }) {
                 <span><i style={{width:9,height:9,borderRadius:3,background:"#5CA9E0",display:"inline-block",marginRight:4}}/>A su cargo</span>
               </div>
               {rd.actividadPersonas.length===0&&<p style={{color:"#55555A",fontSize:12}}>Sin actividad en este período</p>}
-              {rd.actividadPersonas.map((p:any,i)=>{
+              {rd.actividadPersonas.slice(0,8).map((p:any,i)=>{
                 const maxP=Math.max(1,...rd.actividadPersonas.map((x:any)=>Math.max(x.resueltas,x.aCargo)));
                 return(
                   <div key={i} style={{display:"flex",alignItems:"center",gap:11,marginBottom:13}}>
@@ -2055,6 +2065,7 @@ export default function App({ session }) {
                   </div>
                 );
               })}
+              {rd.actividadPersonas.length>8&&<p style={{color:"#8E8E93",fontSize:11,fontWeight:600,margin:"4px 0 0"}}>y {rd.actividadPersonas.length-8} más</p>}
             </div>
             <div>
               <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Estado general</p>
@@ -2068,7 +2079,6 @@ export default function App({ session }) {
                       <circle cx="60" cy="60" r="52" fill="none" stroke="#FF3B30" strokeWidth="16" strokeDasharray={`${segVenc} ${circ-segVenc}`} strokeDashoffset={-(segResueltas+segPend)} transform="rotate(-90 60 60)"/>
                     </>}
                   </svg>
-                  <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,fontWeight:900,color:"#1C1C1E"}}>{totalDonut>0?Math.round((rd.resueltas/totalDonut)*100):0}%</div>
                 </div>
                 <div style={{width:"100%",display:"flex",flexDirection:"column",gap:8}}>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11}}><span style={{display:"flex",alignItems:"center",gap:6,fontWeight:600}}><span style={{width:9,height:9,borderRadius:3,background:"#34C759",display:"inline-block"}}/>Resueltas</span><b>{rd.resueltas}</b></div>
@@ -2340,7 +2350,7 @@ export default function App({ session }) {
                   </div>
                 </div>
                 {(p.gremioCritico||p.obraCritica)&&<div style={{display:"flex",flexDirection:"column",gap:6,marginTop:12}}>
-                  {p.gremioCritico&&<div style={{display:"flex",alignItems:"center",gap:8,background:"#FFF6E0",borderRadius:11,padding:"8px 11px"}}><span style={{fontSize:14}}>🔧</span><span style={{fontSize:12,fontWeight:700,color:"#9a6b00"}}>Gremio con más atrasos: <b style={{color:"#7a5400"}}>{p.gremioCritico[0]}</b> ({p.gremioCritico[1]})</span></div>}
+                  {p.gremioCritico&&<div style={{display:"flex",alignItems:"center",gap:8,background:"#FFF6E0",borderRadius:11,padding:"8px 11px"}}><span style={{fontSize:14}}>🔧</span><span style={{fontSize:12,fontWeight:700,color:"#9a6b00"}}>Oficio con más atrasos: <b style={{color:"#7a5400"}}>{p.gremioCritico[0]}</b> ({p.gremioCritico[1]})</span></div>}
                   {p.obraCritica&&<div style={{display:"flex",alignItems:"center",gap:8,background:"#FFF6E0",borderRadius:11,padding:"8px 11px"}}><span style={{fontSize:14}}>📍</span><span style={{fontSize:12,fontWeight:700,color:"#9a6b00"}}>Obra con más atrasos: <b style={{color:"#7a5400"}}>{p.obraCritica[0]}</b> ({p.obraCritica[1]})</span></div>}
                 </div>}
               </div>
@@ -3154,9 +3164,9 @@ export default function App({ session }) {
 
           {/* POR GREMIO */}
           <div style={{background:"#fff",borderRadius:20,padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Por gremio</p>
+            <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Por oficio</p>
             {porGremioEnriquecido.length===0
-              ?<div style={{background:"#EDFAF1",borderRadius:14,padding:"20px",textAlign:"center"}}><p style={{fontSize:28,margin:"0 0 8px"}}>✅</p><p style={{fontSize:14,fontWeight:600,color:"#34C759"}}>Sin problemas por gremio</p></div>
+              ?<div style={{background:"#EDFAF1",borderRadius:14,padding:"20px",textAlign:"center"}}><p style={{fontSize:28,margin:"0 0 8px"}}>✅</p><p style={{fontSize:14,fontWeight:600,color:"#34C759"}}>Sin problemas por oficio</p></div>
               :porGremioEnriquecido.map(g=>{
                 const tieneUrgVenc=g.urgVenc>0;
                 const tieneUrg=g.urgentes>0;
