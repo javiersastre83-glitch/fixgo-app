@@ -647,15 +647,19 @@ export default function App({ session }) {
     });
     const actividadPersonas=Object.values(personasMap).sort((a:any,b:any)=>(b.resueltas+b.aCargo)-(a.resueltas+a.aCargo));
 
-    // Evolución: bucket diario si el rango es <=31 días, sino semanal
+    // Evolución: bucket diario por defecto; si el rango es largo (>14 días) y hay poca
+    // actividad total, agrupar por semana para que las barras no queden invisibles.
     const diasTotales=Math.max(1,Math.round(duracionMs/864e5));
-    const bucketDias=diasTotales<=31?1:7;
+    const actividadTotal=actual.reportadas.length+actual.resueltas.length;
+    const bucketDias=(diasTotales>31)?7:(diasTotales>14&&actividadTotal<diasTotales)?7:1;
     const buckets=[];
     for(let t=desdeMs;t<=hastaMs;t+=bucketDias*864e5){
       const bMs=t,bFinMs=Math.min(t+bucketDias*864e5-1,hastaMs);
       const rep=novedades.filter(n=>enRango(n.created_at,bMs,bFinMs)).length;
       const res=novedades.filter(n=>n.resuelta&&enRango(n.resueltaAt,bMs,bFinMs)).length;
-      const fechaLbl=new Date(bMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"});
+      const fechaLbl=bucketDias===7
+        ?`${new Date(bMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}–${new Date(bFinMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}`
+        :new Date(bMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"});
       buckets.push({label:fechaLbl,reportadas:rep,resueltas:res});
     }
 
@@ -2006,6 +2010,11 @@ export default function App({ session }) {
             </div>
             <div>
               <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Evolución en el período</p>
+              {(rd.buckets.every(b=>b.reportadas===0&&b.resueltas===0))?(
+                <div style={{background:"#F8F8F9",borderRadius:12,padding:"18px 22px",height:172,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <p style={{margin:0,fontSize:12,color:"#8E8E93",textAlign:"center"}}>Sin actividad para graficar en este rango</p>
+                </div>
+              ):(<>
               <div style={{background:"#F8F8F9",borderRadius:12,padding:"18px 22px",height:172,display:"flex",alignItems:"flex-end",gap:8,justifyContent:rd.buckets.length<10?"space-between":"flex-start",overflowX:"auto"}}>
                 {rd.buckets.map((b,i)=>(
                   <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flexShrink:0}}>
@@ -2021,6 +2030,7 @@ export default function App({ session }) {
                 <span><i style={{width:9,height:9,borderRadius:3,background:"#5CA9E0",display:"inline-block",marginRight:5}}/>Reportadas</span>
                 <span><i style={{width:9,height:9,borderRadius:3,background:"#34C759",display:"inline-block",marginRight:5}}/>Resueltas</span>
               </div>
+              </>)}
             </div>
           </div>
 
