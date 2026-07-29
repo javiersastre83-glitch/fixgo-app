@@ -2262,7 +2262,7 @@ export default function App({ session }) {
                 ):(
                   primeraObra&&<button onClick={()=>{setModalTelefono({uid:m.usuario_id,nombre,obraId:primeraObra.id});setTelInput("");}} style={{width:"100%",background:"#FFF3E8",border:"none",borderRadius:14,padding:"13px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>
                     <Phone size={16} color="#FF6B00" style={{flexShrink:0}}/>
-                    <span style={{flex:1,fontSize:14,fontWeight:600,color:"#FF6B00",textAlign:"left"}}>Sin teléfono — Agregar para contacto rápido</span>
+                    <span style={{flex:1,fontSize:14,fontWeight:600,color:"#FF6B00",textAlign:"left"}}>Sin teléfono</span>
                     <span style={{fontSize:12,fontWeight:700,color:"#fff",background:"#FF6B00",padding:"3px 10px",borderRadius:99}}>+ Agregar</span>
                   </button>
                 )}
@@ -2508,7 +2508,7 @@ export default function App({ session }) {
   if(tabActiva==="alertas"&&vistaRaiz==="inicio"){
     // Generar alertas dinámicas desde todas las obras
     const alertasDinamicas = [];
-    const obrasParaAlertas=[...obras,...obrasEmpresa.filter(oe=>!obras.some(o=>o.id===oe.id)).map(oe=>({...oe,novedades:(oe.novedades||[]).map(n=>({...n,fechaLimite:n.fecha_limite}))}))];
+    const obrasParaAlertas=[...obras.map(o=>({...o,esDeEquipo:false})),...obrasEmpresa.filter(oe=>!obras.some(o=>o.id===oe.id)).map(oe=>({...oe,esDeEquipo:true,novedades:(oe.novedades||[]).map(n=>({...n,fechaLimite:n.fecha_limite}))}))];
     obrasParaAlertas.forEach(obra => {
       const novs = obra.novedades||novedadesPorObra[obra.id] || [];
       novs.forEach(nov => {
@@ -2518,19 +2518,19 @@ export default function App({ session }) {
         if (d !== null && d < 0) {
           alertasDinamicas.push({ key:`venc-${nov.id}`, tipo:"urgente",
             texto:`Vencida hace ${Math.abs(d)} ${Math.abs(d)===1?"día":"días"} — ${nov.descripcion}`,
-            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:0 });
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:0, esDeEquipo:obra.esDeEquipo });
         }
         // Vence hoy
         else if (d === 0) {
           alertasDinamicas.push({ key:`hoy-${nov.id}`, tipo:"urgente",
             texto:`Vence hoy — ${nov.descripcion}`,
-            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:1 });
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:1, esDeEquipo:obra.esDeEquipo });
         }
         // Marcadas URGENTE (aunque la fecha sea futura o no tenga)
         else if (nov.prioridad === 0) {
           alertasDinamicas.push({ key:`urg-${nov.id}`, tipo:"urgente",
             texto:`Urgente — ${nov.descripcion}`,
-            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:2 });
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:2, esDeEquipo:obra.esDeEquipo });
         }
       });
     });
@@ -2568,20 +2568,36 @@ export default function App({ session }) {
               <p style={{fontSize:14,margin:0}}>No hay novedades urgentes ni vencidas</p>
             </div>
           )}
-          {alertasFiltradas.map(a=>(
-            <button key={a.key} onClick={()=>irAAlerta(a)}
-              style={{background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",gap:12,
-                alignItems:"center",
-                border:"none",width:"100%",textAlign:"left",cursor:"pointer",
-                outline:"none",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
-              <span style={{width:36,height:36,borderRadius:10,background:"#FF3B3012",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><AlertTriangle size={19} color="#FF3B30"/></span>
-              <div style={{flex:1,minWidth:0}}>
-                <p style={{margin:0,fontSize:14,fontWeight:700,color:"#1C1C1E",lineHeight:1.35}}>{a.texto}</p>
-                <p style={{margin:"3px 0 0",fontSize:12,color:"#55555A"}}>{a.sub}</p>
-              </div>
-              <ChevronRight size={18} color="#C7C7CC" style={{flexShrink:0}}/>
-            </button>
-          ))}
+          {(()=>{
+            const propias=alertasFiltradas.filter(a=>!a.esDeEquipo);
+            const deEquipo=alertasFiltradas.filter(a=>a.esDeEquipo);
+            const Tarjeta=(a)=>(
+              <button key={a.key} onClick={()=>irAAlerta(a)}
+                style={{background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",gap:12,
+                  alignItems:"center",
+                  border:"none",width:"100%",textAlign:"left",cursor:"pointer",
+                  outline:"none",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
+                <span style={{width:36,height:36,borderRadius:10,background:"#FF3B3012",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><AlertTriangle size={19} color="#FF3B30"/></span>
+                <div style={{flex:1,minWidth:0}}>
+                  <p style={{margin:0,fontSize:14,fontWeight:700,color:"#1C1C1E",lineHeight:1.35}}>{a.texto}</p>
+                  <p style={{margin:"3px 0 0",fontSize:12,color:"#55555A"}}>{a.sub}</p>
+                </div>
+                <ChevronRight size={18} color="#C7C7CC" style={{flexShrink:0}}/>
+              </button>
+            );
+            // Si hay un filtro por obra puntual (viniendo de Director), no hace falta separar en secciones
+            if(filtroObraAlertas||deEquipo.length===0){
+              return alertasFiltradas.map(Tarjeta);
+            }
+            return(<>
+              {propias.length>0&&<>
+                <p style={{margin:"4px 0 2px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5,display:"flex",alignItems:"center",gap:7}}><span style={{width:9,height:9,borderRadius:"50%",background:"#2E3A4B",flexShrink:0}}/>Tus obras</p>
+                {propias.map(Tarjeta)}
+              </>}
+              <p style={{margin:"12px 0 2px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5,display:"flex",alignItems:"center",gap:7}}><span style={{width:9,height:9,borderRadius:"50%",background:"#7C5CFC",flexShrink:0}}/>Obras de tu equipo</p>
+              {deEquipo.map(Tarjeta)}
+            </>);
+          })()}
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva="alertas" onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
