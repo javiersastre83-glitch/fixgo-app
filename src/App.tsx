@@ -1672,11 +1672,17 @@ export default function App({ session }) {
     setGenerandoLink(true);
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
     const esp=invitarRol==="operario"?(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp):null;
-    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:invitarNombre.trim()||null,telefono:invitarTelefono.trim()||null});
+    const nombreLimpio=invitarNombre.trim();
+    if(nombreLimpio){
+      // Si ya había una invitación sin usar para esta MISMA persona en esta obra, la borramos
+      // (evita que quede "fantasma" pendiente para siempre si se regenera el link).
+      await supabase.from("invitaciones").delete().eq("obra_id",obraActual.id).eq("usada",false).ilike("nombre",nombreLimpio);
+    }
+    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:nombreLimpio||null,telefono:invitarTelefono.trim()||null});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
     setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
     setGenerandoLink(false);
-    setInvitacionesPendientes(p=>[{codigo,rol:invitarRol,especialidad:esp,nombre:invitarNombre.trim()||null,telefono:invitarTelefono.trim()||null,created_at:new Date().toISOString()},...p]);
+    setInvitacionesPendientes(p=>[{codigo,rol:invitarRol,especialidad:esp,nombre:nombreLimpio||null,telefono:invitarTelefono.trim()||null,created_at:new Date().toISOString()},...(nombreLimpio?p.filter(i=>(i.nombre||"").toLowerCase()!==nombreLimpio.toLowerCase()):p)]);
     if(invitarCallback){
       const etiqueta=invitarNombre.trim()||esp||(invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":"Nuevo integrante");
       invitarCallback({responsable:etiqueta,usuarioId:null});
