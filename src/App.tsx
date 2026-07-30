@@ -1831,13 +1831,15 @@ export default function App({ session }) {
     if(a.resuelta!==b.resuelta)return a.resuelta?1:-1;
     let resultado;
     if(orden==="fecha"){
+      const ca=a.created_at?new Date(a.created_at).getTime():(a.fecha?new Date(a.fecha).getTime():0);
+      const cb=b.created_at?new Date(b.created_at).getTime():(b.fecha?new Date(b.fecha).getTime():0);
+      resultado=ca-cb;
+    }else if(orden==="vencimiento"){
       const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);
       if(da===null&&db===null)resultado=0;
       else if(da===null)resultado=1;
       else if(db===null)resultado=-1;
       else resultado=da-db;
-    }else if(orden==="sector"){
-      resultado=(a.sector||"").localeCompare(b.sector||"");
     }else{
       // orden==="urgencia" (default)
       const da=diasRestantes(a.fechaLimite),db=diasRestantes(b.fechaLimite);
@@ -3692,7 +3694,7 @@ export default function App({ session }) {
         </div>
         <div style={{display:"flex",alignItems:"center",gap:6,paddingBottom:12}}>
           <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:700,color:"#55555A",flexShrink:0}}><ArrowUpDown size={12}/>Ordenar:</span>
-          {[["urgencia","Urgencia"],["fecha","Fecha"],["sector","Sector"]].map(([key,lbl])=>(
+          {[["urgencia","Urgencia"],["fecha","Fecha"],["vencimiento","Vencimiento"]].map(([key,lbl])=>(
             <button key={key} onClick={()=>{if(orden===key)setOrdenDesc(d=>!d);else{setOrden(key);setOrdenDesc(false);}}} style={{padding:"5px 12px",borderRadius:99,border:`1.5px solid ${orden===key?"#0057FF":"#E5E5EA"}`,background:orden===key?"#0057FF12":"#fff",color:orden===key?"#0057FF":"#55555A",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
               {lbl}{orden===key&&<span style={{fontSize:13,fontWeight:900}}>{ordenDesc?"▼":"▲"}</span>}
             </button>
