@@ -1403,6 +1403,15 @@ export default function App({ session }) {
             return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.audioUrl===item.audioBase64)?{...c,audioUrl,pendienteSync:false}:c)}:x)};
           });
           quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
+        } else if(item.tipo==="comentario_texto"){
+          const{error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:item.texto});
+          if(errorInsert)throw errorInsert;
+          setNovedadesPorObra(p=>{
+            const obraKey=Object.keys(p).find(k=>(p[k]||[]).some(x=>x.id===item.novedadId));
+            if(!obraKey)return p;
+            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.texto===item.texto&&c.autorId===item.autorId&&c.pendienteSync)?{...c,pendienteSync:false}:c)}:x)};
+          });
+          quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
         }
       }catch(e){
         console.error("Error sincronizando item offline:",e);
@@ -1423,7 +1432,29 @@ export default function App({ session }) {
     return()=>document.removeEventListener("visibilitychange",onVisible);
   },[]);
 
-  const agregarComentario=async(id)=>{if(!nuevoComentario.trim()||guardando)return;const texto=nuevoComentario.trim();setGuardando(true);if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});if(error){alert("No se pudo agregar el comentario: "+error.message);setGuardando(false);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId:usuarioReal?.id||usuarioActivo.id,ts:Date.now()}]}:x));setNuevoComentario("");setGuardando(false);mostrarToast("Comentario agregado");};
+  const agregarComentario=async(id)=>{
+    if(!nuevoComentario.trim()||guardando)return;
+    const texto=nuevoComentario.trim();
+    setGuardando(true);
+    const autorId=usuarioReal?.id||usuarioActivo.id;
+    if(usuarioReal&&typeof id==="string"&&!estaOnline){
+      // ── Sin conexión: guardar local y encolar para subir cuando vuelva la señal ──
+      setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId,ts:Date.now(),pendienteSync:true}]}:x));
+      setColaOffline(c=>[...c,{tipo:"comentario_texto",novedadId:id,texto,autorId}]);
+      setNuevoComentario("");
+      setGuardando(false);
+      mostrarToast("📡 Comentario guardado sin conexión — se sube solo cuando vuelva la señal");
+      return;
+    }
+    if(usuarioReal&&typeof id==="string"){
+      const{error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});
+      if(error){alert("No se pudo agregar el comentario: "+error.message);setGuardando(false);return;}
+    }
+    setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId,ts:Date.now()}]}:x));
+    setNuevoComentario("");
+    setGuardando(false);
+    mostrarToast("Comentario agregado");
+  };
 
   // ── NOTAS DE VOZ EN COMENTARIOS (punto 1) ──
   const blobABase64=(blob)=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
