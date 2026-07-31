@@ -606,6 +606,7 @@ export default function App({ session }) {
   const [rangoPersonalizado, setRangoPersonalizado] = useState({desde:"",hasta:""});
   const [reporteData,      setReporteData]      = useState<any>(null);
   const [vistaReporte,     setVistaReporte]      = useState(false);
+  const [modoInformeFoto,  setModoInformeFoto]    = useState(false);
   const [generandoReporte, setGenerandoReporte]  = useState(false);
   const generarReporte=(desde,hasta)=>{
     const desdeMs=desde.getTime(),hastaMs=hasta.getTime();
@@ -679,6 +680,7 @@ export default function App({ session }) {
 
     setReporteData({
       desde,hasta,
+      listaCompleta:actual.reportadas,
       reportadas:actual.reportadas.length,
       resueltas:actual.resueltas.length,
       tiempoProm:actual.tiempoProm,
@@ -1920,7 +1922,7 @@ export default function App({ session }) {
         <input type="date" value={rangoPersonalizado.hasta} onChange={e=>setRangoPersonalizado(r=>({...r,hasta:e.target.value}))} style={{...s.input,flex:1,fontSize:13,padding:"10px"}}/>
       </div>
       <button onClick={()=>elegirPeriodo("personalizado")} style={{...s.btnPrincipal,background:"#2E3A4B",marginBottom:8}}>Generar con este rango</button>
-      <button onClick={()=>setModalPeriodoReporte(false)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}}>Cancelar</button>
+      <button onClick={()=>{setModalPeriodoReporte(false);setModoInformeFoto(false);}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}}>Cancelar</button>
     </>)}
   </div></div>;
 
@@ -1997,6 +1999,87 @@ export default function App({ session }) {
   // ─────────────────────────────
   // INFO APP
   // ─────────────────────────────
+  // ─────────────────────────────
+  // INFORME FOTOGRÁFICO (solo foto, sector, responsable, fecha y estado)
+  // ─────────────────────────────
+  if(vistaReporte&&reporteData&&modoInformeFoto){
+    const rd=reporteData;
+    const fmtFecha=(d)=>d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"});
+    const lista=rd.listaCompleta||[];
+    const resueltas=lista.filter(n=>n.resuelta).length;
+    const vencidas=lista.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length;
+    const pendientes=lista.length-resueltas-vencidas;
+    const estadoDe=(n)=>n.resuelta?{txt:"✓ Resuelta",bg:"#E9F9EE",color:"#1a8a3d"}:diasRestantes(n.fechaLimite)<0?{txt:"✕ Vencida",bg:"#FFEDEC",color:"#D0342C"}:{txt:"○ Pendiente",bg:"#FFF3E2",color:"#9a6b00"};
+    const fotoDe=(n)=>n.fotoResolucion||(n.fotos&&n.fotos[0])||null;
+    const nombreResp=(n)=>n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||n.responsable):n.responsable;
+    return(
+      <div style={{...s.root,background:"#8A8D93",overflowY:"auto",padding:"20px"}}>
+        <style>{`@media print{body *{visibility:hidden;} .hoja-reporte,.hoja-reporte *{visibility:visible;} .hoja-reporte{position:absolute;left:0;top:0;} .no-print{display:none!important;}}`}</style>
+        <div className="no-print" style={{maxWidth:794,margin:"0 auto 14px",display:"flex",gap:10}}>
+          <button onClick={()=>{setVistaReporte(false);setReporteData(null);setModoInformeFoto(false);}} style={{background:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><ChevronLeft size={16}/>Volver</button>
+          <button onClick={()=>window.print()} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer"}}>Imprimir / Guardar PDF</button>
+        </div>
+        <div className="hoja-reporte" style={{background:"#fff",width:794,minHeight:1000,margin:"0 auto",padding:"44px 46px",boxShadow:"0 4px 24px rgba(0,0,0,0.2)"}}>
+
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+            <div style={{display:"flex",alignItems:"center",gap:13}}>
+              {logoEstudioUrl?
+                <img src={logoEstudioUrl} alt={nombreEstudio||"Logo"} style={{width:50,height:50,borderRadius:12,objectFit:"contain",flexShrink:0}}/>
+                :<div style={{width:50,height:50,borderRadius:12,background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",flexShrink:0}}/>}
+              <div>
+                <p style={{margin:0,fontSize:14.5,fontWeight:800}}>{nombreEstudio||"Fixgo"}</p>
+                <p style={{margin:"2px 0 0",fontSize:11,color:"#55555A"}}>{usuarioActivoReal?.nombre}</p>
+              </div>
+            </div>
+            <p style={{margin:0,fontSize:10,color:"#55555A",textAlign:"right",lineHeight:1.5}}>Emitido el {fmtFecha(new Date())}<br/>fixgo.ar</p>
+          </div>
+
+          <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:16,padding:"20px 24px",marginBottom:26}}>
+            <p style={{margin:"0 0 4px",fontSize:10,fontWeight:800,color:"#9BB0C9",textTransform:"uppercase",letterSpacing:1}}>📷 Informe fotográfico</p>
+            <h1 style={{fontSize:22,margin:"0 0 6px",color:"#fff",letterSpacing:-0.3}}>{obraActual?.nombre}</h1>
+            <p style={{margin:0,fontSize:12,color:"rgba(255,255,255,0.65)"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)}{obraActual?.direccion?` · ${obraActual.direccion}`:""}</p>
+            <div style={{display:"flex",marginTop:14,paddingTop:14,borderTop:"1px solid rgba(255,255,255,0.15)"}}>
+              {[["Novedades",lista.length],["Resueltas",resueltas],["Pendientes",pendientes],["Vencidas",vencidas]].map(([lbl,val],i)=>(
+                <div key={lbl} style={{flex:1,textAlign:"center",borderRight:i<3?"1px solid rgba(255,255,255,0.15)":"none"}}>
+                  <b style={{fontSize:22,color:"#fff",display:"block",letterSpacing:-0.4}}>{val}</b>
+                  <span style={{fontSize:9.5,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",letterSpacing:0.3}}>{lbl}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {lista.length===0?(
+            <p style={{textAlign:"center",color:"#8E8E93",fontSize:13,marginTop:40}}>No hay novedades en este período.</p>
+          ):(
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+              {lista.map(n=>{
+                const foto=fotoDe(n);
+                const est=estadoDe(n);
+                return(
+                  <div key={n.id} style={{borderRadius:14,overflow:"hidden",border:"1px solid #E5E5EA"}}>
+                    {foto?
+                      <img src={foto} alt="" style={{width:"100%",height:150,objectFit:"cover",display:"block"}}/>
+                      :<div style={{width:"100%",height:150,display:"flex",alignItems:"center",justifyContent:"center",color:"#B0B0B5",fontSize:11,fontWeight:600,background:"linear-gradient(135deg,#E5E5EA,#D4D4D8)"}}>Sin foto</div>}
+                    <div style={{padding:"11px 13px"}}>
+                      <span style={{fontSize:9,fontWeight:800,padding:"3px 8px",borderRadius:99,display:"inline-block",marginBottom:6,textTransform:"uppercase",letterSpacing:0.2,background:est.bg,color:est.color}}>{est.txt}</span>
+                      <p style={{margin:"0 0 2px",fontSize:14,fontWeight:800}}>{n.sector||"General"}</p>
+                      <p style={{margin:0,fontSize:10.5,color:"#55555A"}}>{nombreResp(n)} · {n.fecha?fmtFecha(new Date(n.fecha+"T00:00:00")):""}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div style={{marginTop:30,paddingTop:14,borderTop:"1px solid #E5E5EA",display:"flex",justifyContent:"space-between",fontSize:9.5,color:"#8E8E93"}}>
+            <span>Fixgo · Gestión simple de novedades</span>
+            <span>fixgo.ar</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if(vistaReporte&&reporteData){
     const rd=reporteData;
     const fmtFecha=(d)=>d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"});
@@ -3329,8 +3412,8 @@ export default function App({ session }) {
           )}
 
           {/* INFORME INTERNO — solo Profesional o Colega, nunca Capataz/Operario */}
-          {(miRolEnObra==="profesional"||miRolEnObra==="co_profesional")&&(esVersionPro?(
-            <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left"}}>
+          {(miRolEnObra==="profesional"||miRolEnObra==="co_profesional")&&(esVersionPro?(<>
+            <button onClick={()=>{setModoInformeFoto(false);setModalPeriodoReporte(true);}} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left"}}>
               <div style={{width:44,height:44,borderRadius:14,background:"#0057FF15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><ClipboardList size={20} color="#0057FF"/></div>
               <div style={{flex:1}}>
                 <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>Generar informe</p>
@@ -3338,7 +3421,15 @@ export default function App({ session }) {
               </div>
               <ChevronRight size={18} color="#C7C7CC"/>
             </button>
-          ):(
+            <button onClick={()=>{setModoInformeFoto(true);setModalPeriodoReporte(true);}} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left",marginTop:10}}>
+              <div style={{width:44,height:44,borderRadius:14,background:"#7C5CFC15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Camera size={20} color="#7C5CFC"/></div>
+              <div style={{flex:1}}>
+                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>Informe fotográfico</p>
+                <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Solo fotos, sector, responsable y estado</p>
+              </div>
+              <ChevronRight size={18} color="#C7C7CC"/>
+            </button>
+          </>):(
             <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
               <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
               <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
