@@ -2101,12 +2101,12 @@ export default function App({ session }) {
     );
 
     return(
-      <div className="fondo-informe-pantalla" style={{background:"#8A8D93",minHeight:"100vh",padding:"20px 0"}}>
+      <div className="fondo-informe-pantalla" style={{background:"#8A8D93",height:"100dvh",overflowY:"auto",padding:"20px 0"}}>
         <style>{`
           .hoja-informe, .hoja-informe *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}
           @media print{
           @page{size:A4 portrait;margin:0;}
-          .fondo-informe-pantalla{background:none!important;padding:0!important;min-height:0!important;}
+          .fondo-informe-pantalla{background:none!important;padding:0!important;height:auto!important;overflow:visible!important;}
           .hoja-informe{box-shadow:none!important;margin:0!important;}
           .no-print{display:none!important;}
         }`}</style>
