@@ -606,7 +606,6 @@ export default function App({ session }) {
   const [rangoPersonalizado, setRangoPersonalizado] = useState({desde:"",hasta:""});
   const [reporteData,      setReporteData]      = useState<any>(null);
   const [vistaReporte,     setVistaReporte]      = useState(false);
-  const [modoInformeFoto,  setModoInformeFoto]    = useState(false);
   const [generandoReporte, setGenerandoReporte]  = useState(false);
   const generarReporte=(desde,hasta)=>{
     const desdeMs=desde.getTime(),hastaMs=hasta.getTime();
@@ -634,36 +633,73 @@ export default function App({ session }) {
     actual.reportadas.forEach(n=>{const s=n.sector||"Sin sector";porSectorMap[s]=(porSectorMap[s]||0)+1;});
     const porSector=Object.entries(porSectorMap).map(([nombre,cant])=>({nombre,cant})).sort((a:any,b:any)=>b.cant-a.cant);
 
+    // Por oficio (el campo "responsable" siempre guarda el oficio, esté o no asignado a una persona)
+    const porOficioMap={};
+    actual.reportadas.forEach(n=>{const o=n.responsable||"Sin oficio";porOficioMap[o]=(porOficioMap[o]||0)+1;});
+    const porOficio=Object.entries(porOficioMap).map(([nombre,cant])=>({nombre,cant})).sort((a:any,b:any)=>b.cant-a.cant);
+
     // Actividad por persona: resueltas por responsable_usuario_id, a-su-cargo por responsable asignado (reportadas del período)
     const personasMap={};
     const clavePersona=(n)=>n.responsable_usuario_id||`oficio:${n.responsable}`;
     actual.reportadas.forEach(n=>{
       const k=clavePersona(n);
-      if(!personasMap[k])personasMap[k]={uid:n.responsable_usuario_id||null,nombre:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||"Sin nombre"):n.responsable,oficio:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.especialidad||""):n.responsable,resueltas:0,aCargo:0};
+      if(!personasMap[k])personasMap[k]={uid:n.responsable_usuario_id||null,nombre:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||"Sin nombre"):n.responsable,oficio:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.especialidad||""):n.responsable,resueltas:0,aCargo:0,vencidas:0};
       personasMap[k].aCargo++;
+      if(!n.resuelta&&n.fechaLimite&&new Date(n.fechaLimite).getTime()<hoyMs)personasMap[k].vencidas++;
     });
     actual.resueltas.forEach(n=>{
       const k=clavePersona(n);
-      if(!personasMap[k])personasMap[k]={uid:n.responsable_usuario_id||null,nombre:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||"Sin nombre"):n.responsable,oficio:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.especialidad||""):n.responsable,resueltas:0,aCargo:0};
+      if(!personasMap[k])personasMap[k]={uid:n.responsable_usuario_id||null,nombre:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||"Sin nombre"):n.responsable,oficio:n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.especialidad||""):n.responsable,resueltas:0,aCargo:0,vencidas:0};
       personasMap[k].resueltas++;
     });
     const actividadPersonas=Object.values(personasMap).sort((a:any,b:any)=>(b.resueltas+b.aCargo)-(a.resueltas+a.aCargo));
 
-    // Evolución: bucket diario por defecto; si el rango es largo (>14 días) y hay poca
-    // actividad total, agrupar por semana para que las barras no queden invisibles.
+    // Línea de tiempo: agrupa por día si el rango es corto, por semana si es medio, por mes si es largo.
+    // (criterio: ≤14 días → día · 15 días a 3 meses → semana · más de 3 meses → mes)
     const diasTotales=Math.max(1,Math.round(duracionMs/864e5));
-    const actividadTotal=actual.reportadas.length+actual.resueltas.length;
-    const bucketDias=(diasTotales>31)?7:(diasTotales>14&&actividadTotal<diasTotales)?7:1;
-    const buckets=[];
-    for(let t=desdeMs;t<=hastaMs;t+=bucketDias*864e5){
-      const bMs=t,bFinMs=Math.min(t+bucketDias*864e5-1,hastaMs);
-      const rep=novedades.filter(n=>enRango(n.created_at,bMs,bFinMs)).length;
-      const res=novedades.filter(n=>n.resuelta&&enRango(n.resueltaAt,bMs,bFinMs)).length;
-      const fechaLbl=bucketDias===7
-        ?`${new Date(bMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}–${new Date(bFinMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}`
-        :new Date(bMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"});
-      buckets.push({label:fechaLbl,reportadas:rep,resueltas:res});
+    const tipoLinea=diasTotales<=14?"dia":diasTotales<=90?"semana":"mes";
+    const timelinePuntos=[];
+    if(tipoLinea==="dia"){
+      for(let t=desdeMs;t<=hastaMs;t+=864e5){
+        const bMs=t,bFinMs=t+864e5-1;
+        const novsDia=novedades.filter(n=>enRango(n.created_at,bMs,bFinMs));
+        timelinePuntos.push({fecha:new Date(bMs),label:new Date(bMs).toLocaleDateString("es-AR",{day:"2-digit",month:"short"}).toUpperCase(),sub:new Date(bMs).toLocaleDateString("es-AR",{weekday:"long"}),novs:novsDia});
+      }
+    }else if(tipoLinea==="semana"){
+      for(let t=desdeMs;t<=hastaMs;t+=7*864e5){
+        const bMs=t,bFinMs=Math.min(t+7*864e5-1,hastaMs);
+        const novsSemana=novedades.filter(n=>enRango(n.created_at,bMs,bFinMs));
+        timelinePuntos.push({fecha:new Date(bMs),label:`${new Date(bMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}`,sub:`al ${new Date(bFinMs).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})}`,novs:novsSemana});
+      }
+    }else{
+      const d0=new Date(desdeMs);
+      let cursor=new Date(d0.getFullYear(),d0.getMonth(),1);
+      while(cursor.getTime()<=hastaMs){
+        const bMs=Math.max(cursor.getTime(),desdeMs);
+        const finMes=new Date(cursor.getFullYear(),cursor.getMonth()+1,1).getTime()-1;
+        const bFinMs=Math.min(finMes,hastaMs);
+        const novsMes=novedades.filter(n=>enRango(n.created_at,bMs,bFinMs));
+        timelinePuntos.push({fecha:new Date(bMs),label:cursor.toLocaleDateString("es-AR",{month:"long",year:"numeric"}).toUpperCase(),sub:"",novs:novsMes});
+        cursor=new Date(cursor.getFullYear(),cursor.getMonth()+1,1);
+      }
     }
+    // Máximo 8 puntos en la línea de tiempo para que no se rompa el diseño (si hay más, ya debería estar agrupando por una unidad más grande)
+    const timeline=timelinePuntos.slice(0,8).map(p=>{
+      const resueltasP=p.novs.filter(n=>n.resuelta).length;
+      const vencidasP=p.novs.filter(n=>!n.resuelta&&n.fechaLimite&&new Date(n.fechaLimite).getTime()<hoyMs).length;
+      const pendientesP=p.novs.length-resueltasP-vencidasP;
+      let estado="sin_cambios",cant=0,etiqueta="Sin cambios";
+      if(vencidasP>0){estado="vencida";cant=vencidasP;etiqueta=vencidasP===1?"Vencida":"Vencidas";}
+      else if(pendientesP>0){estado="pendiente";cant=pendientesP;etiqueta=pendientesP===1?"Pendiente":"Pendientes";}
+      else if(resueltasP>0){estado="resuelta";cant=resueltasP;etiqueta=resueltasP===1?"Resuelta":"Resueltas";}
+      const fotos=p.novs.map(n=>n.fotoResolucion||(n.fotos&&n.fotos[0])).filter(Boolean).slice(0,2);
+      return{...p,estado,cant,etiqueta,fotos};
+    });
+
+    // Comparativa con el período anterior (vencidas: las que ya estaban vencidas al cierre de cada período)
+    const vencidasEnPeriodo=(lista,finMs)=>lista.filter(n=>!n.resuelta&&n.fechaLimite&&new Date(n.fechaLimite).getTime()<finMs).length;
+    const vencidasActualPeriodo=vencidasEnPeriodo(actual.reportadas,hastaMs);
+    const vencidasAnteriorPeriodo=vencidasEnPeriodo(anterior.reportadas,hastaAntMs);
 
     const fotos=actual.resueltas.filter(n=>n.fotoResolucion).map((n,i)=>({
       num:i+1,descripcion:n.descripcion,sector:n.sector,foto:n.fotoResolucion,
@@ -675,8 +711,25 @@ export default function App({ session }) {
       if(ant===0)return{texto:"Primer período con datos",tipo:"neutral"};
       const pct=Math.round(((act-ant)/ant)*100);
       const bueno=invertido?pct<=0:pct>=0;
-      return{texto:`${Math.abs(pct)}% ${pct>=0?"más":"menos"} que el período anterior`,tipo:pct===0?"neutral":(bueno?"good":"bad")};
+      return{texto:`${Math.abs(pct)}% ${pct>=0?"más":"menos"} que el período anterior`,tipo:pct===0?"neutral":(bueno?"good":"bad"),pct};
     };
+
+    // Estado general (regla simple, sin IA): según vencidas y críticas abiertas ahora mismo
+    const estadoGeneral=criticasAbiertas.length>0?{txt:"Crítico",color:"#D0342C",desc:"Hay novedades urgentes vencidas que necesitan atención inmediata."}
+      :vencidasActuales.length>0?{txt:"Atención",color:"#9a6b00",desc:"Hay novedades vencidas sin resolver que conviene priorizar."}
+      :{txt:"Bueno",color:"#1a8a3d",desc:"La obra muestra un buen nivel de avance general, con la mayoría de las incidencias bajo control."};
+
+    // Puntos clave del período (plantillas con datos reales, sin texto libre)
+    const deltaRep=delta(actual.reportadas.length,anterior.reportadas.length);
+    const oficioCritico=porOficio.filter(o=>actual.reportadas.some(n=>n.responsable===o.nombre&&!n.resuelta&&n.fechaLimite&&new Date(n.fechaLimite).getTime()<hoyMs)).sort((a,b)=>b.cant-a.cant)[0];
+    const vencidaMasVieja=vencidasActuales.sort((a,b)=>new Date(a.fechaLimite).getTime()-new Date(b.fechaLimite).getTime())[0];
+    const diasVencidaMasVieja=vencidaMasVieja?Math.floor((hoyMs-new Date(vencidaMasVieja.fechaLimite).getTime())/864e5):0;
+    const insights=[];
+    if(deltaRep.tipo!=="neutral")insights.push({icono:"📈",texto:`Las novedades reportadas ${deltaRep.pct>=0?"subieron":"bajaron"} un ${Math.abs(deltaRep.pct)}% respecto del período anterior.`});
+    if(oficioCritico)insights.push({icono:"🔧",texto:`El oficio con más atrasos es ${oficioCritico.nombre}.`});
+    if(vencidaMasVieja)insights.push({icono:"⚠️",texto:`Hay una novedad vencida hace ${diasVencidaMasVieja} día${diasVencidaMasVieja!==1?"s":""} que necesita atención.`});
+    if(porSector[0])insights.push({icono:"📍",texto:`El sector ${porSector[0].nombre} concentra el ${Math.round((porSector[0].cant/actual.reportadas.length)*100)}% de las novedades del período.`});
+    insights.push({icono:"⏱️",texto:`El tiempo promedio de resolución es de ${actual.tiempoProm.toFixed(1)} días.`});
 
     setReporteData({
       desde,hasta,
@@ -691,9 +744,16 @@ export default function App({ session }) {
       deltaReportadas:delta(actual.reportadas.length,anterior.reportadas.length),
       deltaResueltas:delta(actual.resueltas.length,anterior.resueltas.length),
       deltaTiempo:delta(Number(actual.tiempoProm.toFixed(1)),Number(anterior.tiempoProm.toFixed(1)),true),
-      porSector,
+      deltaVencidas:delta(vencidasActualPeriodo,vencidasAnteriorPeriodo,true),
+      vencidasActualPeriodo,vencidasAnteriorPeriodo,
+      resueltasAnterior:anterior.resueltas.length,
+      reportadasAnterior:anterior.reportadas.length,
+      tiempoPromAnterior:anterior.tiempoProm,
+      desdeAnt:new Date(desdeAntMs),hastaAnt:new Date(hastaAntMs),
+      porSector,porOficio,
       actividadPersonas,
-      buckets,
+      tipoLinea,timeline,
+      estadoGeneral,insights,
       fotos,
     });
     setModalPeriodoReporte(false);
@@ -938,6 +998,11 @@ export default function App({ session }) {
   },[usuarioReal]);
 
   useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarEmpresa();},[usuarioReal,invitacionProcesada]);
+  useEffect(()=>{
+    if(!vistaReporte||!reporteData)return;
+    const t=setTimeout(()=>window.print(),450); // le da tiempo a que las fotos carguen antes de imprimir
+    return ()=>clearTimeout(t);
+  },[vistaReporte,reporteData]);
   useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarBitacora();},[usuarioReal,invitacionProcesada]);
   useEffect(()=>{
     if(!usuarioReal||!invitacionProcesada)return;
@@ -1998,245 +2063,352 @@ export default function App({ session }) {
 
   // ─────────────────────────────
   // INFO APP
-  // ─────────────────────────────
-  // ─────────────────────────────
-  // INFORME FOTOGRÁFICO (solo foto, sector, responsable, fecha y estado)
-  // ─────────────────────────────
-  if(vistaReporte&&reporteData&&modoInformeFoto){
-    const rd=reporteData;
-    const fmtFecha=(d)=>d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"});
-    const lista=rd.listaCompleta||[];
-    const resueltas=lista.filter(n=>n.resuelta).length;
-    const vencidas=lista.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length;
-    const pendientes=lista.length-resueltas-vencidas;
-    const estadoDe=(n)=>n.resuelta?{txt:"✓ Resuelta",bg:"#E9F9EE",color:"#1a8a3d"}:diasRestantes(n.fechaLimite)<0?{txt:"✕ Vencida",bg:"#FFEDEC",color:"#D0342C"}:{txt:"○ Pendiente",bg:"#FFF3E2",color:"#9a6b00"};
-    const fotoDe=(n)=>n.fotoResolucion||(n.fotos&&n.fotos[0])||null;
-    const nombreResp=(n)=>n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||n.responsable):n.responsable;
-    return(
-      <div style={{...s.root,background:"#8A8D93",overflowY:"auto",padding:"20px"}}>
-        <style>{`@media print{body *{visibility:hidden;} .hoja-reporte,.hoja-reporte *{visibility:visible;} .hoja-reporte{position:absolute;left:0;top:0;} .no-print{display:none!important;}}`}</style>
-        <div className="no-print" style={{maxWidth:794,margin:"0 auto 14px",display:"flex",gap:10}}>
-          <button onClick={()=>{setVistaReporte(false);setReporteData(null);setModoInformeFoto(false);}} style={{background:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><ChevronLeft size={16}/>Volver</button>
-          <button onClick={()=>window.print()} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer"}}>Imprimir / Guardar PDF</button>
-        </div>
-        <div className="hoja-reporte" style={{background:"#fff",width:794,minHeight:1000,margin:"0 auto",padding:"44px 46px",boxShadow:"0 4px 24px rgba(0,0,0,0.2)"}}>
-
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-            <div style={{display:"flex",alignItems:"center",gap:13}}>
-              {logoEstudioUrl?
-                <img src={logoEstudioUrl} alt={nombreEstudio||"Logo"} style={{width:50,height:50,borderRadius:12,objectFit:"contain",flexShrink:0}}/>
-                :<div style={{width:50,height:50,borderRadius:12,background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",flexShrink:0}}/>}
-              <div>
-                <p style={{margin:0,fontSize:14.5,fontWeight:800}}>{nombreEstudio||"Fixgo"}</p>
-                <p style={{margin:"2px 0 0",fontSize:11,color:"#55555A"}}>{usuarioActivoReal?.nombre}</p>
-              </div>
-            </div>
-            <p style={{margin:0,fontSize:10,color:"#55555A",textAlign:"right",lineHeight:1.5}}>Emitido el {fmtFecha(new Date())}<br/>fixgo.ar</p>
-          </div>
-
-          <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:16,padding:"20px 24px",marginBottom:26}}>
-            <p style={{margin:"0 0 4px",fontSize:10,fontWeight:800,color:"#9BB0C9",textTransform:"uppercase",letterSpacing:1}}>📷 Informe fotográfico</p>
-            <h1 style={{fontSize:22,margin:"0 0 6px",color:"#fff",letterSpacing:-0.3}}>{obraActual?.nombre}</h1>
-            <p style={{margin:0,fontSize:12,color:"rgba(255,255,255,0.65)"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)}{obraActual?.direccion?` · ${obraActual.direccion}`:""}</p>
-            <div style={{display:"flex",marginTop:14,paddingTop:14,borderTop:"1px solid rgba(255,255,255,0.15)"}}>
-              {[["Novedades",lista.length],["Resueltas",resueltas],["Pendientes",pendientes],["Vencidas",vencidas]].map(([lbl,val],i)=>(
-                <div key={lbl} style={{flex:1,textAlign:"center",borderRight:i<3?"1px solid rgba(255,255,255,0.15)":"none"}}>
-                  <b style={{fontSize:22,color:"#fff",display:"block",letterSpacing:-0.4}}>{val}</b>
-                  <span style={{fontSize:9.5,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",letterSpacing:0.3}}>{lbl}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {lista.length===0?(
-            <p style={{textAlign:"center",color:"#8E8E93",fontSize:13,marginTop:40}}>No hay novedades en este período.</p>
-          ):(
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-              {lista.map(n=>{
-                const foto=fotoDe(n);
-                const est=estadoDe(n);
-                return(
-                  <div key={n.id} style={{borderRadius:14,overflow:"hidden",border:"1px solid #E5E5EA"}}>
-                    {foto?
-                      <img src={foto} alt="" style={{width:"100%",height:150,objectFit:"cover",display:"block"}}/>
-                      :<div style={{width:"100%",height:150,display:"flex",alignItems:"center",justifyContent:"center",color:"#B0B0B5",fontSize:11,fontWeight:600,background:"linear-gradient(135deg,#E5E5EA,#D4D4D8)"}}>Sin foto</div>}
-                    <div style={{padding:"11px 13px"}}>
-                      <span style={{fontSize:9,fontWeight:800,padding:"3px 8px",borderRadius:99,display:"inline-block",marginBottom:6,textTransform:"uppercase",letterSpacing:0.2,background:est.bg,color:est.color}}>{est.txt}</span>
-                      <p style={{margin:"0 0 2px",fontSize:14,fontWeight:800}}>{n.sector||"General"}</p>
-                      <p style={{margin:0,fontSize:10.5,color:"#55555A"}}>{nombreResp(n)} · {n.fecha?fmtFecha(new Date(n.fecha+"T00:00:00")):""}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div style={{marginTop:30,paddingTop:14,borderTop:"1px solid #E5E5EA",display:"flex",justifyContent:"space-between",fontSize:9.5,color:"#8E8E93"}}>
-            <span>Fixgo · Gestión simple de novedades</span>
-            <span>fixgo.ar</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if(vistaReporte&&reporteData){
     const rd=reporteData;
+    const PORTADA_DEFAULT_URL="/informe-portada-default.jpg"; // Javier: subir esta imagen a la carpeta public/ del repo con este nombre exacto
     const fmtFecha=(d)=>d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"});
-    const paletaPersona=["#8B7FD1","#E0A85C","#5CA9E0","#5CC9A7","#D17FA0","#9AAE8E"];
-    const paletaSector=["#5CC9A7","#5CA9E0","#8B7FD1","#E0A85C","#D17FA0"];
-    const pendientesNoVencidas=Math.max(0,rd.pendientes-rd.vencidas);
-    const totalDonut=rd.resueltas+pendientesNoVencidas+rd.vencidas;
-    const circ=326.7;
-    const segResueltas=totalDonut>0?(rd.resueltas/totalDonut)*circ:0;
-    const segPend=totalDonut>0?(pendientesNoVencidas/totalDonut)*circ:0;
-    const segVenc=totalDonut>0?(rd.vencidas/totalDonut)*circ:0;
-    const totalSector=rd.porSector.reduce((a,s:any)=>a+s.cant,0)||1;
-    let offsetSector=0;
-    const maxBucket=Math.max(1,...rd.buckets.map(b=>Math.max(b.reportadas,b.resueltas)));
-    const deltaColor=(tipo)=>tipo==="good"?"#1E9E4A":tipo==="bad"?"#E5484D":"#55555A";
-    return(
-      <div style={{...s.root,background:"#8A8D93",overflowY:"auto",padding:"20px"}}>
-        <style>{`@media print{body *{visibility:hidden;} .hoja-reporte,.hoja-reporte *{visibility:visible;} .hoja-reporte{position:absolute;left:0;top:0;} .no-print{display:none!important;}}`}</style>
-        <div className="no-print" style={{maxWidth:794,margin:"0 auto 14px",display:"flex",gap:10}}>
-          <button onClick={()=>{setVistaReporte(false);setReporteData(null);}} style={{background:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><ChevronLeft size={16}/>Volver</button>
-          <button onClick={()=>window.print()} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer"}}>Imprimir / Guardar PDF</button>
+    const fmtFechaCorta=(d)=>d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"});
+    const paletaPersona=["#3DAE8C","#E8A23D","#5CA9E0","#8B7FD1","#D17FA0","#9AAE8E"];
+    const TEAL="#3DAE8C",MINT="#EAF6F1",INK="#1A2B2A",GRAY="#6B7573",RED="#D64545",ORANGE="#E8A23D";
+    const totalDonut=Math.max(1,rd.resueltas+Math.max(0,rd.pendientes-rd.vencidas)+rd.vencidas);
+    const pctResueltas=Math.round((rd.resueltas/totalDonut)*100);
+    const pctPendientes=Math.round((Math.max(0,rd.pendientes-rd.vencidas)/totalDonut)*100);
+    const pctVencidas=100-pctResueltas-pctPendientes;
+    const estadoBadge=(n)=>n.resuelta?{txt:"Resuelta",bg:"#E4F5EC",color:"#1a8a3d"}:(n.fechaLimite&&diasRestantes(n.fechaLimite)<0)?{txt:"Vencida",bg:"#FBE7E6",color:"#D0342C"}:{txt:"Pendiente",bg:"#FDF1DE",color:"#9a6b00"};
+    const prioTxt=(p)=>p===0?{txt:"Alta",color:RED}:p===1?{txt:"Media",color:ORANGE}:{txt:"Baja",color:"#8FBFA8"};
+    const nombreResp=(n)=>n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||n.responsable):n.responsable;
+
+    const styleHoja:any={width:"210mm",height:"297mm",background:"#fff",margin:"20px auto",boxShadow:"0 4px 30px rgba(0,0,0,0.18)",position:"relative",overflow:"hidden",padding:"14mm 14mm 10mm",pageBreakAfter:"always"};
+    const HeaderPagina=()=>(
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
+        <div style={{display:"flex",alignItems:"center",gap:9}}>
+          {logoEstudioUrl?<img src={logoEstudioUrl} style={{width:24,height:24,objectFit:"contain"}}/>:<div style={{width:24,height:24,borderRadius:6,background:"#2E3A4B"}}/>}
+          <span style={{fontSize:16,fontWeight:800,letterSpacing:-0.2}}>{nombreEstudio||"FIXGO"}</span>
         </div>
-        <div className="hoja-reporte" style={{background:"#fff",width:794,minHeight:1000,margin:"0 auto",padding:"40px 46px",boxShadow:"0 4px 24px rgba(0,0,0,0.2)"}}>
-          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:24}}>
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:6,opacity:0.5,marginBottom:14}}><div style={{width:15,height:15,borderRadius:4,background:"#55555A",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:8.5}}>F</div><span style={{fontWeight:700,fontSize:10,color:"#55555A"}}>Generado con Fixgo</span></div>
-              <h1 style={{fontSize:26,margin:0,color:"#1C1C1E",letterSpacing:-0.4}}>{obraActual?.nombre}</h1>
-              <p style={{fontSize:11.5,fontWeight:700,color:"#5CA9E0",textTransform:"uppercase",letterSpacing:0.4,margin:"5px 0 0"}}>Informe del período · Resolución de novedades</p>
-              {nombreEstudio&&<p style={{fontSize:11,color:"#55555A",margin:"3px 0 0"}}>{nombreEstudio}</p>}
-              <p style={{fontSize:11,color:"#55555A",margin:"6px 0 0"}}>Período {fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)} · Emitido el {fmtFecha(new Date())}</p>
-            </div>
-            {logoEstudioUrl?
-              <div style={{maxWidth:120,maxHeight:84,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"flex-end"}}><img src={logoEstudioUrl} alt={nombreEstudio||"Logo"} style={{maxWidth:120,maxHeight:84,objectFit:"contain"}}/></div>
-              :<div style={{width:84,height:84,border:"1.5px dashed #E5E5E7",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,textAlign:"center",fontSize:8.5,color:"#C7C7CC",fontWeight:600}}>Logo del<br/>estudio</div>
-            }
-          </div>
-          <div style={{height:3,background:"linear-gradient(90deg,#34C759,#5CA9E0)",borderRadius:99,margin:"18px 0 22px"}}/>
+        <div style={{fontSize:10,fontWeight:700,textAlign:"right",lineHeight:1.5,borderRight:`2px solid ${TEAL}`,paddingRight:12}}>
+          INFORME EJECUTIVO DE NOVEDADES<br/>
+          <span style={{color:GRAY,fontWeight:600}}>{obraActual?.nombre?.toUpperCase()}{obraActual?.direccion?` · ${obraActual.direccion.toUpperCase()}`:""}</span>
+        </div>
+      </div>
+    );
+    const FooterPagina=({pagina}:{pagina:number})=>(
+      <div style={{position:"absolute",bottom:"8mm",left:"14mm",right:"14mm",display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9.5,color:GRAY}}>
+        <span>Informe generado por <b style={{color:INK}}>Fixgo</b></span>
+        {logoEstudioUrl?<img src={logoEstudioUrl} style={{width:14,height:14,objectFit:"contain",opacity:0.35}}/>:<span/>}
+        <span>{pagina} / 4</span>
+      </div>
+    );
 
-          <div style={{display:"flex",background:"#F7F7F8",border:"1px solid #EEEEF0",borderRadius:12,padding:"18px 6px",marginBottom:26}}>
-            {[["Resueltas",rd.resueltas,rd.deltaResueltas],["Reportadas",rd.reportadas,rd.deltaReportadas],["Tiempo prom. resolución",rd.tiempoProm.toFixed(1)+"d",rd.deltaTiempo],["Pendientes",rd.pendientes,null],["Críticas abiertas",rd.criticas,null]].map(([lbl,num,d]:any,i)=>(
-              <div key={i} style={{flex:1,textAlign:"center",padding:"0 8px",borderRight:i<4?"1px solid #E5E5E7":"none"}}>
-                <div style={{fontSize:8.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.3,minHeight:22,display:"flex",alignItems:"center",justifyContent:"center"}}>{lbl}</div>
-                <div style={{fontSize:22,fontWeight:900,color:"#1C1C1E",margin:"5px 0 4px"}}>{num}</div>
-                {d&&<div style={{fontSize:9.5,fontWeight:700,color:deltaColor(d.tipo),minHeight:24}}>{d.texto}</div>}
+    return(
+      <div style={{background:"#8A8D93",minHeight:"100vh",padding:"20px 0"}}>
+        <style>{`@media print{
+          @page{size:A4 portrait;margin:0;}
+          body *{visibility:hidden;}
+          .hoja-informe,.hoja-informe *{visibility:visible;}
+          .hoja-informe{position:relative;box-shadow:none!important;margin:0!important;}
+          .no-print{display:none!important;}
+        }`}</style>
+        <div className="no-print" style={{maxWidth:"210mm",margin:"0 auto 14px",display:"flex",gap:10,padding:"0 20px"}}>
+          <button onClick={()=>{setVistaReporte(false);setReporteData(null);}} style={{background:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><ChevronLeft size={16}/>Volver</button>
+          <button onClick={()=>window.print()} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer"}}>Guardar / Imprimir PDF</button>
+        </div>
+
+        {/* ══════════ PÁGINA 1 — PORTADA ══════════ */}
+        <div className="hoja-informe" style={{...styleHoja,padding:0}}>
+          <div style={{position:"absolute",inset:0,backgroundImage:`url('${PORTADA_DEFAULT_URL}')`,backgroundSize:"cover",backgroundPosition:"center 25%"}}/>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(100deg,#0A1418 0%,#0E1B22 38%,rgba(14,27,34,0) 62%)"}}/>
+          <div style={{position:"relative",height:"100%",display:"flex",flexDirection:"column",padding:"14mm 14mm 10mm"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                {logoEstudioUrl?<img src={logoEstudioUrl} style={{width:36,height:36,borderRadius:9,objectFit:"contain"}}/>:<div style={{width:36,height:36,borderRadius:9,background:"#fff"}}/>}
+                <span style={{color:"#fff",fontSize:19,fontWeight:800,letterSpacing:-0.3}}>{(nombreEstudio||"FIXGO").toUpperCase()}</span>
               </div>
-            ))}
+              <div style={{color:"#fff",fontSize:11,fontWeight:700,textAlign:"right",lineHeight:1.4,opacity:0.85,borderRight:`2px solid ${TEAL}`,paddingRight:12}}>
+                INFORME EJECUTIVO<br/>DE NOVEDADES
+              </div>
+            </div>
+
+            <div style={{marginTop:56,maxWidth:400}}>
+              <h1 style={{color:"#fff",fontSize:42,lineHeight:1.03,margin:0,fontWeight:800,letterSpacing:-1}}>Informe<br/>Ejecutivo</h1>
+              <p style={{color:TEAL,fontSize:15,fontWeight:700,margin:"9px 0 0",letterSpacing:0.3}}>DE NOVEDADES</p>
+              <div style={{width:56,height:2,background:"rgba(255,255,255,0.3)",margin:"18px 0"}}/>
+              <p style={{color:"#fff",fontSize:23,fontWeight:800,margin:0}}>{obraActual?.nombre}</p>
+              <p style={{color:"rgba(255,255,255,0.6)",fontSize:14,margin:"4px 0 0"}}>{obraActual?.direccion}</p>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginTop:22}}>
+                <div style={{width:25,height:25,border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:11,flexShrink:0}}><Calendar size={13}/></div>
+                <div>
+                  <p style={{margin:0,color:"rgba(255,255,255,0.5)",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Período</p>
+                  <p style={{margin:0,color:"#fff",fontSize:14,fontWeight:700}}>{fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{flex:1}}/>
+
+            <div style={{background:"rgba(14,27,34,0.82)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:16,padding:"18px 6px",display:"flex"}}>
+              {[["Novedades",rd.reportadas,TEAL],["Resueltas",`${rd.avance}%`,TEAL],["Pendientes",rd.pendientes,ORANGE],["Vencidas",rd.vencidas,"#FF6B60"]].map(([lbl,val,color],i)=>(
+                <div key={String(lbl)} style={{flex:1,textAlign:"center",borderRight:i<3?"1px solid rgba(255,255,255,0.1)":"none"}}>
+                  <b style={{display:"block",fontSize:30,fontWeight:800,letterSpacing:-1,color:color as string}}>{val}</b>
+                  <span style={{display:"block",fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",letterSpacing:0.5,marginTop:2}}>{lbl}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:14,color:"rgba(255,255,255,0.5)",fontSize:10}}>
+              <span>Informe generado por <b style={{color:TEAL}}>Fixgo</b></span>
+              <span>01 / 04</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ══════════ PÁGINA 2 — RESUMEN GENERAL ══════════ */}
+        <div className="hoja-informe" style={styleHoja}>
+          <HeaderPagina/>
+          <div style={{display:"flex",gap:18,marginBottom:22}}>
+            <div style={{flex:"0 0 190px"}}>
+              <h1 style={{fontSize:27,margin:0,lineHeight:1.05,fontWeight:800,letterSpacing:-0.5}}>RESUMEN<span style={{color:TEAL,display:"block"}}>GENERAL</span></h1>
+              <div style={{width:30,height:3,background:TEAL,margin:"11px 0 9px"}}/>
+              <p style={{fontSize:10.5,color:GRAY,lineHeight:1.5,margin:0}}>Análisis consolidado de las novedades registradas en el período.</p>
+            </div>
+            <div style={{flex:1,background:"linear-gradient(135deg,#0B2622,#123D37)",borderRadius:16,padding:"18px 20px",display:"flex",alignItems:"center",gap:16}}>
+              <div>
+                <p style={{margin:"0 0 2px",color:"rgba(255,255,255,0.5)",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Estado general</p>
+                <p style={{margin:"0 0 6px",fontSize:20,fontWeight:800,color:TEAL}}>{rd.estadoGeneral.txt}</p>
+                <p style={{margin:0,fontSize:10.5,color:"rgba(255,255,255,0.7)",lineHeight:1.5,maxWidth:230}}>{rd.estadoGeneral.desc}</p>
+              </div>
+              <div style={{width:50,height:50,borderRadius:"50%",border:`2px solid ${TEAL}`,display:"flex",alignItems:"center",justifyContent:"center",color:TEAL,fontSize:20,flexShrink:0,marginLeft:"auto"}}>✓</div>
+            </div>
           </div>
 
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:32,marginBottom:30}}>
-            <div>
-              <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Novedades por sector</p>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                <thead><tr><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#55555A",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>Sector</th><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#55555A",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>Reportadas</th><th style={{textAlign:"left",fontSize:9,fontWeight:800,color:"#55555A",textTransform:"uppercase",padding:"0 0 8px",borderBottom:"1.5px solid #F0F0F2"}}>% del total</th></tr></thead>
-                <tbody>
-                  {rd.porSector.length===0&&<tr><td colSpan={3} style={{padding:"10px 0",color:"#55555A"}}>Sin novedades en este período</td></tr>}
-                  {rd.porSector.map((s:any,i)=>(
-                    <tr key={s.nombre}><td style={{padding:"8px 0",borderBottom:"1px solid #F5F5F6"}}><span style={{width:9,height:9,borderRadius:3,background:paletaSector[i%paletaSector.length],display:"inline-block",marginRight:7}}/>{s.nombre}</td><td style={{padding:"8px 0",borderBottom:"1px solid #F5F5F6"}}>{s.cant}</td><td style={{padding:"8px 0",borderBottom:"1px solid #F5F5F6"}}>{Math.round((s.cant/totalSector)*100)}%</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div>
-              <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Evolución en el período</p>
-              {(rd.buckets.every(b=>b.reportadas===0&&b.resueltas===0))?(
-                <div style={{background:"#F8F8F9",borderRadius:12,padding:"18px 22px",height:172,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <p style={{margin:0,fontSize:12,color:"#8E8E93",textAlign:"center"}}>Sin actividad para graficar en este rango</p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+            <div style={{border:"1px solid #E5E5EA",borderRadius:13,padding:17}}>
+              <h3 style={{fontSize:13,margin:"0 0 14px",fontWeight:800}}>Estado de novedades</h3>
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                <div style={{width:96,height:96,borderRadius:"50%",flexShrink:0,position:"relative",background:`conic-gradient(${TEAL} 0% ${pctResueltas}%, ${ORANGE} ${pctResueltas}% ${pctResueltas+pctPendientes}%, ${RED} ${pctResueltas+pctPendientes}% 100%)`}}>
+                  <div style={{position:"absolute",inset:14,background:"#fff",borderRadius:"50%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                    <b style={{fontSize:17}}>{rd.reportadas}</b><span style={{fontSize:7,color:GRAY,textTransform:"uppercase"}}>Total</span>
+                  </div>
                 </div>
-              ):(<>
-              <div style={{background:"#F8F8F9",borderRadius:12,padding:"18px 22px",height:172,display:"flex",alignItems:"flex-end",gap:8,justifyContent:rd.buckets.length<10?"space-between":"flex-start",overflowX:"auto"}}>
-                {rd.buckets.map((b,i)=>(
-                  <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flexShrink:0}}>
-                    <div style={{display:"flex",gap:3,alignItems:"flex-end",height:118}}>
-                      <div style={{width:12,borderRadius:"3px 3px 0 0",background:"#5CA9E0",height:Math.max(2,(b.reportadas/maxBucket)*118)}}/>
-                      <div style={{width:12,borderRadius:"3px 3px 0 0",background:"#34C759",height:Math.max(2,(b.resueltas/maxBucket)*118)}}/>
-                    </div>
-                    <span style={{fontSize:9,color:"#55555A"}}>{b.label}</span>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:7,fontSize:11}}><span style={{width:8,height:8,borderRadius:2,background:TEAL,flexShrink:0}}/>Resueltas<b style={{marginLeft:"auto"}}>{pctResueltas}% ({rd.resueltas})</b></div>
+                  <div style={{display:"flex",alignItems:"center",gap:7,fontSize:11}}><span style={{width:8,height:8,borderRadius:2,background:ORANGE,flexShrink:0}}/>Pendientes<b style={{marginLeft:"auto"}}>{pctPendientes}% ({Math.max(0,rd.pendientes-rd.vencidas)})</b></div>
+                  <div style={{display:"flex",alignItems:"center",gap:7,fontSize:11}}><span style={{width:8,height:8,borderRadius:2,background:RED,flexShrink:0}}/>Vencidas<b style={{marginLeft:"auto"}}>{pctVencidas}% ({rd.vencidas})</b></div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{border:"1px solid #E5E5EA",borderRadius:13,padding:17}}>
+              <h3 style={{fontSize:13,margin:"0 0 14px",fontWeight:800}}>Novedades por oficio</h3>
+              {rd.porOficio.length===0&&<p style={{fontSize:11,color:GRAY}}>Sin datos en este período.</p>}
+              {rd.porOficio.slice(0,5).map((o:any)=>(
+                <div key={o.nombre} style={{display:"flex",alignItems:"center",gap:9,marginBottom:11}}>
+                  <span style={{fontSize:10.5,width:95,flexShrink:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.nombre}</span>
+                  <div style={{flex:1,height:7,background:"#F0F0F2",borderRadius:99}}><div style={{height:"100%",width:`${(o.cant/rd.porOficio[0].cant)*100}%`,background:TEAL,borderRadius:99}}/></div>
+                  <span style={{fontSize:11,fontWeight:700,width:14,textAlign:"right",flexShrink:0}}>{o.cant}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{border:"1px solid #E5E5EA",borderRadius:13,padding:17}}>
+              <h3 style={{fontSize:13,margin:"0 0 14px",fontWeight:800}}>Novedades por responsable</h3>
+              {rd.actividadPersonas.length===0&&<p style={{fontSize:11,color:GRAY}}>Sin datos en este período.</p>}
+              {rd.actividadPersonas.slice(0,5).map((p:any,i:number)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:9,marginBottom:11}}>
+                  <span style={{width:19,height:19,borderRadius:"50%",background:paletaPersona[i%paletaPersona.length],color:"#fff",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{p.nombre[0]?.toUpperCase()}</span>
+                  <span style={{fontSize:10.5,width:76,flexShrink:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</span>
+                  <div style={{flex:1,height:7,background:"#F0F0F2",borderRadius:99}}><div style={{height:"100%",width:`${((p.resueltas+p.aCargo)/(rd.actividadPersonas[0].resueltas+rd.actividadPersonas[0].aCargo))*100}%`,background:TEAL,borderRadius:99}}/></div>
+                  <span style={{fontSize:11,fontWeight:700,width:14,textAlign:"right",flexShrink:0}}>{p.resueltas+p.aCargo}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{border:"1px solid #E5E5EA",borderRadius:13,padding:17}}>
+              <h3 style={{fontSize:13,margin:"0 0 14px",fontWeight:800}}>Novedades por sector</h3>
+              {rd.porSector.length===0?<p style={{fontSize:11,color:GRAY}}>Sin datos en este período.</p>:(
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                <div style={{width:96,height:96,borderRadius:"50%",flexShrink:0,background:`conic-gradient(${rd.porSector.map((s:any,i:number)=>{
+                    const total=rd.porSector.reduce((a:number,x:any)=>a+x.cant,0);
+                    const acumPrev=rd.porSector.slice(0,i).reduce((a:number,x:any)=>a+x.cant,0);
+                    const from=Math.round((acumPrev/total)*100),to=Math.round(((acumPrev+s.cant)/total)*100);
+                    return `${paletaPersona[i%paletaPersona.length]} ${from}% ${to}%`;
+                  }).join(", ")})`}}/>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {rd.porSector.slice(0,4).map((s:any,i:number)=>{
+                    const total=rd.porSector.reduce((a:number,x:any)=>a+x.cant,0);
+                    return(<div key={s.nombre} style={{display:"flex",alignItems:"center",gap:7,fontSize:11}}><span style={{width:8,height:8,borderRadius:2,background:paletaPersona[i%paletaPersona.length],flexShrink:0}}/>{s.nombre}<b style={{marginLeft:"auto"}}>{Math.round((s.cant/total)*100)}%</b></div>);
+                  })}
+                </div>
+              </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{background:MINT,borderRadius:13,padding:18}}>
+            <p style={{display:"flex",alignItems:"center",gap:8,fontSize:10.5,fontWeight:800,textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 15px"}}><span style={{width:22,height:22,borderRadius:6,background:"#DFF3EA",color:TEAL,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>💡</span>Puntos clave del período</p>
+            <div style={{display:"flex",gap:11}}>
+              {rd.insights.slice(0,5).map((ins:any,i:number)=>(
+                <div key={i} style={{flex:1,textAlign:"center"}}>
+                  <div style={{width:34,height:34,borderRadius:"50%",background:"#fff",border:"1.5px solid #E5E5EA",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,margin:"0 auto 8px"}}>{ins.icono}</div>
+                  <p style={{fontSize:9,color:"#3A4340",lineHeight:1.35,margin:0}}>{ins.texto}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <FooterPagina pagina={2}/>
+        </div>
+
+        {/* ══════════ PÁGINA 3 — EVOLUCIÓN DE NOVEDADES ══════════ */}
+        <div className="hoja-informe" style={styleHoja}>
+          <HeaderPagina/>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:18,marginBottom:22}}>
+            <div>
+              <p style={{color:TEAL,fontSize:10.5,fontWeight:800,textTransform:"uppercase",letterSpacing:0.8,margin:"0 0 2px"}}>Línea de tiempo</p>
+              <h1 style={{fontSize:25,margin:0,lineHeight:1.06,fontWeight:800,letterSpacing:-0.5}}>EVOLUCIÓN DE<span style={{color:TEAL,display:"block"}}>NOVEDADES</span></h1>
+              <div style={{width:30,height:3,background:TEAL,margin:"9px 0 8px"}}/>
+              <p style={{fontSize:10.5,color:GRAY,lineHeight:1.5,margin:0,maxWidth:250}}>Resumen cronológico de las novedades registradas durante el período.</p>
+            </div>
+            <div style={{background:MINT,borderRadius:12,padding:"12px 15px",display:"flex",alignItems:"center",gap:10,flexShrink:0,width:230}}>
+              <div style={{width:30,height:30,borderRadius:8,background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Calendar size={13} color={TEAL}/></div>
+              <div>
+                <p style={{margin:0,fontSize:8.5,color:TEAL,fontWeight:700,textTransform:"uppercase",letterSpacing:0.3}}>Período analizado</p>
+                <p style={{margin:"2px 0 0",fontSize:11.5,fontWeight:800}}>{fmtFecha(rd.desde)} al {fmtFecha(rd.hasta)}</p>
+                <p style={{margin:0,fontSize:9,color:GRAY}}>Agrupado por {rd.tipoLinea==="dia"?"día":rd.tipoLinea==="semana"?"semana":"mes"}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{display:"flex",alignItems:"flex-start",position:"relative",marginBottom:28}}>
+            <div style={{position:"absolute",left:"5%",right:"5%",top:100,height:1.5,background:"#E5E5EA",zIndex:0}}/>
+            {rd.timeline.map((p:any,i:number)=>{
+              const colorEstado=p.estado==="resuelta"?"#1a8a3d":p.estado==="pendiente"?"#9a6b00":p.estado==="vencida"?"#D0342C":"#8E8E93";
+              const bgEstado=p.estado==="resuelta"?"#E4F5EC":p.estado==="pendiente"?"#FDF1DE":p.estado==="vencida"?"#FBE7E6":"#F2F2F7";
+              const colorCirculo=p.estado==="resuelta"?TEAL:p.estado==="pendiente"?ORANGE:p.estado==="vencida"?RED:"#D9D9DE";
+              return(
+                <div key={i} style={{flex:1,textAlign:"center",position:"relative",zIndex:1}}>
+                  <div style={{height:96}}>
+                    <p style={{fontSize:11.5,fontWeight:800,margin:0}}>{p.label}</p>
+                    {p.sub&&<p style={{fontSize:7,color:GRAY,textTransform:"uppercase",letterSpacing:0.3,margin:"1px 0 10px"}}>{p.sub}</p>}
+                    <div style={{width:12,height:12,borderRadius:"50%",border:`2.5px solid ${colorCirculo}`,background:p.estado==="sin_cambios"?"#fff":colorCirculo,margin:"0 auto"}}/>
+                    <span style={{display:"inline-block",fontSize:7,fontWeight:800,padding:"3px 7px",borderRadius:99,marginTop:10,textTransform:"uppercase",background:bgEstado,color:colorEstado}}>{p.etiqueta}</span>
+                    {p.cant>0&&<p style={{fontSize:16,fontWeight:800,margin:"7px 0 0"}}>{p.cant}</p>}
+                  </div>
+                  <div style={{marginTop:11,height:135,display:"flex",flexDirection:"column",gap:3}}>
+                    {p.fotos.length>0?p.fotos.map((f:string,fi:number)=>(
+                      <img key={fi} src={f} style={{width:"90%",margin:"0 auto",height:p.fotos.length>1?"66px":"135px",objectFit:"cover",borderRadius:6,display:"block"}}/>
+                    )):(
+                      <div style={{width:"90%",height:135,margin:"0 auto",borderRadius:6,background:"#F7F8F8",display:"flex",alignItems:"center",justifyContent:"center",color:"#C7C7CC",fontSize:16}}><Calendar size={16}/></div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{background:MINT,borderRadius:15,padding:20}}>
+            <div style={{display:"flex",gap:16}}>
+              <div style={{width:115,flexShrink:0}}>
+                <div style={{width:32,height:32,borderRadius:"50%",background:"#fff",color:TEAL,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,marginBottom:8}}>📈</div>
+                <b style={{fontSize:9.5,textTransform:"uppercase",letterSpacing:0.3,display:"block",lineHeight:1.4}}>Comparativa con período anterior</b>
+                <span style={{fontSize:9.5,color:GRAY,display:"block",marginTop:5}}>{fmtFechaCorta(rd.desdeAnt)} al {fmtFechaCorta(rd.hastaAnt)}</span>
+              </div>
+              <div style={{flex:1,display:"flex"}}>
+                {[
+                  {ic:"📄",lbl:"Novedades totales",...rd.deltaReportadas,vs:`(${rd.reportadas} vs ${rd.reportadasAnterior})`},
+                  {ic:"⏱️",lbl:"Tiempo prom. de resolución",...rd.deltaTiempo,vs:`(${rd.tiempoProm.toFixed(1)} vs ${rd.tiempoPromAnterior.toFixed(1)} días)`},
+                  {ic:"✓",lbl:"Novedades resueltas",...rd.deltaResueltas,vs:`(${rd.resueltas} vs ${rd.resueltasAnterior})`},
+                  {ic:"⚠️",lbl:"Novedades vencidas",...rd.deltaVencidas,vs:`(${rd.vencidasActualPeriodo} vs ${rd.vencidasAnteriorPeriodo})`},
+                ].map((c:any,i:number)=>(
+                  <div key={i} style={{flex:1,textAlign:"center"}}>
+                    <div style={{width:30,height:30,borderRadius:"50%",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,margin:"0 auto 7px"}}>{c.ic}</div>
+                    <p style={{fontSize:16,fontWeight:800,margin:0,color:c.tipo==="bad"?RED:c.tipo==="good"?"#1a8a3d":INK}}>{c.pct!==undefined?`${c.pct>=0?"+":""}${c.pct}%`:"—"}</p>
+                    <p style={{fontSize:8.5,color:GRAY,lineHeight:1.35,margin:"4px 0 0"}}>{c.lbl}</p>
+                    <small style={{fontSize:8,color:"#8E9490",display:"block",marginTop:1}}>{c.vs}</small>
                   </div>
                 ))}
               </div>
-              <div style={{display:"flex",gap:16,justifyContent:"center",marginTop:10,fontSize:9.5,color:"#636366"}}>
-                <span><i style={{width:9,height:9,borderRadius:3,background:"#5CA9E0",display:"inline-block",marginRight:5}}/>Reportadas</span>
-                <span><i style={{width:9,height:9,borderRadius:3,background:"#34C759",display:"inline-block",marginRight:5}}/>Resueltas</span>
-              </div>
-              </>)}
             </div>
-          </div>
-
-          <div style={{display:"grid",gridTemplateColumns:"1.7fr 1fr",gap:32,marginBottom:30,alignItems:"start"}}>
-            <div>
-              <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Equipo ({rd.actividadPersonas.length} integrante{rd.actividadPersonas.length!==1?"s":""}) — actividad del período</p>
-              <div style={{display:"flex",gap:14,fontSize:9.5,color:"#636366",marginBottom:14}}>
-                <span><i style={{width:9,height:9,borderRadius:3,background:"#34C759",display:"inline-block",marginRight:4}}/>Resueltas</span>
-                <span><i style={{width:9,height:9,borderRadius:3,background:"#5CA9E0",display:"inline-block",marginRight:4}}/>A su cargo</span>
-              </div>
-              {rd.actividadPersonas.length===0&&<p style={{color:"#55555A",fontSize:12}}>Sin actividad en este período</p>}
-              {rd.actividadPersonas.slice(0,8).map((p:any,i)=>{
-                const maxP=Math.max(1,...rd.actividadPersonas.map((x:any)=>Math.max(x.resueltas,x.aCargo)));
-                return(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:11,marginBottom:13}}>
-                    <div style={{width:28,height:28,borderRadius:"50%",color:"#fff",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:paletaPersona[i%paletaPersona.length]}}>{p.nombre[0]?.toUpperCase()}</div>
-                    <div style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",width:84,flexShrink:0,lineHeight:1.3}}>{p.nombre}<br/><small style={{fontWeight:400,color:"#55555A",fontSize:9.5}}>{p.oficio}</small></div>
-                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:4}}>
-                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#34C759",width:`${(p.resueltas/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.resueltas} resueltas</div></div>
-                      <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{flex:1,background:"#F0F0F2",borderRadius:99,height:7,overflow:"hidden"}}><div style={{height:"100%",borderRadius:99,background:"#5CA9E0",width:`${(p.aCargo/maxP)*100}%`}}/></div><div style={{fontSize:9.5,fontWeight:800,color:"#1C1C1E",width:78,textAlign:"right",flexShrink:0}}>{p.aCargo} a su cargo</div></div>
-                    </div>
-                  </div>
-                );
-              })}
-              {rd.actividadPersonas.length>8&&<p style={{color:"#8E8E93",fontSize:11,fontWeight:600,margin:"4px 0 0"}}>y {rd.actividadPersonas.length-8} más</p>}
-            </div>
-            <div>
-              <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Estado general</p>
-              <div style={{background:"#F8F8F9",borderRadius:12,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
-                <div style={{width:110,height:110,position:"relative"}}>
-                  <svg width="110" height="110" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="52" fill="none" stroke="#F0F0F2" strokeWidth="16"/>
-                    {totalDonut>0&&<>
-                      <circle cx="60" cy="60" r="52" fill="none" stroke="#34C759" strokeWidth="16" strokeDasharray={`${segResueltas} ${circ-segResueltas}`} transform="rotate(-90 60 60)"/>
-                      <circle cx="60" cy="60" r="52" fill="none" stroke="#FF9500" strokeWidth="16" strokeDasharray={`${segPend} ${circ-segPend}`} strokeDashoffset={-segResueltas} transform="rotate(-90 60 60)"/>
-                      <circle cx="60" cy="60" r="52" fill="none" stroke="#FF3B30" strokeWidth="16" strokeDasharray={`${segVenc} ${circ-segVenc}`} strokeDashoffset={-(segResueltas+segPend)} transform="rotate(-90 60 60)"/>
-                    </>}
-                  </svg>
-                </div>
-                <div style={{width:"100%",display:"flex",flexDirection:"column",gap:8}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11}}><span style={{display:"flex",alignItems:"center",gap:6,fontWeight:600}}><span style={{width:9,height:9,borderRadius:3,background:"#34C759",display:"inline-block"}}/>Resueltas</span><b>{rd.resueltas}</b></div>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11}}><span style={{display:"flex",alignItems:"center",gap:6,fontWeight:600}}><span style={{width:9,height:9,borderRadius:3,background:"#FF9500",display:"inline-block"}}/>Pendientes</span><b>{pendientesNoVencidas}</b></div>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11}}><span style={{display:"flex",alignItems:"center",gap:6,fontWeight:600}}><span style={{width:9,height:9,borderRadius:3,background:"#FF3B30",display:"inline-block"}}/>Vencidas</span><b>{rd.vencidas}</b></div>
-                </div>
-                <div style={{width:"100%",borderTop:"1px solid #E5E5E7",paddingTop:8,display:"flex",justifyContent:"space-between",fontSize:11,fontWeight:800,color:"#1C1C1E"}}><span>Total</span><span>{totalDonut}</span></div>
+            <div style={{display:"flex",gap:10,alignItems:"flex-start",paddingTop:16,marginTop:16,borderTop:"1px solid rgba(61,174,140,0.25)"}}>
+              <span style={{fontSize:15}}>✨</span>
+              <div>
+                <b style={{fontSize:9.5,textTransform:"uppercase",letterSpacing:0.4,display:"block",marginBottom:3}}>En resumen</b>
+                <p style={{fontSize:10.5,color:"#2E3D3A",margin:0,lineHeight:1.5}}>
+                  {rd.deltaReportadas.tipo==="bad"?"La cantidad de novedades aumentó respecto del período anterior. ":rd.deltaReportadas.tipo==="good"?"La cantidad de novedades disminuyó respecto del período anterior. ":""}
+                  {rd.deltaVencidas.tipo==="bad"?"Las vencidas aumentaron, se recomienda priorizar su resolución.":rd.vencidas===0?"No hay novedades vencidas en este momento.":"Las vencidas se mantuvieron bajo control."}
+                </p>
               </div>
             </div>
           </div>
+          <FooterPagina pagina={3}/>
+        </div>
 
-          <div>
-            <p style={{fontSize:11,fontWeight:800,color:"#1C1C1E",textTransform:"uppercase",letterSpacing:0.5,margin:"0 0 14px"}}>Fotos de resultado</p>
-            {rd.fotos.length===0?<p style={{color:"#55555A",fontSize:12}}>No hay fotos de resultado en este período</p>:
-            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
-              {rd.fotos.map((f:any)=>(
-                <div key={f.num} style={{borderRadius:9,overflow:"hidden",background:"#fff",border:"1px solid #EEEEF0"}}>
-                  <img src={f.foto} alt="" style={{width:"100%",height:70,objectFit:"cover",display:"block"}}/>
-                  <div style={{padding:"7px 8px"}}>
-                    <div style={{fontSize:7.5,color:"#C7C7CC",fontWeight:700}}>#{f.num}</div>
-                    <div style={{fontSize:9.5,color:"#1C1C1E",fontWeight:700,margin:"2px 0",lineHeight:1.2}}>{f.descripcion}</div>
-                    <div style={{fontSize:8.5,color:"#55555A",marginTop:3}}>{f.responsable} · {f.sector}</div>
-                    <span style={{display:"inline-block",fontSize:7,fontWeight:800,color:"#34C759",background:"#34C75915",padding:"2px 6px",borderRadius:99,textTransform:"uppercase",marginTop:4}}>Resuelta</span>
-                  </div>
+        {/* ══════════ PÁGINA 4 — GALERÍA DE NOVEDADES ══════════ */}
+        <div className="hoja-informe" style={styleHoja}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
+            <div style={{display:"flex",alignItems:"center",gap:9}}>
+              {logoEstudioUrl?<img src={logoEstudioUrl} style={{width:24,height:24,objectFit:"contain"}}/>:<div style={{width:24,height:24,borderRadius:6,background:"#2E3A4B"}}/>}
+              <span style={{fontSize:16,fontWeight:800,letterSpacing:-0.2}}>{nombreEstudio||"FIXGO"}</span>
+            </div>
+            <div style={{fontSize:10,fontWeight:700,textAlign:"right",lineHeight:1.5,borderRight:`2px solid ${TEAL}`,paddingRight:12}}>
+              INFORME EJECUTIVO DE NOVEDADES<br/>
+              <span style={{color:GRAY,fontWeight:600}}>{obraActual?.nombre?.toUpperCase()} · {obraActual?.direccion?.toUpperCase()}</span><br/>
+              <span style={{color:TEAL,fontWeight:800}}>{fmtFechaCorta(rd.desde)} – {fmtFechaCorta(rd.hasta)} {rd.desde.getFullYear()}</span>
+            </div>
+          </div>
+
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,marginBottom:20}}>
+            <div>
+              <h1 style={{fontSize:19,margin:0,fontWeight:800,letterSpacing:-0.3}}>GALERÍA DE NOVEDADES <span style={{fontSize:12,fontWeight:600,color:GRAY}}>(Vista general)</span></h1>
+              <p style={{fontSize:10.5,color:GRAY,margin:"5px 0 0",lineHeight:1.4}}>Vista rápida de las incidencias registradas en el período.</p>
+            </div>
+            <div style={{display:"flex",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:13,padding:"12px 8px",gap:13,flexShrink:0}}>
+              {[["✓",rd.resueltas,"Resueltas","#E4F5EC","#1a8a3d"],["🕐",Math.max(0,rd.pendientes-rd.vencidas),"Pendientes","#FDF1DE","#9a6b00"],["⚠️",rd.vencidas,"Vencida","#FBE7E6","#D0342C"],["📄",rd.reportadas,"Total","#F2F2F7",INK]].map(([ic,val,lbl,bg,color]:any,i)=>(
+                <div key={i} style={{textAlign:"center",width:48}}>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:bg,color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,margin:"0 auto 4px"}}>{ic}</div>
+                  <b style={{fontSize:15,display:"block",fontWeight:800}}>{val}</b>
+                  <span style={{fontSize:7,color:GRAY,textTransform:"uppercase"}}>{lbl}</span>
                 </div>
               ))}
-            </div>}
+            </div>
           </div>
 
-          <div style={{marginTop:34,paddingTop:16,borderTop:"1px solid #F0F0F2",display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9.5,color:"#B0B0B4"}}>
-            <div><b style={{color:"#1C1C1E"}}>Fixgo</b> · Gestión simple, obras organizadas</div>
-            <div>fixgo.ar</div>
-            <div>Página 1 de 1</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
+            {rd.listaCompleta.slice(0,8).map((n:any,i:number)=>{
+              const est=estadoBadge(n);
+              const prio=prioTxt(n.prioridad);
+              const fotosNov=[n.fotoResolucion,...(n.fotos||[])].filter(Boolean);
+              return(
+                <div key={n.id} style={{border:"1px solid #E5E5EA",borderRadius:11,overflow:"hidden"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 8px"}}>
+                    <span style={{fontSize:8.5,fontWeight:800,color:"#fff",background:INK,padding:"2px 6px",borderRadius:5}}>#{String(i+1).padStart(3,"0")}</span>
+                    <span style={{fontSize:7.5,fontWeight:800,padding:"2px 6px",borderRadius:99,textTransform:"uppercase",background:est.bg,color:est.color}}>{est.txt}</span>
+                  </div>
+                  {fotosNov[0]?<img src={fotosNov[0]} style={{width:"100%",height:88,objectFit:"cover",display:"block"}}/>:<div style={{width:"100%",height:88,background:"linear-gradient(135deg,#E5E5EA,#D4D4D8)",display:"flex",alignItems:"center",justifyContent:"center",color:"#B0B0B5",fontSize:9}}>Sin foto</div>}
+                  {fotosNov.length>1&&<div style={{display:"flex",gap:2,padding:2}}>
+                    {fotosNov.slice(1,3).map((f:string,fi:number)=>(<img key={fi} src={f} style={{width:"33.3%",height:30,objectFit:"cover"}}/>))}
+                    {fotosNov.length>3&&<div style={{width:"33.3%",height:30,background:"rgba(0,0,0,0.65)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800}}>+{fotosNov.length-3}</div>}
+                  </div>}
+                  <div style={{padding:"8px 9px 9px"}}>
+                    <p style={{fontSize:9.5,fontWeight:800,margin:"0 0 6px",lineHeight:1.25,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{n.descripcion}</p>
+                    <div style={{display:"flex",alignItems:"center",gap:6,fontSize:7.5,color:GRAY,borderTop:"1px solid #F0F0F2",paddingTop:6,flexWrap:"wrap"}}>
+                      <span>👤 {nombreResp(n)}</span>
+                      <span>📅 {n.fecha?fmtFechaCorta(new Date(n.fecha+"T00:00:00")):""}</span>
+                      <span style={{display:"flex",alignItems:"center",gap:2}}><span style={{width:6,height:6,borderRadius:"50%",background:prio.color,flexShrink:0}}/>{prio.txt}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+
+          {rd.listaCompleta.length===0&&<p style={{textAlign:"center",color:"#8E8E93",fontSize:12,marginTop:30}}>No hay novedades en este período.</p>}
+
+          <div style={{display:"flex",alignItems:"center",gap:10,background:MINT,borderRadius:11,padding:"12px 15px"}}>
+            <span style={{fontSize:15}}>⭐</span>
+            <p style={{fontSize:10,margin:0,color:"#2E3D3A"}}>Esta es una vista general del período{rd.listaCompleta.length>8?" — se muestran las primeras 8 novedades":""}.</p>
+          </div>
+          <FooterPagina pagina={4}/>
         </div>
+
       </div>
     );
   }
@@ -3412,24 +3584,16 @@ export default function App({ session }) {
           )}
 
           {/* INFORME INTERNO — solo Profesional o Colega, nunca Capataz/Operario */}
-          {(miRolEnObra==="profesional"||miRolEnObra==="co_profesional")&&(esVersionPro?(<>
-            <button onClick={()=>{setModoInformeFoto(false);setModalPeriodoReporte(true);}} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left"}}>
+          {(miRolEnObra==="profesional"||miRolEnObra==="co_profesional")&&(esVersionPro?(
+            <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left"}}>
               <div style={{width:44,height:44,borderRadius:14,background:"#0057FF15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><ClipboardList size={20} color="#0057FF"/></div>
               <div style={{flex:1}}>
                 <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>Generar informe</p>
-                <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Resumen del período con gráficos y fotos</p>
+                <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Informe ejecutivo del período, listo para guardar en PDF</p>
               </div>
               <ChevronRight size={18} color="#C7C7CC"/>
             </button>
-            <button onClick={()=>{setModoInformeFoto(true);setModalPeriodoReporte(true);}} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left",marginTop:10}}>
-              <div style={{width:44,height:44,borderRadius:14,background:"#7C5CFC15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Camera size={20} color="#7C5CFC"/></div>
-              <div style={{flex:1}}>
-                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>Informe fotográfico</p>
-                <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Solo fotos, sector, responsable y estado</p>
-              </div>
-              <ChevronRight size={18} color="#C7C7CC"/>
-            </button>
-          </>):(
+          ):(
             <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
               <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
               <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
