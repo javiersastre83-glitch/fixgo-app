@@ -2079,7 +2079,7 @@ export default function App({ session }) {
     const prioTxt=(p)=>p===0?{txt:"Alta",color:RED}:p===1?{txt:"Media",color:ORANGE}:{txt:"Baja",color:"#8FBFA8"};
     const nombreResp=(n)=>n.responsable_usuario_id?(equipoObra.find(m=>m.uid===n.responsable_usuario_id)?.nombre||n.responsable):n.responsable;
 
-    const styleHoja:any={width:"210mm",height:"297mm",background:"#fff",margin:"20px auto",boxShadow:"0 4px 30px rgba(0,0,0,0.18)",position:"relative",overflow:"hidden",padding:"14mm 14mm 10mm",pageBreakAfter:"always"};
+    const styleHoja:any={width:"210mm",height:"297mm",background:"#fff",margin:"20px auto",boxShadow:"0 4px 30px rgba(0,0,0,0.18)",position:"relative",padding:"14mm 14mm 10mm",pageBreakAfter:"always",breakAfter:"page"};
     const HeaderPagina=()=>(
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
         <div style={{display:"flex",alignItems:"center",gap:9}}>
@@ -2101,12 +2101,13 @@ export default function App({ session }) {
     );
 
     return(
-      <div style={{background:"#8A8D93",minHeight:"100vh",padding:"20px 0"}}>
-        <style>{`@media print{
+      <div className="fondo-informe-pantalla" style={{background:"#8A8D93",minHeight:"100vh",padding:"20px 0"}}>
+        <style>{`
+          .hoja-informe, .hoja-informe *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}
+          @media print{
           @page{size:A4 portrait;margin:0;}
-          body *{visibility:hidden;}
-          .hoja-informe,.hoja-informe *{visibility:visible;}
-          .hoja-informe{position:relative;box-shadow:none!important;margin:0!important;}
+          .fondo-informe-pantalla{background:none!important;padding:0!important;min-height:0!important;}
+          .hoja-informe{box-shadow:none!important;margin:0!important;}
           .no-print{display:none!important;}
         }`}</style>
         <div className="no-print" style={{maxWidth:"210mm",margin:"0 auto 14px",display:"flex",gap:10,padding:"0 20px"}}>
