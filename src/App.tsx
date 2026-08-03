@@ -1838,6 +1838,16 @@ export default function App({ session }) {
     const esp=invitarRol==="operario"?(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp):null;
     const nombreLimpio=invitarNombre.trim();
     if(nombreLimpio){
+      // RESTRICCIÓN: si esta persona (por nombre) ya es miembro del equipo de esta obra,
+      // no dejamos generar una segunda invitación con otro rol (evita que alguien quede
+      // invitado como Operario Y Colega a la vez, con el segundo rol nunca activándose).
+      const yaEsMiembro=(equipoObra||[]).find(m=>(m.nombre||"").trim().toLowerCase()===nombreLimpio.toLowerCase());
+      if(yaEsMiembro){
+        const rolTxt=yaEsMiembro.rolEnObra==="capataz"?"Capataz":yaEsMiembro.rolEnObra==="co_profesional"?"Colega":yaEsMiembro.rolEnObra==="profesional"?"Profesional":"Operario";
+        alert(`${yaEsMiembro.nombre} ya es parte del equipo de esta obra (como ${rolTxt}). Si querés cambiarle el rol, primero sacalo del equipo desde "Equipo" y volvé a invitarlo.`);
+        setGenerandoLink(false);
+        return;
+      }
       // Si ya había una invitación sin usar para esta MISMA persona en esta obra, la borramos
       // (evita que quede "fantasma" pendiente para siempre si se regenera el link).
       await supabase.from("invitaciones").delete().eq("obra_id",obraActual.id).eq("usada",false).ilike("nombre",nombreLimpio);
