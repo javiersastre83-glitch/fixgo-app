@@ -855,27 +855,25 @@ export default function App({ session }) {
   };
   const guardarTelefono=async()=>{
     if(!modalTelefono)return;
-    const obraId=modalTelefono.obraId||obraActual?.id;
-    if(!obraId)return;
-    const{error}=await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("obra_id",obraId).eq("usuario_id",modalTelefono.uid);
+    const uid=modalTelefono.uid;
+    const{error}=await supabase.from("equipo_obra").update({telefono:telInput.trim()||null}).eq("usuario_id",uid);
     if(error){alert("No se pudo guardar el teléfono: "+error.message);return;}
     const tel=telInput.trim()||null;
-    setObras(obs=>obs.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:o));
-    setObraActual(oa=>oa&&oa.id===obraId?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:oa);
-    setObrasEmpresa(oe=>oe.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalTelefono.uid?{...m,telefono:tel}:m)}:o));
-    if(miembroSel&&miembroSel.uid===modalTelefono.uid)setMiembroSel(ms=>ms?{...ms,telefono:tel}:ms);
+    setObras(obs=>obs.map(o=>({...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,telefono:tel}:m)})));
+    setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===uid?{...m,telefono:tel}:m)}:oa);
+    setObrasEmpresa(oe=>oe.map(o=>({...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,telefono:tel}:m)})));
+    if(miembroSel&&miembroSel.uid===uid)setMiembroSel(ms=>ms?{...ms,telefono:tel}:ms);
     setModalTelefono(null);setTelInput("");mostrarToast("Teléfono guardado");
   };
   const [modalEmailContacto,setModalEmailContacto]=useState<any>(null); // {uid,nombre,obraId}
   const [emailContactoInput,setEmailContactoInput]=useState("");
   const guardarEmailContacto=async()=>{
     if(!modalEmailContacto)return;
-    const obraId=modalEmailContacto.obraId;
-    if(!obraId)return;
-    const{error}=await supabase.from("equipo_obra").update({email_contacto:emailContactoInput.trim()||null}).eq("obra_id",obraId).eq("usuario_id",modalEmailContacto.uid);
+    const uid=modalEmailContacto.uid;
+    const{error}=await supabase.from("equipo_obra").update({email_contacto:emailContactoInput.trim()||null}).eq("usuario_id",uid);
     if(error){alert("No se pudo guardar el mail: "+error.message);return;}
     const mail=emailContactoInput.trim()||null;
-    setObrasEmpresa(oe=>oe.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).map(m=>m.uid===modalEmailContacto.uid?{...m,emailContacto:mail}:m)}:o));
+    setObrasEmpresa(oe=>oe.map(o=>({...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,emailContacto:mail}:m)})));
     setModalEmailContacto(null);setEmailContactoInput("");mostrarToast("Mail de contacto guardado");
   };
   const [confirmarEliminar,setConfirmarEliminar]= useState(null);
@@ -2545,9 +2543,8 @@ export default function App({ session }) {
             const nombre=m.usuarios?.nombre||m.usuarios?.email||"Profesional";
             const emailCuenta=m.usuarios?.email;
             const primeraObra=obrasDeEste[0];
-            const miembroEnObra=primeraObra?.equipo?.find(eq=>eq.uid===m.usuario_id);
-            const telefono=miembroEnObra?.telefono;
-            const emailContacto=miembroEnObra?.emailContacto;
+            const telefono=obrasDeEste.map(o=>o.equipo?.find(eq=>eq.uid===m.usuario_id)?.telefono).find(Boolean);
+            const emailContacto=obrasDeEste.map(o=>o.equipo?.find(eq=>eq.uid===m.usuario_id)?.emailContacto).find(Boolean);
             return(
               <div key={m.usuario_id} style={{background:"#fff",borderRadius:18,padding:15,margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A"}}>
                 <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
