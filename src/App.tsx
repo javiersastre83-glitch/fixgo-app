@@ -355,6 +355,61 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
   );
 };
 
+// ─────────────────────────────
+// CACHEO LOCAL DE IMÁGENES (IndexedDB) — para que fotos de resolución, logo de estudio
+// y portada del informe se guarden en el teléfono la primera vez que se ven, y las
+// próximas veces (con o sin señal) se muestren al instante sin volver a pedirlas.
+// ─────────────────────────────
+const IMG_CACHE_DB="fixgo_img_cache";
+const IMG_CACHE_STORE="imagenes";
+const abrirImgCacheDB=()=>new Promise((resolve,reject)=>{
+  if(typeof indexedDB==="undefined"){reject(new Error("Sin IndexedDB"));return;}
+  const req=indexedDB.open(IMG_CACHE_DB,1);
+  req.onupgradeneeded=()=>{req.result.createObjectStore(IMG_CACHE_STORE);};
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error);
+});
+const obtenerImagenCacheada=async(url)=>{
+  if(!url)return null;
+  try{
+    const db=await abrirImgCacheDB();
+    const cacheado=await new Promise((resolve,reject)=>{
+      const tx=db.transaction(IMG_CACHE_STORE,"readonly");
+      const req=tx.objectStore(IMG_CACHE_STORE).get(url);
+      req.onsuccess=()=>resolve(req.result||null);
+      req.onerror=()=>reject(req.error);
+    });
+    if(cacheado)return URL.createObjectURL(cacheado);
+    const resp=await fetch(url);
+    if(!resp.ok)return url;
+    const blob=await resp.blob();
+    const db2=await abrirImgCacheDB();
+    await new Promise((resolve,reject)=>{
+      const tx=db2.transaction(IMG_CACHE_STORE,"readwrite");
+      tx.objectStore(IMG_CACHE_STORE).put(blob,url);
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error);
+    });
+    return URL.createObjectURL(blob);
+  }catch(e){return url;} // si algo falla (sin IndexedDB, cuota llena, etc.) se usa la URL original como respaldo
+};
+const useImagenCacheada=(url)=>{
+  const [src,setSrc]=useState(url||null);
+  useEffect(()=>{
+    let activo=true;
+    setSrc(url||null);
+    if(!url)return;
+    obtenerImagenCacheada(url).then(u=>{if(activo&&u)setSrc(u);});
+    return()=>{activo=false;};
+  },[url]);
+  return src;
+};
+const ImgCacheada=({src,...props})=>{
+  const url=useImagenCacheada(src);
+  if(!url)return null;
+  return <img src={url} {...props}/>;
+};
+
 const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#007AFF" }) => {
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
@@ -2094,7 +2149,7 @@ export default function App({ session }) {
     const HeaderPagina=()=>(
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
         <div style={{display:"flex",alignItems:"center",gap:9}}>
-          {logoEstudioUrl?<img src={logoEstudioUrl} style={{width:24,height:24,objectFit:"contain"}}/>:<div style={{width:24,height:24,borderRadius:6,background:"#2E3A4B"}}/>}
+          {logoEstudioUrl?<ImgCacheada src={logoEstudioUrl} style={{width:24,height:24,objectFit:"contain"}}/>:<div style={{width:24,height:24,borderRadius:6,background:"#2E3A4B"}}/>}
           <span style={{fontSize:16,fontWeight:800,letterSpacing:-0.2}}>{nombreEstudio||"FIXGO"}</span>
         </div>
         <div style={{fontSize:10,fontWeight:700,textAlign:"right",lineHeight:1.5,borderRight:`2px solid ${TEAL}`,paddingRight:12}}>
@@ -2106,7 +2161,7 @@ export default function App({ session }) {
     const FooterPagina=({pagina}:{pagina:number})=>(
       <div style={{position:"absolute",bottom:"8mm",left:"14mm",right:"14mm",display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9.5,color:GRAY}}>
         <span>Informe generado por <b style={{color:INK}}>Fixgo</b></span>
-        {logoEstudioUrl?<img src={logoEstudioUrl} style={{width:14,height:14,objectFit:"contain",opacity:0.35}}/>:<span/>}
+        {logoEstudioUrl?<ImgCacheada src={logoEstudioUrl} style={{width:14,height:14,objectFit:"contain",opacity:0.35}}/>:<span/>}
         <span>{pagina} / 4</span>
       </div>
     );
@@ -2129,12 +2184,12 @@ export default function App({ session }) {
 
         {/* ══════════ PÁGINA 1 — PORTADA ══════════ */}
         <div className="hoja-informe" style={{...styleHoja,padding:0}}>
-          <div style={{position:"absolute",inset:0,backgroundImage:`url('${PORTADA_DEFAULT_URL}')`,backgroundSize:"cover",backgroundPosition:"center 25%"}}/>
+          <div style={{position:"absolute",inset:0,overflow:"hidden"}}><ImgCacheada src={PORTADA_DEFAULT_URL} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 25%"}}/></div>
           <div style={{position:"absolute",inset:0,background:"linear-gradient(100deg,#0A1418 0%,#0E1B22 38%,rgba(14,27,34,0) 62%)"}}/>
           <div style={{position:"relative",height:"100%",display:"flex",flexDirection:"column",padding:"14mm 14mm 10mm"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                {logoEstudioUrl?<img src={logoEstudioUrl} style={{width:36,height:36,borderRadius:9,objectFit:"contain"}}/>:<div style={{width:36,height:36,borderRadius:9,background:"#fff"}}/>}
+                {logoEstudioUrl?<ImgCacheada src={logoEstudioUrl} style={{width:36,height:36,borderRadius:9,objectFit:"contain"}}/>:<div style={{width:36,height:36,borderRadius:9,background:"#fff"}}/>}
                 <span style={{color:"#fff",fontSize:19,fontWeight:800,letterSpacing:-0.3}}>{(nombreEstudio||"FIXGO").toUpperCase()}</span>
               </div>
               <div style={{color:"#fff",fontSize:11,fontWeight:700,textAlign:"right",lineHeight:1.4,opacity:0.85,borderRight:`2px solid ${TEAL}`,paddingRight:12}}>
@@ -2358,7 +2413,7 @@ export default function App({ session }) {
         <div className="hoja-informe" style={{...styleHoja,pageBreakAfter:"auto",breakAfter:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
             <div style={{display:"flex",alignItems:"center",gap:9}}>
-              {logoEstudioUrl?<img src={logoEstudioUrl} style={{width:24,height:24,objectFit:"contain"}}/>:<div style={{width:24,height:24,borderRadius:6,background:"#2E3A4B"}}/>}
+              {logoEstudioUrl?<ImgCacheada src={logoEstudioUrl} style={{width:24,height:24,objectFit:"contain"}}/>:<div style={{width:24,height:24,borderRadius:6,background:"#2E3A4B"}}/>}
               <span style={{fontSize:16,fontWeight:800,letterSpacing:-0.2}}>{nombreEstudio||"FIXGO"}</span>
             </div>
             <div style={{fontSize:10,fontWeight:700,textAlign:"right",lineHeight:1.5,borderRight:`2px solid ${TEAL}`,paddingRight:12}}>
@@ -2763,7 +2818,7 @@ export default function App({ session }) {
             <input ref={fileRefLogo} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)subirLogoEstudio(f);}}/>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <div style={{width:64,height:64,borderRadius:12,background:modoOscuro?"#3A3A3C":"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden",border:logoEstudioUrl?"1px solid #E5E5EA":"1.5px dashed #D0D0D5"}}>
-                {logoEstudioUrl?<img src={logoEstudioUrl} alt="Logo" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}}/>:<span style={{fontSize:20,color:"#C7C7CC"}}>🏢</span>}
+                {logoEstudioUrl?<ImgCacheada src={logoEstudioUrl} alt="Logo" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}}/>:<span style={{fontSize:20,color:"#C7C7CC"}}>🏢</span>}
               </div>
               <button onClick={()=>fileRefLogo.current?.click()} disabled={subiendoLogo} style={{background:modoOscuro?"#3A3A3C":"#F2F2F7",border:"none",borderRadius:12,padding:"11px 16px",fontWeight:700,cursor:"pointer",fontSize:13,color:modoOscuro?"#fff":"#1C1C1E",opacity:subiendoLogo?0.6:1}}>{subiendoLogo?"Subiendo...":logoEstudioUrl?"Cambiar logo":"Subir logo"}</button>
             </div>
@@ -3710,7 +3765,7 @@ export default function App({ session }) {
           <p style={{fontSize:21,fontWeight:800,color:"#1C1C1E",marginBottom:16,lineHeight:1.25}}>{detalle.descripcion}</p>
           {detalle.fotoResolucion&&<div style={{marginBottom:16}}>
             <p style={{margin:"0 0 8px",fontSize:12,fontWeight:700,color:"#34C759",textTransform:"uppercase",letterSpacing:0.5}}>✅ Foto del resultado</p>
-            <img src={detalle.fotoResolucion} alt="Resultado" onClick={()=>setFotoAmpliada(detalle.fotoResolucion)} style={{width:"100%",maxHeight:220,objectFit:"cover",borderRadius:14,cursor:"pointer",border:"2px solid #34C75930"}}/>
+            <ImgCacheada src={detalle.fotoResolucion} alt="Resultado" onClick={()=>setFotoAmpliada(detalle.fotoResolucion)} style={{width:"100%",maxHeight:220,objectFit:"cover",borderRadius:14,cursor:"pointer",border:"2px solid #34C75930"}}/>
           </div>}
           <div onClick={()=>{if(detalle.autorId===miId||puedeGestionar)setAsignacionRapida(detalle.id);}} style={{background:"#F9F9F9",borderRadius:14,padding:"12px 14px",display:"flex",alignItems:"center",gap:12,marginBottom:10,cursor:(detalle.autorId===miId||puedeGestionar)?"pointer":"default"}}>
             <div style={{width:36,height:36,borderRadius:"50%",background:colorResp,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:"#fff",flexShrink:0}}>
