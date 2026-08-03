@@ -1000,8 +1000,20 @@ export default function App({ session }) {
   useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarEmpresa();},[usuarioReal,invitacionProcesada]);
   useEffect(()=>{
     if(!vistaReporte||!reporteData)return;
-    const t=setTimeout(()=>window.print(),450); // le da tiempo a que las fotos carguen antes de imprimir
-    return ()=>clearTimeout(t);
+    let cancelado=false,impreso=false;
+    const imprimirUnaVez=()=>{if(impreso||cancelado)return;impreso=true;window.print();};
+    const esperarImagenesYImprimir=()=>{
+      const imgs=Array.from(document.querySelectorAll(".hoja-informe img")) as HTMLImageElement[];
+      const pendientes=imgs.filter(img=>!img.complete);
+      if(pendientes.length===0){setTimeout(imprimirUnaVez,150);return;}
+      let restantes=pendientes.length;
+      const listo=()=>{restantes--;if(restantes<=0)setTimeout(imprimirUnaVez,150);};
+      pendientes.forEach(img=>{img.addEventListener("load",listo,{once:true});img.addEventListener("error",listo,{once:true});});
+      // Respaldo: si por algún motivo alguna imagen nunca dispara load/error, igual imprime a los 5s
+      setTimeout(imprimirUnaVez,5000);
+    };
+    const t=setTimeout(esperarImagenesYImprimir,120); // pequeña espera para que React termine de montar el DOM
+    return ()=>{cancelado=true;clearTimeout(t);};
   },[vistaReporte,reporteData]);
   useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarBitacora();},[usuarioReal,invitacionProcesada]);
   useEffect(()=>{
