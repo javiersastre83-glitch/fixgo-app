@@ -2105,6 +2105,7 @@ export default function App({ session }) {
         <style>{`
           .hoja-informe, .hoja-informe *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}
           @media print{
+          html,body,#root{height:auto!important;overflow:visible!important;}
           @page{size:A4 portrait;margin:0;}
           .fondo-informe-pantalla{background:none!important;padding:0!important;height:auto!important;overflow:visible!important;}
           .hoja-informe{box-shadow:none!important;margin:0!important;}
