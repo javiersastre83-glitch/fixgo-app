@@ -729,7 +729,8 @@ export default function App({ session }) {
     if(oficioCritico)insights.push({icono:"🔧",texto:`El oficio con más atrasos es ${oficioCritico.nombre}.`});
     if(vencidaMasVieja)insights.push({icono:"⚠️",texto:`Hay una novedad vencida hace ${diasVencidaMasVieja} día${diasVencidaMasVieja!==1?"s":""} que necesita atención.`});
     if(porSector[0])insights.push({icono:"📍",texto:`El sector ${porSector[0].nombre} concentra el ${Math.round((porSector[0].cant/actual.reportadas.length)*100)}% de las novedades del período.`});
-    insights.push({icono:"⏱️",texto:`El tiempo promedio de resolución es de ${actual.tiempoProm.toFixed(1)} días.`});
+    if(actual.resueltas.length>0)insights.push({icono:"⏱️",texto:`El tiempo promedio de resolución es de ${actual.tiempoProm.toFixed(1)} días.`});
+    else insights.push({icono:"⏱️",texto:"Todavía no hay novedades resueltas en este período para calcular un tiempo promedio."});
 
     setReporteData({
       desde,hasta,
