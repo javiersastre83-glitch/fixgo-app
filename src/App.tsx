@@ -2357,7 +2357,7 @@ export default function App({ session }) {
         </div>
 
         {/* ══════════ PÁGINA 4 — GALERÍA DE NOVEDADES ══════════ */}
-        <div className="hoja-informe" style={styleHoja}>
+        <div className="hoja-informe" style={{...styleHoja,pageBreakAfter:"auto",breakAfter:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22}}>
             <div style={{display:"flex",alignItems:"center",gap:9}}>
               {logoEstudioUrl?<img src={logoEstudioUrl} style={{width:24,height:24,objectFit:"contain"}}/>:<div style={{width:24,height:24,borderRadius:6,background:"#2E3A4B"}}/>}
