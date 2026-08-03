@@ -2311,7 +2311,7 @@ export default function App({ session }) {
                     {p.fotos.length>0?p.fotos.map((f:string,fi:number)=>(
                       <img key={fi} src={f} style={{width:"90%",margin:"0 auto",height:p.fotos.length>1?"66px":"135px",objectFit:"cover",borderRadius:6,display:"block"}}/>
                     )):(
-                      <div style={{width:"90%",height:135,margin:"0 auto",borderRadius:6,background:"#F7F8F8",display:"flex",alignItems:"center",justifyContent:"center",color:"#C7C7CC",fontSize:16}}><Calendar size={16}/></div>
+                      <div style={{width:"90%",height:135,margin:"0 auto",borderRadius:6,background:"#F7F8F8",display:"flex",alignItems:"center",justifyContent:"center"}}><img src="/fixgo-logo-relleno.png" style={{width:32,height:32,objectFit:"contain",opacity:0.35}}/></div>
                     )}
                   </div>
                 </div>
