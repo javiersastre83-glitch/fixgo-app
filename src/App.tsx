@@ -2187,10 +2187,10 @@ export default function App({ session }) {
             <div style={{flex:1,background:"linear-gradient(135deg,#0B2622,#123D37)",borderRadius:16,padding:"18px 20px",display:"flex",alignItems:"center",gap:16}}>
               <div>
                 <p style={{margin:"0 0 2px",color:"rgba(255,255,255,0.5)",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Estado general</p>
-                <p style={{margin:"0 0 6px",fontSize:20,fontWeight:800,color:TEAL}}>{rd.estadoGeneral.txt}</p>
+                <p style={{margin:"0 0 6px",fontSize:20,fontWeight:800,color:rd.estadoGeneral.color}}>{rd.estadoGeneral.txt}</p>
                 <p style={{margin:0,fontSize:10.5,color:"rgba(255,255,255,0.7)",lineHeight:1.5,maxWidth:230}}>{rd.estadoGeneral.desc}</p>
               </div>
-              <div style={{width:50,height:50,borderRadius:"50%",border:`2px solid ${TEAL}`,display:"flex",alignItems:"center",justifyContent:"center",color:TEAL,fontSize:20,flexShrink:0,marginLeft:"auto"}}>✓</div>
+              <div style={{width:50,height:50,borderRadius:"50%",border:`2px solid ${rd.estadoGeneral.color}`,display:"flex",alignItems:"center",justifyContent:"center",color:rd.estadoGeneral.color,fontSize:20,flexShrink:0,marginLeft:"auto"}}>{rd.estadoGeneral.txt==="Bueno"?"✓":"!"}</div>
             </div>
           </div>
 
