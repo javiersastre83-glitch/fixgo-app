@@ -1653,8 +1653,17 @@ export default function App({ session }) {
       return orden[a.estado]-orden[b.estado]||b.urgentes-a.urgentes;
     });
 
+    // Eficiencia general (memoria pendiente 03/08): antigüedad promedio de TODO lo pendiente en todas las obras
+    // del director juntas — mismo criterio que "Nivel de ritmo" individual, no tiempo de resolución histórico.
+    const hoyTs=Date.now();
+    const todasPendientesEmpresa=obrasEmpresa.flatMap(o=>(o.novedades||[]).filter(n=>!n.resuelta));
+    const antiguedadPromEmpresa=todasPendientesEmpresa.length>0?todasPendientesEmpresa.reduce((acc,n)=>{const t=n.created_at?new Date(n.created_at).getTime():hoyTs;return acc+(hoyTs-t)/864e5;},0)/todasPendientesEmpresa.length:0;
+    const obrasActivas=obrasEmpresa.length;
+    const novedadesSinResponsable=obrasEmpresa.reduce((acc,o)=>acc+(o.novedades||[]).filter(n=>!n.resuelta&&!n.responsable_usuario_id).length,0);
+    const profesionalesActivos=porProfesional.filter(p=>p.total>0).length;
     return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,previewUrgentes,previewNovedades,previewResueltas,porProfesional,
-      diasPromEmpresa:porProfesional.filter(p=>p.diasProm>0).length>0?(porProfesional.reduce((s,p)=>s+p.diasProm,0)/porProfesional.filter(p=>p.diasProm>0).length):0};
+      diasPromEmpresa:porProfesional.filter(p=>p.diasProm>0).length>0?(porProfesional.reduce((s,p)=>s+p.diasProm,0)/porProfesional.filter(p=>p.diasProm>0).length):0,
+      antiguedadPromEmpresa,obrasActivas,novedadesSinResponsable,profesionalesActivos};
   };
 
   const cargarBitacora=async()=>{
@@ -2546,40 +2555,50 @@ export default function App({ session }) {
   if(vistaDirectorCategoria){
     const stats=calcularStatsEmpresa();
     const CONFIG:any={
-      urgencias:{titulo:"Urgencias",emoji:"🔥",color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",badgeBg:"#FFEDEC",valor:stats.totalUrgentes,lista:stats.porObraUrgentes,unidad:"urg.",esAlertas:true},
-      novedades:{titulo:"Novedades",emoji:"📋",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalNovedades,lista:stats.porObraNovedades,filtroDestino:"todas",unidad:"nov."},
-      resueltas:{titulo:"Resueltas",emoji:"✓",color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",badgeBg:"#E9F9EE",valor:stats.totalResueltas,lista:stats.porObraResueltas,filtroDestino:"resueltas",unidad:"res."},
+      urgencias:{titulo:"Urgencias",tituloPlural:"urgencias",emoji:"🔥",color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",badgeBg:"#FFEDEC",valor:stats.totalUrgentes,lista:stats.porObraUrgentes,unidad:"urg.",esAlertas:true},
+      novedades:{titulo:"Novedades",tituloPlural:"novedades",emoji:"📋",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalNovedades,lista:stats.porObraNovedades,filtroDestino:"todas",unidad:"nov."},
+      resueltas:{titulo:"Resueltas",tituloPlural:"resueltas",emoji:"✓",color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",badgeBg:"#E9F9EE",valor:stats.totalResueltas,lista:stats.porObraResueltas,filtroDestino:"resueltas",unidad:"res."},
     };
     const cfg=CONFIG[vistaDirectorCategoria];
+    // Agrupar las obras por el profesional dueño (memoria pendiente 03/08: reemplaza la tarjeta grande de color repetida)
+    const gruposPorProfesional=Object.values(
+      cfg.lista.reduce((acc:any,item:any)=>{
+        const key=item.responsable||"Profesional";
+        if(!acc[key])acc[key]={responsable:key,items:[]};
+        acc[key].items.push(item);
+        return acc;
+      },{})
+    ).sort((a:any,b:any)=>a.responsable.localeCompare(b.responsable));
     return(
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
           <button onClick={()=>{setVistaDirectorCategoria(null);setTabActiva("obras");irInicio();}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
         </div>
-        <div style={{flex:1,overflowY:"auto",padding:"0 0 24px"}}>
-          <div style={{borderRadius:18,padding:18,margin:"0 16px 16px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:cfg.bg}}>
-            <p style={{margin:"0 0 4px",fontSize:13,fontWeight:800,textTransform:"uppercase",letterSpacing:0.4,color:cfg.color}}>{cfg.emoji} {cfg.titulo}</p>
-            <p style={{margin:0,fontSize:46,fontWeight:800,letterSpacing:-1.5,lineHeight:1,color:cfg.color}}><NumeroAnimado valor={cfg.valor}/></p>
-            <p style={{margin:"6px 0 0",fontSize:12,color:"#55555A",fontWeight:600}}>repartidas en {cfg.lista.length} obra{cfg.lista.length!==1?"s":""}</p>
-          </div>
-          <p style={{margin:"0 16px 8px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Por obra</p>
+        <div style={{flex:1,overflowY:"auto",padding:"0 16px 24px"}}>
+          <p style={{margin:"4px 0 4px",fontSize:22,fontWeight:800,color:"#1C1C1E"}}>{cfg.titulo} por obra</p>
+          <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>{cfg.valor} {cfg.tituloPlural} repartidas en {cfg.lista.length} obra{cfg.lista.length!==1?"s":""}</p>
           {cfg.lista.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:20}}>Nada por acá 🎉</p>}
-          {cfg.lista.map(item=>(
-            <div key={item.obraId} onClick={()=>{
-                if(cfg.esAlertas){setFiltroObraAlertas({id:item.obraId,nombre:item.obraNombre});setOrigenDirectorCategoria(vistaDirectorCategoria);setTabActiva("alertas");setVistaDirectorCategoria(null);return;}
-                const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);
-                if(obra){setOrigenDirectorCategoria(vistaDirectorCategoria);irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}
-              }}
-              style={{background:"#fff",borderRadius:16,padding:"13px 15px",margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
-              <div style={{flex:1,minWidth:0}}>
-                <p style={{margin:0,fontSize:14.5,fontWeight:700}}>{item.obraNombre}</p>
-                <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{item.responsable}{item.diasMasVieja!==undefined?` · la más vieja: ${item.diasMasVieja} día${item.diasMasVieja!==1?"s":""}`:""}</p>
-              </div>
-              <div style={{background:cfg.badgeBg,borderRadius:14,padding:"6px 12px",textAlign:"center",flexShrink:0}}>
-                <p style={{margin:0,fontSize:19,fontWeight:800,color:cfg.color,lineHeight:1}}>{item.count}</p>
-                <p style={{margin:"1px 0 0",fontSize:8.5,textTransform:"uppercase",fontWeight:700,color:cfg.color}}>{cfg.unidad}</p>
-              </div>
-              <span style={{color:"#8E8E93",fontSize:16}}>›</span>
+          {gruposPorProfesional.map((grupo:any)=>(
+            <div key={grupo.responsable}>
+              <p style={{margin:"18px 0 8px 2px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>{grupo.responsable}</p>
+              {grupo.items.map((item:any)=>(
+                <div key={item.obraId} onClick={()=>{
+                    if(cfg.esAlertas){setFiltroObraAlertas({id:item.obraId,nombre:item.obraNombre});setOrigenDirectorCategoria(vistaDirectorCategoria);setTabActiva("alertas");setVistaDirectorCategoria(null);return;}
+                    const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);
+                    if(obra){setOrigenDirectorCategoria(vistaDirectorCategoria);irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}
+                  }}
+                  style={{background:"#fff",borderRadius:16,padding:"13px 15px",marginBottom:10,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <p style={{margin:0,fontSize:14.5,fontWeight:700}}>{item.obraNombre}</p>
+                    {item.diasMasVieja!==undefined&&<p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{`la más vieja: ${item.diasMasVieja} día${item.diasMasVieja!==1?"s":""}`}</p>}
+                  </div>
+                  <div style={{background:cfg.badgeBg,borderRadius:14,padding:"6px 12px",textAlign:"center",flexShrink:0}}>
+                    <p style={{margin:0,fontSize:19,fontWeight:800,color:cfg.color,lineHeight:1}}>{item.count}</p>
+                    <p style={{margin:"1px 0 0",fontSize:8.5,textTransform:"uppercase",fontWeight:700,color:cfg.color}}>{cfg.unidad}</p>
+                  </div>
+                  <span style={{color:"#8E8E93",fontSize:16}}>›</span>
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -3037,7 +3056,45 @@ export default function App({ session }) {
                   {key:"novedades",emoji:"📋",label:"Novedades",valor:stats.totalNovedades,color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",sub:`en ${stats.porObraNovedades.length} obra${stats.porObraNovedades.length!==1?"s":""}`,preview:stats.previewNovedades,onTap:()=>setVistaDirectorCategoria("novedades")},
                   {key:"resueltas",emoji:"✓",label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`,preview:stats.previewResueltas,onTap:()=>setVistaDirectorCategoria("resueltas")},
                 ];
+                const NIVELES_EMPRESA=[
+                  {id:"diamante",label:"Diamante",color:"#5AC8FA",icon:"💎",min:0,max:2,siguiente:null},
+                  {id:"oro",label:"Oro",color:"#E5A400",icon:"🥇",min:2,max:4,siguiente:2},
+                  {id:"plata",label:"Plata",color:"#9A9A9A",icon:"🥈",min:4,max:7,siguiente:4},
+                  {id:"bronce",label:"Bronce",color:"#CD7F32",icon:"🥉",min:7,max:Infinity,siguiente:7},
+                ];
+                const nivelEmpresa=stats.totalNovedades>0?(NIVELES_EMPRESA.find(n=>stats.antiguedadPromEmpresa>=n.min&&stats.antiguedadPromEmpresa<n.max)||NIVELES_EMPRESA[3]):NIVELES_EMPRESA[0];
                 return<>
+                <div style={{background:"#fff",borderRadius:18,padding:16,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A"}}>
+                  <p onClick={()=>setVistaTuEquipo(true)} style={{margin:"0 0 12px",fontSize:15,fontWeight:700,color:"#1C1C1E",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>Tu equipo <span style={{color:"#8E8E93",fontSize:16}}>›</span></p>
+                  <div style={{background:"#EAF6F1",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+                    <div style={{width:44,height:44,borderRadius:"50%",background:"#DCEFC7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{nivelEmpresa.icon}</div>
+                    <div style={{flex:1}}>
+                      <p style={{margin:0,fontSize:11,fontWeight:700,color:"#3B6D11",textTransform:"uppercase",letterSpacing:0.3}}>Eficiencia general · {nivelEmpresa.label}</p>
+                      <p style={{margin:"2px 0 0"}}><span style={{fontSize:20,fontWeight:800,color:"#1C1C1E"}}>{stats.antiguedadPromEmpresa<1?"<1":stats.antiguedadPromEmpresa.toFixed(1)}</span> <span style={{fontSize:13,fontWeight:600,color:"#3B6D11"}}>días promedio de resolución</span></p>
+                    </div>
+                  </div>
+                  <div style={{height:6,background:"#E5E5EA",borderRadius:3,overflow:"hidden",marginBottom:16}}>
+                    <div style={{width:`${nivelEmpresa.siguiente===null?100:Math.max(4,Math.min(100,Math.round(((nivelEmpresa.max===Infinity?nivelEmpresa.min*2:nivelEmpresa.max)-stats.antiguedadPromEmpresa)/((nivelEmpresa.max===Infinity?nivelEmpresa.min*2:nivelEmpresa.max)-nivelEmpresa.min)*100)))}%`,height:"100%",background:"#3DAE8C"}}/>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <div style={{background:"#F7F8F8",borderRadius:12,padding:12}}>
+                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Obras activas</p>
+                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.obrasActivas}</p>
+                    </div>
+                    <div style={{background:"#FDEDEC",borderRadius:12,padding:12}}>
+                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#993C1D"}}>Vencidas</p>
+                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.totalVencidas}</p>
+                    </div>
+                    <div style={{background:"#F7F8F8",borderRadius:12,padding:12}}>
+                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Novedades sin responsable asignado</p>
+                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.novedadesSinResponsable}</p>
+                    </div>
+                    <div style={{background:"#F7F8F8",borderRadius:12,padding:12}}>
+                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Profesionales activos</p>
+                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.profesionalesActivos}</p>
+                    </div>
+                  </div>
+                </div>
                 {PASTILLAS.map(p=>(
                   <div key={p.key} onClick={p.onTap} style={{borderRadius:18,padding:18,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:p.bg,cursor:"pointer"}}>
                     <p style={{margin:"0 0 4px",fontSize:12.5,fontWeight:800,textTransform:"uppercase",letterSpacing:0.4,color:p.color}}>{p.emoji} {p.label}</p>
@@ -3052,27 +3109,6 @@ export default function App({ session }) {
                     ))}
                   </div>
                 ))}
-
-                <div onClick={()=>setVistaTuEquipo(true)} style={{borderRadius:18,padding:18,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",background:"#fff",cursor:"pointer"}}>
-                  <p style={{margin:"0 0 12px",fontSize:15,fontWeight:800,color:"#007AFF",display:"flex",alignItems:"center",justifyContent:"space-between"}}>📈 Tu equipo <span style={{fontSize:16}}>›</span></p>
-                  <div style={{display:"flex",gap:10,marginBottom:stats.porProfesional.filter(p=>p.estado!=="aldia").length>0?12:0}}>
-                    <div style={{flex:1,background:"#F7F5FF",borderRadius:12,padding:10}}>
-                      <p style={{margin:0,fontSize:9.5,color:"#7C5CFC",textTransform:"uppercase",letterSpacing:0.3,fontWeight:800}}>Tiempo prom.</p>
-                      <p style={{margin:"3px 0 0",fontSize:18,fontWeight:800}}>{stats.diasPromEmpresa.toFixed(1)} <span style={{fontSize:11,fontWeight:600,color:"#55555A"}}>días</span></p>
-                    </div>
-                    <div style={{flex:1,background:"#FFEDEC",borderRadius:12,padding:10}}>
-                      <p style={{margin:0,fontSize:9.5,color:"#D0342C",textTransform:"uppercase",letterSpacing:0.3,fontWeight:800}}>Vencidas</p>
-                      <p style={{margin:"3px 0 0",fontSize:18,fontWeight:800,color:"#D0342C"}}>{stats.totalVencidas}</p>
-                    </div>
-                  </div>
-                  {stats.porProfesional.filter(p=>p.estado!=="aldia").slice(0,2).map(p=>(
-                    <div key={p.usuario_id} style={{display:"flex",alignItems:"center",gap:9,padding:"7px 0"}}>
-                      <span style={{width:22,height:22,borderRadius:"50%",background:p.estado==="critico"?"#FFEDEC":"#FFF6E0",color:p.estado==="critico"?"#D0342C":"#9a6b00",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0}}>{p.nombre[0]?.toUpperCase()}</span>
-                      <span style={{fontSize:12.5,fontWeight:700,flex:1}}>{p.nombre}</span>
-                      <span style={{fontSize:11.5,fontWeight:700,color:p.estado==="critico"?"#D0342C":"#9a6b00"}}>{p.urgentes} urgente{p.urgentes!==1?"s":""}</span>
-                    </div>
-                  ))}
-                </div>
                 </>;
               })()}
 
@@ -3555,6 +3591,24 @@ export default function App({ session }) {
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
 
+          {/* INFORME INTERNO — solo Profesional o Colega, nunca Capataz/Operario — ARRIBA DE TODO */}
+          {(miRolEnObra==="profesional"||miRolEnObra==="co_profesional")&&(esVersionPro?(
+            <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left"}}>
+              <div style={{width:44,height:44,borderRadius:14,background:"#0057FF15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><ClipboardList size={20} color="#0057FF"/></div>
+              <div style={{flex:1}}>
+                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>Generar informe</p>
+                <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Informe ejecutivo del período, listo para guardar en PDF</p>
+              </div>
+              <ChevronRight size={18} color="#C7C7CC"/>
+            </button>
+          ):(
+            <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
+              <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
+              <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
+              <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span style={{display:"flex",alignItems:"center",gap:8}}><ClipboardList size={17}/>Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
+            </div>
+          ))}
+
           {/* POR GREMIO */}
           <div style={{background:"#fff",borderRadius:20,padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
             <p style={{margin:"0 0 14px",fontSize:11,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Por oficio</p>
@@ -3660,23 +3714,6 @@ export default function App({ session }) {
             </button>
           )}
 
-          {/* INFORME INTERNO — solo Profesional o Colega, nunca Capataz/Operario */}
-          {(miRolEnObra==="profesional"||miRolEnObra==="co_profesional")&&(esVersionPro?(
-            <button onClick={()=>setModalPeriodoReporte(true)} style={{display:"flex",alignItems:"center",gap:14,width:"100%",background:"#fff",border:"none",borderRadius:20,cursor:"pointer",padding:"18px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"left"}}>
-              <div style={{width:44,height:44,borderRadius:14,background:"#0057FF15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><ClipboardList size={20} color="#0057FF"/></div>
-              <div style={{flex:1}}>
-                <p style={{margin:0,fontSize:15,fontWeight:800,color:"#1C1C1E"}}>Generar informe</p>
-                <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Informe ejecutivo del período, listo para guardar en PDF</p>
-              </div>
-              <ChevronRight size={18} color="#C7C7CC"/>
-            </button>
-          ):(
-            <div style={{background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",borderRadius:16,padding:"20px 16px"}}>
-              <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#FFB800",textTransform:"uppercase"}}>✨ Versión Pro</p>
-              <p style={{margin:"0 0 14px",fontSize:17,fontWeight:800,color:"#fff"}}>Informes de obra</p>
-              <button style={{width:"100%",padding:"13px",borderRadius:12,background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}} onClick={()=>setModalPro(true)}><span style={{display:"flex",alignItems:"center",gap:8}}><ClipboardList size={17}/>Informe interno (uso propio)</span><span style={{fontSize:11,background:"#FFB800",color:"#1C1C1E",padding:"2px 8px",borderRadius:99,fontWeight:800}}>PRO</span></button>
-            </div>
-          ))}
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
