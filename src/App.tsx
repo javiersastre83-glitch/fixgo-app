@@ -1218,6 +1218,8 @@ export default function App({ session }) {
         setObraActual(oa=>(oa&&oa.id===obraId)?{...oa,equipo:(oa.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:oa);
       })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"equipo_obra"},(payload)=>{
+        console.log("🔎 FIXGO DEBUG — llegó DELETE de equipo_obra:",payload);
+        console.log("🔎 FIXGO DEBUG — mi usuarioReal.id:",usuarioReal.id,"| payload.old:",payload.old);
         const obraId=payload.old.obra_id;const uidBorrado=payload.old.usuario_id;
         if(uidBorrado&&uidBorrado===usuarioReal.id){
           // ── Me sacaron a mí de esta obra: se la saco de mi lista y aviso ──
