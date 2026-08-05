@@ -976,6 +976,7 @@ export default function App({ session }) {
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
   const miRolInfo    = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
   const puedeGestionar = miRolEnObra==="profesional"||miRolEnObra==="capataz"||miRolEnObra==="co_profesional";
+  if(typeof window!=="undefined"){(window as any).__fixgoDebugRol=()=>console.log("🔎 FIXGO DEBUG — obraActual:",obraActual?.nombre,"| propietario_id:",obraActual?.propietario_id,"| miId:",miId,"| equipo:",obraActual?.equipo,"| miRolEnObra:",miRolEnObra,"| puedeGestionar:",puedeGestionar);}
   const getUserById  = (id)=>{
     if(!id)return null;
     if(usuarioReal&&id===usuarioReal.id)return{id,nombre:usuarioActivoReal.nombre};
