@@ -3141,13 +3141,27 @@ export default function App({ session }) {
             const miRolObraF=esDuenoF?"profesional":((obra.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||"operario");
             const esGestorObraF=esDuenoF||miRolObraF==="co_profesional";
             return !esGestorObraF;
-          }).length===0&&(
-            <div style={{textAlign:"center",padding:"50px 20px",color:"#55555A"}}>
-              <p style={{fontSize:44,margin:0}}>📋</p>
-              <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>Aún no tenés tareas asignadas</p>
-              <p style={{fontSize:14,margin:0}}>Cuando un profesional te sume a una obra, la vas a ver acá.</p>
-            </div>
-          )}
+          }).length===0&&(()=>{
+            // Si la persona gestiona al menos una obra (Profesional/Director/Colega), el mensaje es distinto
+            // al de un Operario recién invitado que todavía no tiene nada — memoria pendiente 04/08 (UX Writer, opción A)
+            const esGestorDeAlgunaObra=obras.some(obra=>{
+              const esDuenoF=usuarioReal?obra.propietario_id===usuarioReal.id:true;
+              const miRolObraF=esDuenoF?"profesional":((obra.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||"operario");
+              return esDuenoF||miRolObraF==="co_profesional";
+            });
+            return(
+              <div style={{textAlign:"center",padding:"50px 20px",color:"#55555A"}}>
+                <p style={{fontSize:44,margin:0}}>📋</p>
+                {esGestorDeAlgunaObra?(<>
+                  <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>No tenés tareas asignadas a tu nombre</p>
+                  <p style={{fontSize:14,margin:0}}>Las novedades de tus obras las administrás desde "Mis obras" o "Director".</p>
+                </>):(<>
+                  <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>Aún no tenés tareas asignadas</p>
+                  <p style={{fontSize:14,margin:0}}>Cuando un profesional te sume a una obra, la vas a ver acá.</p>
+                </>)}
+              </div>
+            );
+          })()}
           {obras.filter(obra=>{
             const esDuenoF=usuarioReal?obra.propietario_id===usuarioReal.id:true;
             const miRolObraF=esDuenoF?"profesional":((obra.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||"operario");
