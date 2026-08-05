@@ -946,13 +946,15 @@ export default function App({ session }) {
   const [logoEstudioUrl,   setLogoEstudioUrl]   = useState("");
   const [subiendoLogo,     setSubiendoLogo]     = useState(false);
   const fileRefLogo = useRef();
+  const [nombrePersonalizado, setNombrePersonalizado] = useState("");
   useEffect(()=>{
     if(!usuarioReal){setEsProReal(false);return;}
-    supabase.from("usuarios").select("es_pro,nombre_estudio,logo_estudio_url").eq("id",usuarioReal.id).single().then(({data})=>{
+    supabase.from("usuarios").select("es_pro,nombre_estudio,logo_estudio_url,nombre_personalizado").eq("id",usuarioReal.id).single().then(({data})=>{
       setEsProReal(!!data?.es_pro);
       setNombreEstudio(data?.nombre_estudio||"");
       setNombreEstudioInput(data?.nombre_estudio||"");
       setLogoEstudioUrl(data?.logo_estudio_url||"");
+      setNombrePersonalizado(data?.nombre_personalizado||"");
     });
   },[usuarioReal?.id]);
   const simularPro=async(valor)=>{
@@ -971,7 +973,7 @@ export default function App({ session }) {
 
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
-  const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
+  const usuarioActivoReal = usuarioReal?{id:usuarioReal.id,nombre:nombrePersonalizado||usuarioReal.user_metadata?.full_name||usuarioReal.email?.split("@")[0]||"Usuario",rolSistema:"profesional",especialidad:"Profesional",avatar:"📐",color:"#0057FF"}:usuarioActivo;
   const equipoObra   = useMemo(()=>obraActual?(obraActual.equipo||[]).filter((m,i,arr)=>arr.findIndex(x=>x.uid===m.uid)===i).map((m,idx)=>{const esDueno=usuarioReal&&m.uid===usuarioReal.id;const nombreFinal=m.nombre||(esDueno?usuarioActivoReal.nombre:null);const color=colorPorIndice(idx);if(nombreFinal){return{id:m.uid,uid:m.uid,nombre:nombreFinal,especialidad:m.especialidad||(m.rolEnObra==="profesional"?"Profesional":""),avatar:m.avatar||"📐",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx,telefono:m.telefono||null};}const u=USUARIOS_DEMO.find(u=>u.id===m.uid);if(u)return{...u,uid:m.uid,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,color,colorIdx:idx,telefono:m.telefono||null};return{id:m.uid,uid:m.uid,nombre:m.especialidad?"("+m.especialidad+")":"Sin nombre",especialidad:m.especialidad||"",avatar:m.avatar||"👷",color,rolEnObra:m.rolEnObra,invitadoPor:m.invitadoPor||null,colorIdx:idx,telefono:m.telefono||null};}).filter(Boolean):[],[obraActual?.id,obraActual?.equipo,usuarioReal?.id]);
   const miId         = usuarioReal?.id||usuarioActivo.id;
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
@@ -2766,7 +2768,7 @@ export default function App({ session }) {
       let novEncontrada=null,obraEncontrada=null;
       for(const oid in novedadesPorObra){
         const n=(novedadesPorObra[oid]||[]).find(x=>x.id===b.novedad_id);
-        if(n){novEncontrada=n;obraEncontrada=obras.find(o=>o.id===oid);break;}
+        if(n){novEncontrada=n;obraEncontrada=obras.find(o=>o.id===oid)||obrasEmpresa.find(o=>o.id===oid);break;}
       }
       return{...b,novedad:novEncontrada,obra:obraEncontrada};
     }).filter(e=>e.novedad);
@@ -2839,7 +2841,7 @@ export default function App({ session }) {
               <span style={{fontSize:15,color:"#55555A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{perfilForm.email}</span>
               <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#C7C7CC",flexShrink:0}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Google</span>
             </div>
-            <button style={{...s.btnPrincipal,background:"#34C759",marginTop:0}} onClick={async()=>{setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));if(usuarioReal)await supabase.auth.updateUser({data:{full_name:perfilForm.nombre}});alert("✅ Cambios guardados");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar cambios</span></button>
+            <button style={{...s.btnPrincipal,background:"#34C759",marginTop:0}} onClick={async()=>{setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));if(usuarioReal){await supabase.from("usuarios").update({nombre_personalizado:perfilForm.nombre||null}).eq("id",usuarioReal.id);setNombrePersonalizado(perfilForm.nombre||"");}alert("✅ Cambios guardados");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar cambios</span></button>
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"18px 16px",flexShrink:0}}>
             <p style={{margin:"0 0 4px",fontSize:15,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>Tu estudio</p>
@@ -2903,7 +2905,7 @@ export default function App({ session }) {
   if(tabActiva==="alertas"&&vistaRaiz==="inicio"){
     // Generar alertas dinámicas desde todas las obras
     const alertasDinamicas = [];
-    const obrasParaAlertas=[...obras.map(o=>({...o,esDeEquipo:false})),...obrasEmpresa.filter(oe=>!obras.some(o=>o.id===oe.id)).map(oe=>({...oe,esDeEquipo:true,novedades:(oe.novedades||[]).map(n=>({...n,fechaLimite:n.fecha_limite}))}))];
+    const obrasParaAlertas=[...obras.map(o=>({...o,esDeEquipo:false,esPropia:usuarioReal?o.propietario_id===usuarioReal.id:true})),...obrasEmpresa.filter(oe=>!obras.some(o=>o.id===oe.id)).map(oe=>({...oe,esDeEquipo:true,esPropia:false,novedades:(oe.novedades||[]).map(n=>({...n,fechaLimite:n.fecha_limite}))}))];
     obrasParaAlertas.forEach(obra => {
       const novs = obra.novedades||novedadesPorObra[obra.id] || [];
       novs.forEach(nov => {
@@ -2913,19 +2915,19 @@ export default function App({ session }) {
         if (d !== null && d < 0) {
           alertasDinamicas.push({ key:`venc-${nov.id}`, tipo:"urgente",
             texto:`Vencida hace ${Math.abs(d)} ${Math.abs(d)===1?"día":"días"} — ${nov.descripcion}`,
-            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:0, esDeEquipo:obra.esDeEquipo });
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:0, esDeEquipo:obra.esDeEquipo, esPropia:obra.esPropia });
         }
         // Vence hoy
         else if (d === 0) {
           alertasDinamicas.push({ key:`hoy-${nov.id}`, tipo:"urgente",
             texto:`Vence hoy — ${nov.descripcion}`,
-            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:1, esDeEquipo:obra.esDeEquipo });
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:1, esDeEquipo:obra.esDeEquipo, esPropia:obra.esPropia });
         }
         // Marcadas URGENTE (aunque la fecha sea futura o no tenga)
         else if (nov.prioridad === 0) {
           alertasDinamicas.push({ key:`urg-${nov.id}`, tipo:"urgente",
             texto:`Urgente — ${nov.descripcion}`,
-            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:2, esDeEquipo:obra.esDeEquipo });
+            sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:2, esDeEquipo:obra.esDeEquipo, esPropia:obra.esPropia });
         }
       });
     });
@@ -2964,7 +2966,8 @@ export default function App({ session }) {
             </div>
           )}
           {(()=>{
-            const propias=alertasFiltradas.filter(a=>!a.esDeEquipo);
+            const propias=alertasFiltradas.filter(a=>!a.esDeEquipo&&a.esPropia);
+            const tareas=alertasFiltradas.filter(a=>!a.esDeEquipo&&!a.esPropia);
             const deEquipo=alertasFiltradas.filter(a=>a.esDeEquipo);
             const Tarjeta=(a)=>(
               <button key={a.key} onClick={()=>irAAlerta(a)}
@@ -2981,7 +2984,7 @@ export default function App({ session }) {
               </button>
             );
             // Si hay un filtro por obra puntual (viniendo de Director), no hace falta separar en secciones
-            if(filtroObraAlertas||deEquipo.length===0){
+            if(filtroObraAlertas||(deEquipo.length===0&&tareas.length===0)){
               return alertasFiltradas.map(Tarjeta);
             }
             return(<>
@@ -2989,8 +2992,14 @@ export default function App({ session }) {
                 <p style={{margin:"4px 0 2px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5,display:"flex",alignItems:"center",gap:7}}><span style={{width:9,height:9,borderRadius:"50%",background:"#2E3A4B",flexShrink:0}}/>Tus obras</p>
                 {propias.map(Tarjeta)}
               </>}
-              <p style={{margin:"12px 0 2px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5,display:"flex",alignItems:"center",gap:7}}><span style={{width:9,height:9,borderRadius:"50%",background:"#7C5CFC",flexShrink:0}}/>Obras de tu equipo</p>
-              {deEquipo.map(Tarjeta)}
+              {tareas.length>0&&<>
+                <p style={{margin:"12px 0 2px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5,display:"flex",alignItems:"center",gap:7}}><span style={{width:9,height:9,borderRadius:"50%",background:"#E8A23D",flexShrink:0}}/>Tus tareas</p>
+                {tareas.map(Tarjeta)}
+              </>}
+              {deEquipo.length>0&&<>
+                <p style={{margin:"12px 0 2px",fontSize:11.5,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5,display:"flex",alignItems:"center",gap:7}}><span style={{width:9,height:9,borderRadius:"50%",background:"#7C5CFC",flexShrink:0}}/>Obras de tu equipo</p>
+                {deEquipo.map(Tarjeta)}
+              </>}
             </>);
           })()}
         </div>
