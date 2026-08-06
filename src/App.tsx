@@ -1430,7 +1430,14 @@ export default function App({ session }) {
       return;
     }
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
-      const{data,error}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:form.responsableUsuarioId||null}).select().single();
+      // Si mientras se cargaba la novedad la persona invitada ya aceptó y entró al equipo,
+      // conectamos por nombre en el momento de guardar (memoria pendiente 04/08).
+      let responsableUsuarioIdFinal=form.responsableUsuarioId||null;
+      if(!responsableUsuarioIdFinal&&resp){
+        const miembroCoincide=equipoObra.find(m=>m.nombre&&m.nombre.trim().toLowerCase()===resp.trim().toLowerCase());
+        if(miembroCoincide)responsableUsuarioIdFinal=miembroCoincide.uid;
+      }
+      const{data,error}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:responsableUsuarioIdFinal}).select().single();
       if(error){alert("No se pudo guardar la novedad: "+error.message);setGuardando(false);guardandoRef.current=false;return;}
       if(data){
         const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
