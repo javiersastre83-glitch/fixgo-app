@@ -288,7 +288,7 @@ const NOVEDADES_DEMO = [
     descripcion:"Pintura terminada en comedor", responsable:"Pintor", sector:"Comedor", prioridad:2, fechaLimite:"", resuelta:true, fecha:"2026-05-15",
     comentarios:[{texto:"Listo, dos manos aplicadas",autorId:"u2",ts:Date.now()-86400000*3},{texto:"Confirmado, quedó excelente 👍",autorId:"u1",ts:Date.now()-86400000*2}]},
 ];
-const FORM_INICIAL = { fotos:[], descripcion:"", responsable:RESPONSABLES[0], responsableCustom:"", responsableUsuarioId:null, sector:SECTORES[0], sectorCustom:"", prioridad:1, fechaLimite:"", comentario:"", ocultoCapataz:false };
+const FORM_INICIAL = { fotos:[], descripcion:"", responsable:RESPONSABLES[0], responsableCustom:"", responsableUsuarioId:null, sector:SECTORES[0], sectorCustom:"", prioridad:1, fechaLimite:"", comentario:"", ocultoCapataz:false, tokenAsignacionPendiente:null };
 
 const formatFecha = (iso) => { if(!iso) return ""; const d=new Date(iso+"T00:00:00"); return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"}); };
 const formatHora  = (ts)  => { const d=new Date(ts); return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}); };
@@ -1430,14 +1430,20 @@ export default function App({ session }) {
       return;
     }
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
-      // Si mientras se cargaba la novedad la persona invitada ya aceptó y entró al equipo,
-      // conectamos por nombre en el momento de guardar (memoria pendiente 04/08).
+      // Conexión garantizada por TOKEN (no depende de que el nombre coincida) — memoria pendiente 04/08.
       let responsableUsuarioIdFinal=form.responsableUsuarioId||null;
+      let tokenPendienteFinal=null;
+      if(!responsableUsuarioIdFinal&&form.tokenAsignacionPendiente){
+        const{data:invData}=await supabase.from("invitaciones").select("usuario_asignado").eq("token_novedad",form.tokenAsignacionPendiente).maybeSingle();
+        if(invData?.usuario_asignado)responsableUsuarioIdFinal=invData.usuario_asignado;
+        else tokenPendienteFinal=form.tokenAsignacionPendiente;
+      }
+      // Respaldo por nombre, por si la invitación no tenía token (invitada desde otro lugar)
       if(!responsableUsuarioIdFinal&&resp){
         const miembroCoincide=equipoObra.find(m=>m.nombre&&m.nombre.trim().toLowerCase()===resp.trim().toLowerCase());
         if(miembroCoincide)responsableUsuarioIdFinal=miembroCoincide.uid;
       }
-      const{data,error}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:responsableUsuarioIdFinal}).select().single();
+      const{data,error}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:responsableUsuarioIdFinal,token_asignacion_pendiente:tokenPendienteFinal}).select().single();
       if(error){alert("No se pudo guardar la novedad: "+error.message);setGuardando(false);guardandoRef.current=false;return;}
       if(data){
         const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
@@ -1857,6 +1863,9 @@ export default function App({ session }) {
     if(!usuarioReal||!obraActual?.id||generandoLink)return;
     setGenerandoLink(true);
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
+    // Token único: garantiza la conexión con la novedad que originó la invitación,
+    // sin depender de que el nombre escrito coincida exactamente (memoria pendiente 04/08 — crítico).
+    const tokenNov=invitarCallback?(`tk-${Date.now()}-${Math.random().toString(36).slice(2,10)}`):null;
     const esp=invitarRol==="operario"?(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp):null;
     const nombreLimpio=invitarNombre.trim();
     if(nombreLimpio){
@@ -1874,14 +1883,14 @@ export default function App({ session }) {
       // (evita que quede "fantasma" pendiente para siempre si se regenera el link).
       await supabase.from("invitaciones").delete().eq("obra_id",obraActual.id).eq("usada",false).ilike("nombre",nombreLimpio);
     }
-    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:nombreLimpio||null,telefono:invitarTelefono.trim()||null});
+    const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:nombreLimpio||null,telefono:invitarTelefono.trim()||null,token_novedad:tokenNov});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
     setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
     setGenerandoLink(false);
     setInvitacionesPendientes(p=>[{codigo,rol:invitarRol,especialidad:esp,nombre:nombreLimpio||null,telefono:invitarTelefono.trim()||null,created_at:new Date().toISOString()},...(nombreLimpio?p.filter(i=>(i.nombre||"").toLowerCase()!==nombreLimpio.toLowerCase()):p)]);
     if(invitarCallback){
       const etiqueta=invitarNombre.trim()||esp||(invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":"Nuevo integrante");
-      invitarCallback({responsable:etiqueta,usuarioId:null});
+      invitarCallback({responsable:etiqueta,usuarioId:null,token:tokenNov});
     }
   };
   const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp);const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
@@ -2104,7 +2113,7 @@ export default function App({ session }) {
       <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
       <p style={{margin:"0 0 14px",fontSize:13,color:"#55555A"}}>{nov.descripcion}</p>
       <div style={{overflowY:"auto"}}>
-        <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} onInvitarNuevo={()=>{setAsignacionRapida(null);abrirModalInvitar(({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId}));}} />
+        <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} onInvitarNuevo={()=>{setAsignacionRapida(null);abrirModalInvitar(async({responsable,usuarioId,token})=>{await asignarRapido(nov.id,{responsable,usuarioId});if(token)await supabase.from("novedades").update({token_asignacion_pendiente:token}).eq("id",nov.id);});}} />
       </div>
       <button type="button" onClick={()=>setAsignacionRapida(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",marginTop:16}}>Cancelar</button>
     </div></div>
@@ -4024,7 +4033,7 @@ export default function App({ session }) {
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
-          <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId})))} /></div>
+          <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId,token})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId,tokenAsignacionPendiente:token||null})))} /></div>
           <button type="button" onClick={()=>setMasOpciones(o=>!o)} style={{width:"100%",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit"}}>
             <span style={{fontSize:15,fontWeight:600,color:"#1C1C1E"}}>⚙️ Más opciones</span>
             <span style={{fontSize:13,color:"#55555A"}}>{masOpciones?"▲":"▼ sector, fecha, nota…"}</span>
