@@ -2589,7 +2589,6 @@ export default function App({ session }) {
   // ─────────────────────────────
   // DASHBOARD DEL DIRECTOR — nivel 1 por categoría
   // ─────────────────────────────
-  console.log("🔎 FIXGO DEBUG RENDER — vistaDirectorCategoria:",vistaDirectorCategoria,"| tabActiva:",tabActiva,"| vistaRaiz:",vistaRaiz,"| filtroObraAlertas:",filtroObraAlertas,"| vista:",vista,"| detalleId:",detalleId,"| obraActual:",obraActual?.nombre,"| novedadesPorObra[obraActual.id]?.length:",obraActual?.id?novedadesPorObra[obraActual.id]?.length:"n/a");
   if(vistaDirectorCategoria){
     const stats=calcularStatsEmpresa();
     const CONFIG:any={
@@ -3014,7 +3013,7 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <div style={{padding:"14px 12px 4px",flexShrink:0}}>
-          {filtroObraAlertas&&<button onClick={()=>{console.log("🔎 FIXGO DEBUG boton Director — origenDirectorCategoria ANTES:",origenDirectorCategoria);setFiltroObraAlertas(null);if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{setTabActiva("obras");}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>}
+          {filtroObraAlertas&&<button onClick={()=>{setFiltroObraAlertas(null);if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{setTabActiva("obras");}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>}
           <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"20px 18px"}}>
             <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff",display:"flex",alignItems:"center",gap:9}}><Bell size={22}/>Urgencias</p>
             <p style={{margin:"5px 0 0",fontSize:13,color:"rgba(255,255,255,0.6)"}}>
@@ -3889,7 +3888,7 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <div style={{background:"#fff",padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #F0F0F0",flexShrink:0}}>
-          <button onClick={()=>setVista("lista")} style={{width:34,height:34,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}><ChevronLeft size={20} color="#1C1C1E"/></button>
+          <button onClick={()=>{if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);setTabActiva("obras");}else{setVista("lista");}}} style={{width:34,height:34,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}><ChevronLeft size={20} color="#1C1C1E"/></button>
           <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{detalle.descripcion}</p>
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
