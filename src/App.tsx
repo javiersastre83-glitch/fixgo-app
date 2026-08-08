@@ -1997,7 +1997,10 @@ export default function App({ session }) {
 
   const statsResponsable=RESPONSABLES.map(r=>({nombre:r,pendientes:novedades.filter(n=>n.responsable===r&&!n.resuelta).length,resueltas:novedades.filter(n=>n.responsable===r&&n.resuelta).length,urgentes:novedades.filter(n=>n.responsable===r&&!n.resuelta&&n.prioridad===0).length})).filter(r=>r.pendientes+r.resueltas>0);
 
-  const novedadesFiltradas=useMemo(()=>novedades.filter(n=>{
+  const novedadesFiltradas=useMemo(()=>{
+    const esObraPropia=obras.some(o=>o.id===obraActual?.id);
+    const listaBase=esObraPropia?novedades:(novedadesPorObra[obraActual?.id]||[]);
+    return listaBase.filter(n=>{
     const matchRol=true;
     const matchResp=filtroResp==="todos"||n.responsable===filtroResp;
     const matchSector=filtroSector==="todos"||n.sector===filtroSector;
@@ -2023,12 +2026,17 @@ export default function App({ session }) {
       resultado=(da!==null&&db!==null)?da-db:a.prioridad-b.prioridad;
     }
     return ordenDesc?-resultado:resultado;
-  }),[novedades,filtro,filtroResp,filtroSector,busqueda,orden,ordenDesc]);
+  });
+  },[novedades,novedadesPorObra,obraActual?.id,obras,filtro,filtroResp,filtroSector,busqueda,orden,ordenDesc]);
 
   const respConTareas=[...new Set(novedades.map(n=>n.responsable))].map(r=>({nombre:r,cant:novedades.filter(n=>n.responsable===r).length})).sort((a,b)=>b.cant-a.cant);
 
-  const contadores=useMemo(()=>({todas:novedades.length,pendientes:novedades.filter(n=>!n.resuelta).length,resueltas:novedades.filter(n=>n.resuelta).length,vencidas:novedades.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length}),[novedades]);
-  const detalle=novedades.find(n=>n.id===detalleId);
+  const contadores=useMemo(()=>{
+    const esObraPropia=obras.some(o=>o.id===obraActual?.id);
+    const base=esObraPropia?novedades:(novedadesPorObra[obraActual?.id]||[]);
+    return{todas:base.length,pendientes:base.filter(n=>!n.resuelta).length,resueltas:base.filter(n=>n.resuelta).length,vencidas:base.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length};
+  },[novedades,novedadesPorObra,obraActual?.id,obras]);
+  const detalle=novedades.find(n=>n.id===detalleId)||(novedadesPorObra[obraActual?.id]||[]).find(n=>n.id===detalleId);
 
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);setOrigenDirectorCategoria(null);setFiltroObraAlertas(null);};
