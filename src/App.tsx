@@ -2827,6 +2827,13 @@ export default function App({ session }) {
         const n=(novedadesPorObra[oid]||[]).find(x=>x.id===b.novedad_id);
         if(n){novEncontrada=n;obraEncontrada=obras.find(o=>o.id===oid)||obrasEmpresa.find(o=>o.id===oid);break;}
       }
+      if(!novEncontrada){
+        // Respaldo: buscar en la versión liviana ya cargada de obrasEmpresa (sin necesitar visitar la obra primero)
+        for(const obra of [...obras,...obrasEmpresa]){
+          const n=(obra.novedades||[]).find((x:any)=>x.id===b.novedad_id);
+          if(n){novEncontrada={...n,fotos:n.fotos||[],comentarios:n.comentarios||[]};obraEncontrada=obra;break;}
+        }
+      }
       return{...b,novedad:novEncontrada,obra:obraEncontrada};
     }).filter(e=>e.novedad);
     const filtradas=entradas.filter(e=>{
@@ -2853,15 +2860,7 @@ export default function App({ session }) {
             <div key={nombreObra}>
               <p style={{margin:"18px 16px 8px",fontSize:12,fontWeight:800,color:"#7C5CFC",textTransform:"uppercase",letterSpacing:0.5}}>🏗️ {nombreObra}</p>
               {porObra[nombreObra].map(e=>(
-                <div key={e.id} onClick={()=>{
-                    setObraActual(e.obra);setVistaRaiz("obra");setTabActiva("obras");setDetalleId(e.novedad.id);setVista("detalle");setVistaBitacora(false);
-                    if(usuarioReal&&e.obra?.id&&typeof e.obra.id==="string"&&(!novedadesPorObra[e.obra.id]||novedadesPorObra[e.obra.id].length===0)){
-                      supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",e.obra.id).then(({data:novs})=>{
-                        if(novs){setNovedadesPorObra(p=>({...p,[e.obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));
-                        }
-                      });
-                    }
-                  }}
+                <div key={e.id} onClick={()=>{setObraActual(e.obra);setDetalleId(e.novedad.id);setVista("detalle");setVistaBitacora(false);}}
                   style={{background:"#fff",borderRadius:16,padding:"13px 15px",margin:"0 16px 10px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",opacity:e.hablado?0.6:1}}>
                   <div style={{width:24,height:24,borderRadius:8,border:"2px solid "+(e.hablado?"#34C759":"#D9D9DE"),background:e.hablado?"#34C759":"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff",marginTop:2}}>{e.hablado?"✓":""}</div>
                   <div style={{flex:1,minWidth:0}}>
