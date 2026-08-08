@@ -2589,6 +2589,7 @@ export default function App({ session }) {
   // ─────────────────────────────
   // DASHBOARD DEL DIRECTOR — nivel 1 por categoría
   // ─────────────────────────────
+  console.log("🔎 FIXGO DEBUG RENDER — vistaDirectorCategoria:",vistaDirectorCategoria,"| tabActiva:",tabActiva,"| vistaRaiz:",vistaRaiz,"| filtroObraAlertas:",filtroObraAlertas);
   if(vistaDirectorCategoria){
     const stats=calcularStatsEmpresa();
     const CONFIG:any={
@@ -3013,7 +3014,7 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <div style={{padding:"14px 12px 4px",flexShrink:0}}>
-          {filtroObraAlertas&&<button onClick={()=>{setFiltroObraAlertas(null);if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{setTabActiva("obras");}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>}
+          {filtroObraAlertas&&<button onClick={()=>{console.log("🔎 FIXGO DEBUG boton Director — origenDirectorCategoria ANTES:",origenDirectorCategoria);setFiltroObraAlertas(null);if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{setTabActiva("obras");}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>}
           <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"20px 18px"}}>
             <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff",display:"flex",alignItems:"center",gap:9}}><Bell size={22}/>Urgencias</p>
             <p style={{margin:"5px 0 0",fontSize:13,color:"rgba(255,255,255,0.6)"}}>
