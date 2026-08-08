@@ -2615,10 +2615,28 @@ export default function App({ session }) {
           <button onClick={()=>{setVistaDirectorCategoria(null);setTabActiva("obras");irInicio();}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"0 16px 24px"}}>
-          <p style={{margin:"4px 0 4px",fontSize:22,fontWeight:800,color:"#1C1C1E"}}>{cfg.titulo} por obra</p>
-          <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>{cfg.valor} {cfg.tituloPlural} repartidas en {cfg.lista.length} obra{cfg.lista.length!==1?"s":""}</p>
+          <p style={{margin:"4px 0 4px",fontSize:22,fontWeight:800,color:"#1C1C1E"}}>{vistaDirectorCategoria==="obrasActivas"?cfg.titulo:`${cfg.titulo} por obra`}</p>
+          <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>{vistaDirectorCategoria==="obrasActivas"?`${cfg.lista.length} obra${cfg.lista.length!==1?"s":""} bajo tu Modo Director`:`${cfg.valor} ${cfg.tituloPlural} repartidas en ${cfg.lista.length} obra${cfg.lista.length!==1?"s":""}`}</p>
           {cfg.lista.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:20}}>Nada por acá 🎉</p>}
-          {gruposPorProfesional.map((grupo:any)=>(
+          {vistaDirectorCategoria==="obrasActivas"?(
+            cfg.lista.map((item:any)=>(
+              <div key={item.obraId} onClick={()=>{
+                  const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);
+                  if(obra){setOrigenDirectorCategoria(vistaDirectorCategoria);irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}
+                }}
+                style={{background:"#fff",borderRadius:16,padding:"13px 15px",marginBottom:10,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <p style={{margin:0,fontSize:15.5,fontWeight:800}}>{item.obraNombre}</p>
+                  <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{item.responsable}</p>
+                </div>
+                <div style={{background:cfg.badgeBg,borderRadius:14,padding:"6px 12px",textAlign:"center",flexShrink:0}}>
+                  <p style={{margin:0,fontSize:19,fontWeight:800,color:cfg.color,lineHeight:1}}>{item.count}</p>
+                  <p style={{margin:"1px 0 0",fontSize:8.5,textTransform:"uppercase",fontWeight:700,color:cfg.color}}>{cfg.unidad}</p>
+                </div>
+                <span style={{color:"#8E8E93",fontSize:16}}>›</span>
+              </div>
+            ))
+          ):gruposPorProfesional.map((grupo:any)=>(
             <div key={grupo.responsable}>
               <p style={{margin:"18px 0 8px 2px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>{grupo.responsable}</p>
               {grupo.items.map((item:any)=>(
