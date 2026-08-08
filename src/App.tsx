@@ -1621,7 +1621,7 @@ export default function App({ session }) {
     const esVencida=(n)=>!n.resuelta&&n.fecha_limite&&n.fecha_limite<hoy;
 
     let totalUrgentes=0,totalPendientes=0,totalResueltas=0,totalVencidas=0,totalNovedades=0;
-    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[],porObraNovedades:any[]=[],porObraVencidas:any[]=[],porObraSinResponsable:any[]=[];
+    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[],porObraNovedades:any[]=[],porObraVencidas:any[]=[],porObraSinResponsable:any[]=[],porObraTodas:any[]=[];
     const previewUrgentes:any[]=[],previewNovedades:any[]=[],previewResueltas:any[]=[],previewVencidas:any[]=[],previewSinResponsable:any[]=[];
 
     obrasEmpresa.forEach(obra=>{
@@ -1634,6 +1634,7 @@ export default function App({ session }) {
       totalUrgentes+=u;totalPendientes+=p;totalResueltas+=r;totalNovedades+=novs.length;
       totalVencidas+=v;
       const nombreResponsable=miembrosEmpresa.find(m=>m.usuario_id===obra.propietario_id)?.usuarios?.nombre||"Profesional";
+      porObraTodas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:novs.length});
       if(u>0)porObraUrgentes.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:u});
       if(v>0)porObraVencidas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:v});
       if(sr>0)porObraSinResponsable.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:sr});
@@ -1686,7 +1687,7 @@ export default function App({ session }) {
     const obrasActivas=obrasEmpresa.length;
     const novedadesSinResponsable=obrasEmpresa.reduce((acc,o)=>acc+(o.novedades||[]).filter(n=>!n.resuelta&&!n.responsable_usuario_id).length,0);
     const profesionalesActivos=porProfesional.filter(p=>p.total>0).length;
-    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,porObraVencidas,porObraSinResponsable,previewUrgentes,previewNovedades,previewResueltas,previewVencidas,previewSinResponsable,porProfesional,
+    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,porObraVencidas,porObraSinResponsable,porObraTodas,previewUrgentes,previewNovedades,previewResueltas,previewVencidas,previewSinResponsable,porProfesional,
       diasPromEmpresa:porProfesional.filter(p=>p.diasProm>0).length>0?(porProfesional.reduce((s,p)=>s+p.diasProm,0)/porProfesional.filter(p=>p.diasProm>0).length):0,
       antiguedadPromEmpresa,obrasActivas,novedadesSinResponsable,profesionalesActivos};
   };
@@ -2596,6 +2597,7 @@ export default function App({ session }) {
       novedades:{titulo:"Novedades",tituloPlural:"novedades",emoji:"📋",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalNovedades,lista:stats.porObraNovedades,filtroDestino:"todas",unidad:"nov."},
       resueltas:{titulo:"Resueltas",tituloPlural:"resueltas",emoji:"✓",color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",badgeBg:"#E9F9EE",valor:stats.totalResueltas,lista:stats.porObraResueltas,filtroDestino:"resueltas",unidad:"res."},
       sinResponsable:{titulo:"Sin responsable asignado",tituloPlural:"sin responsable asignado",emoji:"👤",color:"#854F0B",bg:"linear-gradient(160deg,#FAEEDA,#F5DDB0)",badgeBg:"#FAEEDA",valor:stats.novedadesSinResponsable,lista:stats.porObraSinResponsable,filtroDestino:"sinResponsable",unidad:"nov."},
+      obrasActivas:{titulo:"Obras activas",tituloPlural:"obras activas",emoji:"🏗️",color:"#2E3A4B",bg:"linear-gradient(160deg,#F2F4F6,#E4E8EC)",badgeBg:"#E4E8EC",valor:stats.obrasActivas,lista:stats.porObraTodas,filtroDestino:"todas",unidad:"nov."},
     };
     const cfg=CONFIG[vistaDirectorCategoria];
     // Agrupar las obras por el profesional dueño (memoria pendiente 03/08: reemplaza la tarjeta grande de color repetida)
@@ -3142,7 +3144,7 @@ export default function App({ session }) {
                     <div style={{width:`${nivelEmpresa.siguiente===null?100:Math.max(4,Math.min(100,Math.round(((nivelEmpresa.max===Infinity?nivelEmpresa.min*2:nivelEmpresa.max)-stats.antiguedadPromEmpresa)/((nivelEmpresa.max===Infinity?nivelEmpresa.min*2:nivelEmpresa.max)-nivelEmpresa.min)*100)))}%`,height:"100%",background:"#3DAE8C"}}/>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                    <div onClick={()=>cambiarVistaHome("mias")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
+                    <div onClick={()=>setVistaDirectorCategoria("obrasActivas")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
                       <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Obras activas</p>
                       <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.obrasActivas}</p>
                     </div>
