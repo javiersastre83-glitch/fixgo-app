@@ -1621,18 +1621,20 @@ export default function App({ session }) {
     const esVencida=(n)=>!n.resuelta&&n.fecha_limite&&n.fecha_limite<hoy;
 
     let totalUrgentes=0,totalPendientes=0,totalResueltas=0,totalVencidas=0,totalNovedades=0;
-    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[],porObraNovedades:any[]=[];
-    const previewUrgentes:any[]=[],previewNovedades:any[]=[],previewResueltas:any[]=[];
+    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[],porObraNovedades:any[]=[],porObraVencidas:any[]=[];
+    const previewUrgentes:any[]=[],previewNovedades:any[]=[],previewResueltas:any[]=[],previewVencidas:any[]=[];
 
     obrasEmpresa.forEach(obra=>{
       const novs=obra.novedades||[];
       const u=novs.filter(esUrgente).length;
       const p=novs.filter(esPendienteAprob).length;
       const r=novs.filter(n=>n.resuelta).length;
+      const v=novs.filter(esVencida).length;
       totalUrgentes+=u;totalPendientes+=p;totalResueltas+=r;totalNovedades+=novs.length;
-      totalVencidas+=novs.filter(esVencida).length;
+      totalVencidas+=v;
       const nombreResponsable=miembrosEmpresa.find(m=>m.usuario_id===obra.propietario_id)?.usuarios?.nombre||"Profesional";
       if(u>0)porObraUrgentes.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:u});
+      if(v>0)porObraVencidas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:v});
       if(p>0){
         const pendientesObra=novs.filter(esPendienteAprob);
         const masVieja=pendientesObra.reduce((min,n)=>!min||n.created_at<min.created_at?n:min,null);
@@ -1642,6 +1644,7 @@ export default function App({ session }) {
       if(r>0)porObraResueltas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:r});
       if(novs.length>0)porObraNovedades.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:novs.length});
       novs.filter(esUrgente).forEach(n=>previewUrgentes.push({texto:n.descripcion,obraNombre:obra.nombre}));
+      novs.filter(esVencida).forEach(n=>previewVencidas.push({texto:n.descripcion,obraNombre:obra.nombre}));
       novs.forEach(n=>previewNovedades.push({texto:n.descripcion,obraNombre:obra.nombre}));
       novs.filter(n=>n.resuelta).forEach(n=>previewResueltas.push({texto:n.descripcion,obraNombre:obra.nombre}));
     });
@@ -1680,7 +1683,7 @@ export default function App({ session }) {
     const obrasActivas=obrasEmpresa.length;
     const novedadesSinResponsable=obrasEmpresa.reduce((acc,o)=>acc+(o.novedades||[]).filter(n=>!n.resuelta&&!n.responsable_usuario_id).length,0);
     const profesionalesActivos=porProfesional.filter(p=>p.total>0).length;
-    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,previewUrgentes,previewNovedades,previewResueltas,porProfesional,
+    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,porObraVencidas,previewUrgentes,previewNovedades,previewResueltas,previewVencidas,porProfesional,
       diasPromEmpresa:porProfesional.filter(p=>p.diasProm>0).length>0?(porProfesional.reduce((s,p)=>s+p.diasProm,0)/porProfesional.filter(p=>p.diasProm>0).length):0,
       antiguedadPromEmpresa,obrasActivas,novedadesSinResponsable,profesionalesActivos};
   };
@@ -2585,7 +2588,8 @@ export default function App({ session }) {
   if(vistaDirectorCategoria){
     const stats=calcularStatsEmpresa();
     const CONFIG:any={
-      urgencias:{titulo:"Urgencias",tituloPlural:"urgencias",emoji:"🔥",color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",badgeBg:"#FFEDEC",valor:stats.totalUrgentes,lista:stats.porObraUrgentes,unidad:"urg.",esAlertas:true},
+      urgencias:{titulo:"Urgentes",tituloPlural:"urgentes",emoji:"🔥",color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",badgeBg:"#FFEDEC",valor:stats.totalUrgentes,lista:stats.porObraUrgentes,unidad:"urg.",esAlertas:true},
+      vencidas:{titulo:"Vencidas",tituloPlural:"vencidas",emoji:"⏰",color:"#B8720A",bg:"linear-gradient(160deg,#FFF9EF,#FDECD1)",badgeBg:"#FDECD1",valor:stats.totalVencidas,lista:stats.porObraVencidas,filtroDestino:"vencidas",unidad:"venc."},
       novedades:{titulo:"Novedades",tituloPlural:"novedades",emoji:"📋",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalNovedades,lista:stats.porObraNovedades,filtroDestino:"todas",unidad:"nov."},
       resueltas:{titulo:"Resueltas",tituloPlural:"resueltas",emoji:"✓",color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",badgeBg:"#E9F9EE",valor:stats.totalResueltas,lista:stats.porObraResueltas,filtroDestino:"resueltas",unidad:"res."},
     };
@@ -2935,13 +2939,13 @@ export default function App({ session }) {
       novs.forEach(nov => {
         if (nov.resuelta) return;
         const d = diasRestantes(nov.fechaLimite);
-        // Vencidas (lo más urgente)
+        // Vencida (lo más grave: ya pasó la fecha)
         if (d !== null && d < 0) {
-          alertasDinamicas.push({ key:`venc-${nov.id}`, tipo:"urgente",
+          alertasDinamicas.push({ key:`venc-${nov.id}`, tipo:"vencida",
             texto:`Vencida hace ${Math.abs(d)} ${Math.abs(d)===1?"día":"días"} — ${nov.descripcion}`,
             sub:`${obra.nombre} · ${nov.responsable}`, obraId:obra.id, novId:nov.id, orden:0, esDeEquipo:obra.esDeEquipo, esPropia:obra.esPropia });
         }
-        // Vence hoy
+        // Vence hoy (todavía no está vencida, pero es momento de resolverla ya)
         else if (d === 0) {
           alertasDinamicas.push({ key:`hoy-${nov.id}`, tipo:"urgente",
             texto:`Vence hoy — ${nov.descripcion}`,
@@ -2984,7 +2988,15 @@ export default function App({ session }) {
           <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"20px 18px"}}>
             <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff",display:"flex",alignItems:"center",gap:9}}><Bell size={22}/>Urgencias</p>
             <p style={{margin:"5px 0 0",fontSize:13,color:"rgba(255,255,255,0.6)"}}>
-              {filtroObraAlertas?`${filtroObraAlertas.nombre} · `:""}{alertasFiltradas.length > 0 ? `${alertasFiltradas.length} ${alertasFiltradas.length===1?"urgencia":"urgencias"}` : "Todo en orden"}
+              {filtroObraAlertas?`${filtroObraAlertas.nombre} · `:""}{(()=>{
+                const nU=alertasFiltradas.filter(a=>a.tipo==="urgente").length;
+                const nV=alertasFiltradas.filter(a=>a.tipo==="vencida").length;
+                if(nU===0&&nV===0)return"Todo en orden";
+                const partes=[];
+                if(nU>0)partes.push(`${nU} urgente${nU!==1?"s":""}`);
+                if(nV>0)partes.push(`${nV} vencida${nV!==1?"s":""}`);
+                return partes.join(" · ");
+              })()}
             </p>
           </div>
         </div>
@@ -3000,20 +3012,24 @@ export default function App({ session }) {
             const propias=alertasFiltradas.filter(a=>!a.esDeEquipo&&a.esPropia);
             const tareas=alertasFiltradas.filter(a=>!a.esDeEquipo&&!a.esPropia);
             const deEquipo=alertasFiltradas.filter(a=>a.esDeEquipo);
-            const Tarjeta=(a)=>(
+            const Tarjeta=(a)=>{
+              const esVencida=a.tipo==="vencida";
+              const colorTipo=esVencida?"#B8720A":"#FF3B30";
+              return(
               <button key={a.key} onClick={()=>irAAlerta(a)}
                 style={{background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",gap:12,
                   alignItems:"center",
                   border:"none",width:"100%",textAlign:"left",cursor:"pointer",
                   outline:"none",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
-                <span style={{width:36,height:36,borderRadius:10,background:"#FF3B3012",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><AlertTriangle size={19} color="#FF3B30"/></span>
+                <span style={{width:36,height:36,borderRadius:10,background:`${colorTipo}12`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{esVencida?<Clock size={19} color={colorTipo}/>:<AlertTriangle size={19} color={colorTipo}/>}</span>
                 <div style={{flex:1,minWidth:0}}>
                   <p style={{margin:0,fontSize:14,fontWeight:700,color:"#1C1C1E",lineHeight:1.35}}>{a.texto}</p>
                   <p style={{margin:"3px 0 0",fontSize:12,color:"#55555A"}}>{a.sub}</p>
                 </div>
                 <ChevronRight size={18} color="#C7C7CC" style={{flexShrink:0}}/>
               </button>
-            );
+              );
+            };
             // Si hay un filtro por obra puntual (viniendo de Director), no hace falta separar en secciones
             if(filtroObraAlertas||(deEquipo.length===0&&tareas.length===0)){
               return alertasFiltradas.map(Tarjeta);
@@ -3096,7 +3112,8 @@ export default function App({ session }) {
               {(()=>{
                 const stats=calcularStatsEmpresa();
                 const PASTILLAS=[
-                  {key:"urgencias",emoji:"🔥",label:"Urgencias",valor:stats.totalUrgentes,color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",sub:`en ${stats.porObraUrgentes.length} obra${stats.porObraUrgentes.length!==1?"s":""}`,preview:stats.previewUrgentes,onTap:()=>setVistaDirectorCategoria("urgencias")},
+                  {key:"urgencias",emoji:"🔥",label:"Urgentes",valor:stats.totalUrgentes,color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",sub:`en ${stats.porObraUrgentes.length} obra${stats.porObraUrgentes.length!==1?"s":""}`,preview:stats.previewUrgentes,onTap:()=>setVistaDirectorCategoria("urgencias")},
+                  {key:"vencidas",emoji:"⏰",label:"Vencidas",valor:stats.totalVencidas,color:"#B8720A",bg:"linear-gradient(160deg,#FFF9EF,#FDECD1)",sub:`en ${stats.porObraVencidas.length} obra${stats.porObraVencidas.length!==1?"s":""}`,preview:stats.previewVencidas,onTap:()=>setVistaDirectorCategoria("vencidas")},
                   {key:"novedades",emoji:"📋",label:"Novedades",valor:stats.totalNovedades,color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",sub:`en ${stats.porObraNovedades.length} obra${stats.porObraNovedades.length!==1?"s":""}`,preview:stats.previewNovedades,onTap:()=>setVistaDirectorCategoria("novedades")},
                   {key:"resueltas",emoji:"✓",label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`,preview:stats.previewResueltas,onTap:()=>setVistaDirectorCategoria("resueltas")},
                 ];
