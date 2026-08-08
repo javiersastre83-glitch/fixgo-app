@@ -979,7 +979,6 @@ export default function App({ session }) {
   const miRolEnObra  = obraActual?((obraActual.equipo||[]).find(m=>m.uid===miId)?.rolEnObra||(usuarioReal?(obraActual.propietario_id===miId?"profesional":"operario"):"operario")):(usuarioReal?"profesional":usuarioActivo.rolSistema);
   const miRolInfo    = ROLES_SISTEMA.find(r=>r.id===miRolEnObra);
   const puedeGestionar = miRolEnObra==="profesional"||miRolEnObra==="capataz"||miRolEnObra==="co_profesional";
-  if(typeof window!=="undefined"){(window as any).__fixgoDebugRol=()=>console.log("🔎 FIXGO DEBUG — obraActual:",obraActual?.nombre,"| propietario_id:",obraActual?.propietario_id,"| miId:",miId,"| equipo:",obraActual?.equipo,"| miRolEnObra:",miRolEnObra,"| puedeGestionar:",puedeGestionar);}
   const getUserById  = (id)=>{
     if(!id)return null;
     if(usuarioReal&&id===usuarioReal.id)return{id,nombre:usuarioActivoReal.nombre};
@@ -1222,8 +1221,6 @@ export default function App({ session }) {
         setObraActual(oa=>(oa&&oa.id===obraId)?{...oa,equipo:(oa.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:oa);
       })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"equipo_obra"},(payload)=>{
-        console.log("🔎 FIXGO DEBUG — llegó DELETE de equipo_obra:",payload);
-        console.log("🔎 FIXGO DEBUG — mi usuarioReal.id:",usuarioReal.id,"| payload.old:",payload.old);
         const obraId=payload.old.obra_id;const uidBorrado=payload.old.usuario_id;
         if(uidBorrado&&uidBorrado===usuarioReal.id){
           // ── Me sacaron a mí de esta obra: se la saco de mi lista y aviso ──
@@ -1301,14 +1298,11 @@ export default function App({ session }) {
     reader.readAsDataURL(file);
   });
   const confirmarSinFoto=(id)=>{
-    console.log("🔎 FIXGO DEBUG confirmarSinFoto — id:",id,"obraActual.id:",obraActual?.id,"novedadesPorObra[obraActual.id] antes:",novedadesPorObra[obraActual?.id]);
     const nov=novedades.find(n=>n.id===id);
     const esDirecta=nov&&(nov.autorId===miId||puedeGestionar);
-    console.log("🔎 FIXGO DEBUG — nov encontrada:",nov,"esDirecta:",esDirecta);
     if(esDirecta)resolver(id);else enviarAprobacion(id);
     setModalFotoResolucion(null);
     setVista("lista");
-    setTimeout(()=>console.log("🔎 FIXGO DEBUG — novedadesPorObra[obraActual.id] DESPUÉS (100ms):",novedadesPorObra[obraActual?.id]),100);
   };
   const confirmarResolucionConFoto=async(id,file)=>{
     setSubiendoFotoResolucion(true);
