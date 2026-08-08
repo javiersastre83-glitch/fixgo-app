@@ -3119,8 +3119,8 @@ export default function App({ session }) {
                 const stats=calcularStatsEmpresa();
                 const PASTILLAS=[
                   {key:"urgencias",emoji:"🔥",label:"Urgentes",valor:stats.totalUrgentes,color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",sub:`en ${stats.porObraUrgentes.length} obra${stats.porObraUrgentes.length!==1?"s":""}`,preview:stats.previewUrgentes,onTap:()=>setVistaDirectorCategoria("urgencias")},
-                  {key:"vencidas",emoji:"⏰",label:"Vencidas",valor:stats.totalVencidas,color:"#B8720A",bg:"linear-gradient(160deg,#FFF9EF,#FDECD1)",sub:`en ${stats.porObraVencidas.length} obra${stats.porObraVencidas.length!==1?"s":""}`,preview:stats.previewVencidas,onTap:()=>setVistaDirectorCategoria("vencidas")},
                   {key:"novedades",emoji:"📋",label:"Novedades",valor:stats.totalNovedades,color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",sub:`en ${stats.porObraNovedades.length} obra${stats.porObraNovedades.length!==1?"s":""}`,preview:stats.previewNovedades,onTap:()=>setVistaDirectorCategoria("novedades")},
+                  {key:"vencidas",emoji:"⏰",label:"Vencidas",valor:stats.totalVencidas,color:"#B8720A",bg:"linear-gradient(160deg,#FFF9EF,#FDECD1)",sub:`en ${stats.porObraVencidas.length} obra${stats.porObraVencidas.length!==1?"s":""}`,preview:stats.previewVencidas,onTap:()=>setVistaDirectorCategoria("vencidas")},
                   {key:"resueltas",emoji:"✓",label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`,preview:stats.previewResueltas,onTap:()=>setVistaDirectorCategoria("resueltas")},
                 ];
                 const NIVELES_EMPRESA=[
