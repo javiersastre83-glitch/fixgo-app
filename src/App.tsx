@@ -1301,11 +1301,14 @@ export default function App({ session }) {
     reader.readAsDataURL(file);
   });
   const confirmarSinFoto=(id)=>{
+    console.log("🔎 FIXGO DEBUG confirmarSinFoto — id:",id,"obraActual.id:",obraActual?.id,"novedadesPorObra[obraActual.id] antes:",novedadesPorObra[obraActual?.id]);
     const nov=novedades.find(n=>n.id===id);
     const esDirecta=nov&&(nov.autorId===miId||puedeGestionar);
+    console.log("🔎 FIXGO DEBUG — nov encontrada:",nov,"esDirecta:",esDirecta);
     if(esDirecta)resolver(id);else enviarAprobacion(id);
     setModalFotoResolucion(null);
     setVista("lista");
+    setTimeout(()=>console.log("🔎 FIXGO DEBUG — novedadesPorObra[obraActual.id] DESPUÉS (100ms):",novedadesPorObra[obraActual?.id]),100);
   };
   const confirmarResolucionConFoto=async(id,file)=>{
     setSubiendoFotoResolucion(true);
