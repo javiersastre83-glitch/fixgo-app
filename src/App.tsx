@@ -1412,12 +1412,15 @@ export default function App({ session }) {
     onListo?.();
   };
 
-  const guardar=async()=>{
+  const guardar=async(continuar=false)=>{
     if(!form.descripcion.trim()||guardandoRef.current)return;
     guardandoRef.current=true;
     setGuardando(true);
     const resp=form.responsable==="Otro"&&form.responsableCustom.trim()?form.responsableCustom.trim():form.responsable;
     const sect=form.sector==="Otro"&&form.sectorCustom.trim()?form.sectorCustom.trim():form.sector;
+    // "Guardar y agregar otra" (feedback experto 04/08): limpia fotos/descripción/nota/responsable,
+    // mantiene obra (ya es global) y sector, y se queda en la pantalla de carga.
+    const formSiguiente={...FORM_INICIAL,sector:form.sector,sectorCustom:form.sectorCustom};
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"&&!estaOnline){
       // ── SIN CONEXIÓN: guardar localmente y encolar para sincronizar ──
       const tempId=`local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
@@ -1426,7 +1429,7 @@ export default function App({ session }) {
       const nn={...payload,id:tempId,created_at:new Date().toISOString(),fecha:new Date().toISOString().slice(0,10),fechaLimite:payload.fecha_limite||"",ocultoCapataz:payload.oculto_capataz,autorId:payload.autor_id,pendienteSync:true,comentarios:comentarioInicial?[{texto:comentarioInicial,autorId:usuarioReal.id,ts:Date.now()}]:[]};
       setNovedades(n=>[nn,...n]);
       setColaOffline(c=>[...c,{tipo:"crear_novedad",tempId,payload,comentario:comentarioInicial||null}]);
-      setForm(FORM_INICIAL);setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast("📡 Guardada sin conexión — se sube sola cuando vuelva la señal");
+      setForm(formSiguiente);if(!continuar)setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast(continuar?"📡 Guardada sin conexión — lista para la próxima":"📡 Guardada sin conexión — se sube sola cuando vuelva la señal");
       return;
     }
     if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){
@@ -1453,7 +1456,7 @@ export default function App({ session }) {
     } else {
       setNovedades(n=>[{id:Date.now(),fotos:form.fotos,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fechaLimite:form.fechaLimite,resuelta:false,fecha:new Date().toISOString().slice(0,10),comentarios:form.comentario.trim()?[{texto:form.comentario.trim(),autorId:usuarioActivo.id,ts:Date.now()}]:[]},...n]);
     }
-    setForm(FORM_INICIAL);setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast("Tarea creada con éxito");
+    setForm(formSiguiente);if(!continuar)setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast(continuar?"✅ Guardada — lista para cargar la próxima":"Tarea creada con éxito");
   };
 
   const resolver=async(id)=>{
@@ -4063,7 +4066,8 @@ export default function App({ session }) {
           </div>
           </>}
           <div style={{position:"sticky",bottom:-24,background:"#F2F2F7",paddingTop:14,paddingBottom:24,marginBottom:-24,zIndex:5}}>
-          <button style={{...s.btnPrincipal,opacity:(form.descripcion.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={guardar}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={16}/>Guardar novedad</>}</span></button>
+          <button style={{...s.btnPrincipal,opacity:(form.descripcion.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={()=>guardar(false)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={16}/>Guardar novedad</>}</span></button>
+          <button style={{width:"100%",marginTop:8,padding:"12px",borderRadius:14,border:"1.5px solid #D1D1D6",background:"#fff",color:"#3A3A3C",fontSize:13.5,fontWeight:700,cursor:(form.descripcion.trim()&&!guardando)?"pointer":"default",opacity:(form.descripcion.trim()&&!guardando)?1:0.4,display:"flex",alignItems:"center",justifyContent:"center",gap:6}} disabled={guardando} onClick={()=>guardar(true)}><Plus size={15}/>Guardar y agregar otra</button>
           </div>
         </div>
         {offlineBannerJSX}
