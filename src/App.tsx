@@ -2971,6 +2971,13 @@ export default function App({ session }) {
       const novReal=(novedadesPorObra[alerta.obraId]||[]).find(n=>n.id===alerta.novId);
       setComentariosAbiertos((novReal?.comentarios||[]).length>0);
       setTabActiva("obras");
+      // Traer los datos COMPLETOS de la obra (fotos, comentarios, sector) si todavía no están cargados —
+      // la versión liviana usada para armar las alertas no alcanza para mostrar el detalle ni la lista.
+      if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
+        supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
+          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+        });
+      }
     };
 
     return(
