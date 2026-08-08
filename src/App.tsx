@@ -2676,8 +2676,13 @@ export default function App({ session }) {
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
           <button onClick={()=>setVistaProfesionales(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
-          <p style={{fontSize:24,margin:0,fontWeight:800,letterSpacing:-0.4}}>Profesionales</p>
-          <p style={{fontSize:12.5,color:"#55555A",margin:"4px 0 0"}}>{miembrosEmpresa.length} en {nombreEstudio||empresaPropia?.nombre}</p>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            {logoEstudioUrl&&<ImgCacheada src={logoEstudioUrl} style={{width:36,height:36,borderRadius:9,objectFit:"contain",border:"1.5px solid #E5E5EA",flexShrink:0}}/>}
+            <div>
+              <p style={{fontSize:24,margin:0,fontWeight:800,letterSpacing:-0.4}}>Profesionales</p>
+              <p style={{fontSize:12.5,color:"#55555A",margin:"4px 0 0"}}>{miembrosEmpresa.length} en {nombreEstudio||empresaPropia?.nombre}</p>
+            </div>
+          </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px 0 24px"}}>
           {miembrosEmpresa.map(m=>{
@@ -3128,7 +3133,7 @@ export default function App({ session }) {
           ):(
             <>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                <p onClick={()=>setVistaProfesionales(true)} style={{margin:0,fontSize:19,fontWeight:800,color:"#007AFF",flex:1,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>{nombreEstudio||empresaPropia.nombre} <span style={{fontSize:15}}>›</span></p>
+                <p style={{margin:0,fontSize:19,fontWeight:800,color:"#1C1C1E",flex:1}}>{nombreEstudio||empresaPropia.nombre}</p>
                 <button onClick={()=>setVistaBitacora(true)} style={{background:"#F7F5FF",color:"#7C5CFC",border:"1.5px solid #D9CFFF",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>📔 Bitácora</button>
                 <button onClick={()=>setModalInvitarArq(true)} style={{background:"#2E3A4B",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Invitar</button>
               </div>
@@ -3166,17 +3171,17 @@ export default function App({ session }) {
                       <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Obras activas</p>
                       <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.obrasActivas}</p>
                     </div>
-                    <div onClick={()=>setVistaDirectorCategoria("novedades")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
-                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Total de novedades</p>
-                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.totalNovedades}</p>
+                    <div onClick={()=>setVistaProfesionales(true)} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
+                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Profesionales activos</p>
+                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.profesionalesActivos}</p>
                     </div>
                     <div onClick={()=>setVistaDirectorCategoria("sinResponsable")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
                       <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Novedades sin responsable asignado</p>
                       <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.novedadesSinResponsable}</p>
                     </div>
-                    <div onClick={()=>setVistaProfesionales(true)} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
-                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Profesionales activos</p>
-                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.profesionalesActivos}</p>
+                    <div onClick={()=>setVistaDirectorCategoria("novedades")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
+                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Total de novedades</p>
+                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.totalNovedades}</p>
                     </div>
                   </div>
                 </div>
