@@ -1621,8 +1621,8 @@ export default function App({ session }) {
     const esVencida=(n)=>!n.resuelta&&n.fecha_limite&&n.fecha_limite<hoy;
 
     let totalUrgentes=0,totalPendientes=0,totalResueltas=0,totalVencidas=0,totalNovedades=0;
-    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[],porObraNovedades:any[]=[],porObraVencidas:any[]=[];
-    const previewUrgentes:any[]=[],previewNovedades:any[]=[],previewResueltas:any[]=[],previewVencidas:any[]=[];
+    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[],porObraNovedades:any[]=[],porObraVencidas:any[]=[],porObraSinResponsable:any[]=[];
+    const previewUrgentes:any[]=[],previewNovedades:any[]=[],previewResueltas:any[]=[],previewVencidas:any[]=[],previewSinResponsable:any[]=[];
 
     obrasEmpresa.forEach(obra=>{
       const novs=obra.novedades||[];
@@ -1630,11 +1630,13 @@ export default function App({ session }) {
       const p=novs.filter(esPendienteAprob).length;
       const r=novs.filter(n=>n.resuelta).length;
       const v=novs.filter(esVencida).length;
+      const sr=novs.filter(n=>!n.resuelta&&!n.responsable_usuario_id).length;
       totalUrgentes+=u;totalPendientes+=p;totalResueltas+=r;totalNovedades+=novs.length;
       totalVencidas+=v;
       const nombreResponsable=miembrosEmpresa.find(m=>m.usuario_id===obra.propietario_id)?.usuarios?.nombre||"Profesional";
       if(u>0)porObraUrgentes.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:u});
       if(v>0)porObraVencidas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:v});
+      if(sr>0)porObraSinResponsable.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:sr});
       if(p>0){
         const pendientesObra=novs.filter(esPendienteAprob);
         const masVieja=pendientesObra.reduce((min,n)=>!min||n.created_at<min.created_at?n:min,null);
@@ -1645,6 +1647,7 @@ export default function App({ session }) {
       if(novs.length>0)porObraNovedades.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:novs.length});
       novs.filter(esUrgente).forEach(n=>previewUrgentes.push({texto:n.descripcion,obraNombre:obra.nombre}));
       novs.filter(esVencida).forEach(n=>previewVencidas.push({texto:n.descripcion,obraNombre:obra.nombre}));
+      novs.filter(n=>!n.resuelta&&!n.responsable_usuario_id).forEach(n=>previewSinResponsable.push({texto:n.descripcion,obraNombre:obra.nombre}));
       novs.forEach(n=>previewNovedades.push({texto:n.descripcion,obraNombre:obra.nombre}));
       novs.filter(n=>n.resuelta).forEach(n=>previewResueltas.push({texto:n.descripcion,obraNombre:obra.nombre}));
     });
@@ -1683,7 +1686,7 @@ export default function App({ session }) {
     const obrasActivas=obrasEmpresa.length;
     const novedadesSinResponsable=obrasEmpresa.reduce((acc,o)=>acc+(o.novedades||[]).filter(n=>!n.resuelta&&!n.responsable_usuario_id).length,0);
     const profesionalesActivos=porProfesional.filter(p=>p.total>0).length;
-    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,porObraVencidas,previewUrgentes,previewNovedades,previewResueltas,previewVencidas,porProfesional,
+    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,porObraVencidas,porObraSinResponsable,previewUrgentes,previewNovedades,previewResueltas,previewVencidas,previewSinResponsable,porProfesional,
       diasPromEmpresa:porProfesional.filter(p=>p.diasProm>0).length>0?(porProfesional.reduce((s,p)=>s+p.diasProm,0)/porProfesional.filter(p=>p.diasProm>0).length):0,
       antiguedadPromEmpresa,obrasActivas,novedadesSinResponsable,profesionalesActivos};
   };
@@ -2004,7 +2007,7 @@ export default function App({ session }) {
     const matchRol=true;
     const matchResp=filtroResp==="todos"||n.responsable===filtroResp;
     const matchSector=filtroSector==="todos"||n.sector===filtroSector;
-    const matchFiltro=filtro==="pendientes"?!n.resuelta:filtro==="resueltas"?n.resuelta:filtro==="vencidas"?!n.resuelta&&diasRestantes(n.fechaLimite)<0:true;
+    const matchFiltro=filtro==="pendientes"?!n.resuelta:filtro==="resueltas"?n.resuelta:filtro==="vencidas"?!n.resuelta&&diasRestantes(n.fechaLimite)<0:filtro==="sinResponsable"?!n.resuelta&&!n.responsable_usuario_id:true;
     const matchBusqueda=busqueda.trim()===""||n.descripcion.toLowerCase().includes(busqueda.toLowerCase())||n.responsable.toLowerCase().includes(busqueda.toLowerCase())||n.sector.toLowerCase().includes(busqueda.toLowerCase());
     return matchRol&&matchResp&&matchSector&&matchFiltro&&matchBusqueda;
   }).sort((a,b)=>{
@@ -2592,6 +2595,7 @@ export default function App({ session }) {
       vencidas:{titulo:"Vencidas",tituloPlural:"vencidas",emoji:"⏰",color:"#B8720A",bg:"linear-gradient(160deg,#FFF9EF,#FDECD1)",badgeBg:"#FDECD1",valor:stats.totalVencidas,lista:stats.porObraVencidas,filtroDestino:"vencidas",unidad:"venc."},
       novedades:{titulo:"Novedades",tituloPlural:"novedades",emoji:"📋",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalNovedades,lista:stats.porObraNovedades,filtroDestino:"todas",unidad:"nov."},
       resueltas:{titulo:"Resueltas",tituloPlural:"resueltas",emoji:"✓",color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",badgeBg:"#E9F9EE",valor:stats.totalResueltas,lista:stats.porObraResueltas,filtroDestino:"resueltas",unidad:"res."},
+      sinResponsable:{titulo:"Sin responsable asignado",tituloPlural:"sin responsable asignado",emoji:"👤",color:"#854F0B",bg:"linear-gradient(160deg,#FAEEDA,#F5DDB0)",badgeBg:"#FAEEDA",valor:stats.novedadesSinResponsable,lista:stats.porObraSinResponsable,filtroDestino:"sinResponsable",unidad:"nov."},
     };
     const cfg=CONFIG[vistaDirectorCategoria];
     // Agrupar las obras por el profesional dueño (memoria pendiente 03/08: reemplaza la tarjeta grande de color repetida)
@@ -3138,19 +3142,19 @@ export default function App({ session }) {
                     <div style={{width:`${nivelEmpresa.siguiente===null?100:Math.max(4,Math.min(100,Math.round(((nivelEmpresa.max===Infinity?nivelEmpresa.min*2:nivelEmpresa.max)-stats.antiguedadPromEmpresa)/((nivelEmpresa.max===Infinity?nivelEmpresa.min*2:nivelEmpresa.max)-nivelEmpresa.min)*100)))}%`,height:"100%",background:"#3DAE8C"}}/>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                    <div style={{background:"#F7F8F8",borderRadius:12,padding:12}}>
+                    <div onClick={()=>cambiarVistaHome("mias")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
                       <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Obras activas</p>
                       <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.obrasActivas}</p>
                     </div>
-                    <div style={{background:"#FDEDEC",borderRadius:12,padding:12}}>
-                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#993C1D"}}>Vencidas</p>
-                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.totalVencidas}</p>
+                    <div onClick={()=>setVistaDirectorCategoria("novedades")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
+                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Total de novedades</p>
+                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.totalNovedades}</p>
                     </div>
-                    <div style={{background:"#F7F8F8",borderRadius:12,padding:12}}>
+                    <div onClick={()=>setVistaDirectorCategoria("sinResponsable")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
                       <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Novedades sin responsable asignado</p>
                       <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.novedadesSinResponsable}</p>
                     </div>
-                    <div style={{background:"#F7F8F8",borderRadius:12,padding:12}}>
+                    <div onClick={()=>setVistaProfesionales(true)} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
                       <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Profesionales activos</p>
                       <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.profesionalesActivos}</p>
                     </div>
