@@ -1634,7 +1634,7 @@ export default function App({ session }) {
       totalUrgentes+=u;totalPendientes+=p;totalResueltas+=r;totalNovedades+=novs.length;
       totalVencidas+=v;
       const nombreResponsable=miembrosEmpresa.find(m=>m.usuario_id===obra.propietario_id)?.usuarios?.nombre||"Profesional";
-      porObraTodas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:novs.length});
+      porObraTodas.push({obraId:obra.id,obraNombre:obra.nombre,direccion:obra.direccion,responsable:nombreResponsable,count:novs.length});
       if(u>0)porObraUrgentes.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:u});
       if(v>0)porObraVencidas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:v});
       if(sr>0)porObraSinResponsable.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:sr});
@@ -2627,7 +2627,7 @@ export default function App({ session }) {
                 style={{background:"#fff",borderRadius:16,padding:"13px 15px",marginBottom:10,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
                 <div style={{flex:1,minWidth:0}}>
                   <p style={{margin:0,fontSize:15.5,fontWeight:800}}>{item.obraNombre}</p>
-                  <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{item.responsable}</p>
+                  <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{item.direccion||item.responsable}</p>
                 </div>
                 <div style={{background:cfg.badgeBg,borderRadius:14,padding:"6px 12px",textAlign:"center",flexShrink:0}}>
                   <p style={{margin:0,fontSize:19,fontWeight:800,color:cfg.color,lineHeight:1}}>{item.count}</p>
