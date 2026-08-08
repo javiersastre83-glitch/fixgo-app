@@ -2589,7 +2589,7 @@ export default function App({ session }) {
   // ─────────────────────────────
   // DASHBOARD DEL DIRECTOR — nivel 1 por categoría
   // ─────────────────────────────
-  console.log("🔎 FIXGO DEBUG RENDER — vistaDirectorCategoria:",vistaDirectorCategoria,"| tabActiva:",tabActiva,"| vistaRaiz:",vistaRaiz,"| filtroObraAlertas:",filtroObraAlertas);
+  console.log("🔎 FIXGO DEBUG RENDER — vistaDirectorCategoria:",vistaDirectorCategoria,"| tabActiva:",tabActiva,"| vistaRaiz:",vistaRaiz,"| filtroObraAlertas:",filtroObraAlertas,"| vista:",vista,"| detalleId:",detalleId,"| obraActual:",obraActual?.nombre,"| novedadesPorObra[obraActual.id]?.length:",obraActual?.id?novedadesPorObra[obraActual.id]?.length:"n/a");
   if(vistaDirectorCategoria){
     const stats=calcularStatsEmpresa();
     const CONFIG:any={
