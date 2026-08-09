@@ -413,46 +413,43 @@ const ImgCacheada=({src,...props})=>{
 const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#007AFF" }) => {
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
-  const inputBusquedaRef = useRef<HTMLInputElement>(null);
   const miembros = (equipo||[]).filter(m=>m.nombre);
   const miembrosFiltrados = miembros.filter(m=>(m.nombre||"").toLowerCase().includes(busqueda.toLowerCase()));
   const oficiosFiltrados = buscarOficio(busqueda, RESPONSABLES);
   const personaSel = usuarioId ? miembros.find(m=>m.uid===usuarioId) : null;
   const etiqueta = personaSel ? `${personaSel.nombre}${personaSel.especialidad?" — "+personaSel.especialidad:""}` : (value||"Seleccioná...");
   return (
-    <div style={{position:"relative"}}>
-      <button type="button" onClick={()=>setAbierto(a=>!a)}
+    <div>
+      <button type="button" onClick={()=>setAbierto(true)}
         style={{width:"100%",padding:"13px 14px",borderRadius:14,border:`1.5px solid ${(value||usuarioId)?color:"#E5E5EA"}`,background:"#fff",fontSize:16,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",color:(value||usuarioId)?"#1C1C1E":"#55555A"}}>
         <span>{etiqueta}</span>
-        <span style={{color:"#55555A",fontSize:13}}>{abierto?"▲":"▼"}</span>
+        <span style={{color:"#55555A",fontSize:13}}>▼</span>
       </button>
       {abierto && (
-        <>
-        <div style={{position:"fixed",inset:0,zIndex:49}} onClick={()=>{setAbierto(false);setBusqueda("");}}/>
-        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",borderRadius:14,border:"1.5px solid #E5E5EA",boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50,maxHeight:320,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          <div style={{padding:"10px",borderBottom:"1px solid #F2F2F7"}}>
-            <input autoFocus ref={inputBusquedaRef} value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar persona u oficio..."
-              style={{width:"100%",padding:"10px 12px",borderRadius:10,border:"1.5px solid #E5E5EA",fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-          </div>
-          <div style={{overflowY:"auto",flex:1}}>
-            {miembrosFiltrados.length>0 && <p style={{padding:"8px 14px 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A"}}>👥 Mi equipo</p>}
-            {miembrosFiltrados.map(m => (
-              <button type="button" key={m.uid} onClick={()=>{inputBusquedaRef.current?.blur();onChange({responsable:m.especialidad||"",usuarioId:m.uid});setAbierto(false);setBusqueda("");}}
-                style={{width:"100%",padding:"12px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:usuarioId===m.uid?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:usuarioId===m.uid?color:"#1C1C1E",fontWeight:usuarioId===m.uid?700:400,fontFamily:"inherit"}}>
-                {m.nombre}{m.especialidad?<span style={{color:"#55555A",fontWeight:400}}> — {m.especialidad}</span>:null}
-              </button>
-            ))}
-            {oficiosFiltrados.length>0 && <p style={{padding:"8px 14px 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A"}}>🔧 Oficio genérico</p>}
-            {oficiosFiltrados.map(r => (
-              <button type="button" key={r} onClick={()=>{inputBusquedaRef.current?.blur();onChange({responsable:r,usuarioId:null});setAbierto(false);setBusqueda("");}}
-                style={{width:"100%",padding:"12px 14px",border:"none",borderBottom:"1px solid #F7F7F7",background:(!usuarioId&&value===r)?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(!usuarioId&&value===r)?color:"#1C1C1E",fontWeight:(!usuarioId&&value===r)?700:400,fontFamily:"inherit"}}>
-                {r}
-              </button>
-            ))}
-            {miembrosFiltrados.length===0 && oficiosFiltrados.length===0 && <p style={{padding:"14px",margin:0,fontSize:14,color:"#55555A",textAlign:"center"}}>Sin resultados</p>}
+        <div style={s.overlay} onClick={()=>{setAbierto(false);setBusqueda("");}}>
+          <div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <p style={{margin:"0 0 10px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
+            <input autoFocus style={{...s.input,marginBottom:12}} placeholder="🔍 Buscar persona u oficio..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
+            <div style={{overflowY:"auto",flex:1,margin:"0 -20px",padding:"0 20px"}}>
+              {miembrosFiltrados.length>0 && <p style={{padding:"8px 0 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A"}}>👥 Mi equipo</p>}
+              {miembrosFiltrados.map(m => (
+                <button type="button" key={m.uid} onClick={()=>{onChange({responsable:m.especialidad||"",usuarioId:m.uid});setAbierto(false);setBusqueda("");}}
+                  style={{width:"100%",padding:"12px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:usuarioId===m.uid?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:usuarioId===m.uid?color:"#1C1C1E",fontWeight:usuarioId===m.uid?700:400,fontFamily:"inherit"}}>
+                  {m.nombre}{m.especialidad?<span style={{color:"#55555A",fontWeight:400}}> — {m.especialidad}</span>:null}
+                </button>
+              ))}
+              {oficiosFiltrados.length>0 && <p style={{padding:"8px 0 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A"}}>🔧 Oficio genérico</p>}
+              {oficiosFiltrados.map(r => (
+                <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setAbierto(false);setBusqueda("");}}
+                  style={{width:"100%",padding:"12px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:(!usuarioId&&value===r)?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(!usuarioId&&value===r)?color:"#1C1C1E",fontWeight:(!usuarioId&&value===r)?700:400,fontFamily:"inherit"}}>
+                  {r}
+                </button>
+              ))}
+              {miembrosFiltrados.length===0 && oficiosFiltrados.length===0 && <p style={{padding:"14px 0",margin:0,fontSize:14,color:"#55555A",textAlign:"center"}}>Sin resultados</p>}
+            </div>
+            <button type="button" onClick={()=>{setAbierto(false);setBusqueda("");}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",marginTop:12}}>Cancelar</button>
           </div>
         </div>
-        </>
       )}
     </div>
   );
