@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { HardHat, Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, FileText, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2 } from "lucide-react";
+import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2 } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -620,7 +620,6 @@ export default function App({ session }) {
   const [filtroSector,     setFiltroSector]      = useState("todos");
   const [orden,            setOrden]             = useState("urgencia");
   const [ordenDesc,        setOrdenDesc]         = useState(false);
-  const [filtroRespOpen,   setFiltroRespOpen]   = useState(false);
   const [busqueda,         setBusqueda]         = useState("");
   const [nuevoComentario,  setNuevoComentario]  = useState("");
   const [grabandoAudio,    setGrabandoAudio]    = useState(false);
@@ -856,7 +855,6 @@ export default function App({ session }) {
   const [vistaHome,            setVistaHome]            = useState("mias");
   const [misEmpresasComoMiembro, setMisEmpresasComoMiembro] = useState<any[]>([]);
   const [modalCompartirObra,   setModalCompartirObra]   = useState(null);
-  const [metricasAyerEmpresa,  setMetricasAyerEmpresa]  = useState<any>(null);
   const [vistaDirectorCategoria, setVistaDirectorCategoria] = useState<string|null>(null); // "urgencias"|"novedades"|"resueltas"
   const [filtroObraAlertas,      setFiltroObraAlertas]      = useState<any>(null); // {id,nombre} o null = todas
   const [origenDirectorCategoria,setOrigenDirectorCategoria]= useState<string|null>(null); // para que "volver" desde una obra vuelva a la pastilla correcta
@@ -1999,7 +1997,6 @@ export default function App({ session }) {
     setInvitacionesEmpresaPendientes(p=>p.filter(i=>i.codigo!==codigo));
     mostrarToast("Invitación cancelada");
   };
-  const copiarLink=()=>{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};
   const generarResumenGremio=(gremio:string)=>{const novs=novedades.filter(n=>!n.resuelta&&n.responsable===gremio);const urgentes=novs.filter(n=>n.prioridad===0);const otras=novs.filter(n=>n.prioridad!==0);let msg=`Hola! Te mando el estado de tus novedades en "${obraActual?.nombre}":\n\n`;if(urgentes.length>0){msg+=`🔴 URGENTES (${urgentes.length}):\n`;urgentes.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}${n.fechaLimite?` — límite ${formatFecha(n.fechaLimite)}`:""}\n`;});msg+="\n";}if(otras.length>0){msg+=`🟡 PENDIENTES (${otras.length}):\n`;otras.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}\n`;});}msg+=`\nTotal pendiente: ${novs.length} novedad${novs.length!==1?"es":""}`;return msg;};
   const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",responsableUsuarioId:nov.responsable_usuario_id||null,sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
   const asignarRapido=async(id,{responsable,usuarioId})=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({responsable,responsable_usuario_id:usuarioId||null}).eq("id",id);if(error){alert("No se pudo asignar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,responsable,responsable_usuario_id:usuarioId||null}:x));setAsignacionRapida(null);};
@@ -3576,7 +3573,7 @@ export default function App({ session }) {
             </div>
           );
         })()}
-        {modalTelefono&&<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>}
+        {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
       </div>
     );
   }
