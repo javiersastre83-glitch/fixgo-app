@@ -2063,13 +2063,20 @@ export default function App({ session }) {
     const siguiente=dx<0?idxActual+1:idxActual-1;
     if(siguiente>=0&&siguiente<TABS_INICIO.length)cambiarVistaHome(TABS_INICIO[siguiente]);
   };
-  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setOrden("urgencia");setOrdenDesc(false);setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);setModalEditarObra(null);setMenuObra(null);setModalCompartirObra(null);
-    // Cargar novedades de esta obra si no están cargadas aún
-    if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
+  const cargarNovedadesDeObraSiFalta=(obra)=>{
+    // Cargar novedades de esta obra si no están cargadas aún (reutilizable desde irObra y desde Bitácora)
+    if(usuarioReal&&obra&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
         if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
       });
     }
+  };
+  const irObra=(obra)=>{setObraActual(obra);setVistaRaiz("obra");setVista("lista");setBusqueda("");setFiltro("todas");setFiltroResp("todos");setFiltroSector("todos");setOrden("urgencia");setOrdenDesc(false);setVistaStats(false);setVistaEquipo(false);setMiembroSel(null);setModalEditarObra(null);setMenuObra(null);setModalCompartirObra(null);
+    cargarNovedadesDeObraSiFalta(obra);
+  };
+  const irANovedadDesdeBitacora=(entrada)=>{
+    cargarNovedadesDeObraSiFalta(entrada.obra);
+    setObraActual(entrada.obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
   };
 
   const modalFotoResolucionJSX = modalFotoResolucion&&<div style={s.overlay} onClick={()=>{if(!subiendoFotoResolucion)setModalFotoResolucion(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
@@ -2860,7 +2867,7 @@ export default function App({ session }) {
             <div key={nombreObra}>
               <p style={{margin:"18px 16px 8px",fontSize:12,fontWeight:800,color:"#7C5CFC",textTransform:"uppercase",letterSpacing:0.5}}>🏗️ {nombreObra}</p>
               {porObra[nombreObra].map(e=>(
-                <div key={e.id} onClick={()=>{setObraActual(e.obra);setDetalleId(e.novedad.id);setVista("detalle");setVistaBitacora(false);}}
+                <div key={e.id} onClick={()=>irANovedadDesdeBitacora(e)}
                   style={{background:"#fff",borderRadius:16,padding:"13px 15px",margin:"0 16px 10px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",opacity:e.hablado?0.6:1}}>
                   <div style={{width:24,height:24,borderRadius:8,border:"2px solid "+(e.hablado?"#34C759":"#D9D9DE"),background:e.hablado?"#34C759":"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff",marginTop:2}}>{e.hablado?"✓":""}</div>
                   <div style={{flex:1,minWidth:0}}>
