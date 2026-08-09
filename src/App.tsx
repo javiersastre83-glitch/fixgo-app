@@ -531,6 +531,27 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
   );
 };
 
+const ModalTelefono = ({ modalTelefono, setModalTelefono, telInput, setTelInput, guardarTelefono }) => {
+  if(!modalTelefono) return null;
+  return createPortal(
+    <div style={s.overlay} onClick={()=>setModalTelefono(null)}>
+      <div style={s.modal} onClick={e=>e.stopPropagation()}>
+        <p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p>
+        <p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>
+        {typeof navigator!=="undefined"&&(navigator as any).contacts&&
+          <button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}}
+            style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <span>📱</span>Elegir de mis contactos
+          </button>}
+        <input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/>
+        <button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button>
+        <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 const NavBar = ({ tabActiva, onTab, onPerfil }) => (
   <div style={{ background:"#fff", borderTop:"1px solid #E5E5EA", display:"flex", paddingBottom:"env(safe-area-inset-bottom)", flexShrink:0 }}>
     {[
@@ -2754,7 +2775,7 @@ export default function App({ session }) {
           })}
           {miembrosEmpresa.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:30}}>Todavía no invitaste a nadie.</p>}
         </div>
-        {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
+        <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
         {modalEmailContacto&&<div style={s.overlay} onClick={()=>setModalEmailContacto(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Mail de contacto de {modalEmailContacto.nombre}</p>
           <p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>No cambia su cuenta, es solo para que vos lo tengas a mano.</p>
@@ -3573,7 +3594,7 @@ export default function App({ session }) {
             </div>
           );
         })()}
-        {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
+        <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
       </div>
     );
   }
@@ -3856,7 +3877,7 @@ export default function App({ session }) {
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><span style={{fontSize:40}}>🔒</span><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10}}>🚀 Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
-        {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
+        <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
         {modalPeriodoJSX}
       </div>
     );
@@ -4270,7 +4291,7 @@ export default function App({ session }) {
       </>);})()}<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
       {null}
       {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><span style={{fontSize:44}}>🗑️</span><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
-      {modalTelefono&&createPortal(<div style={s.overlay} onClick={()=>setModalTelefono(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p><p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>{typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await (navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}<input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/><button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button></div></div>,document.body)}
+      <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
       {modalInvitarJSX}
         {asignacionRapidaJSX}
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
