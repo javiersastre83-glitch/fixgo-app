@@ -863,6 +863,7 @@ export default function App({ session }) {
   const [vistaDirectorCategoria, setVistaDirectorCategoria] = useState<string|null>(null); // "urgencias"|"novedades"|"resueltas"
   const [filtroObraAlertas,      setFiltroObraAlertas]      = useState<any>(null); // {id,nombre} o null = todas
   const [origenDirectorCategoria,setOrigenDirectorCategoria]= useState<string|null>(null); // para que "volver" desde una obra vuelva a la pastilla correcta
+  const [origenBitacora,       setOrigenBitacora]       = useState(false); // para que "volver" desde una novedad vuelva a Mi Bitácora si vinimos de ahí
   const [vistaTuEquipo,        setVistaTuEquipo]        = useState(false);
   const [vistaProfesionales,   setVistaProfesionales]   = useState(false);
   const cargarEmpresa=async()=>{
@@ -2078,14 +2079,14 @@ export default function App({ session }) {
     const obra=entrada.obra;
     const yaCargadas=usuarioReal&&obra&&typeof obra.id==="string"&&novedadesPorObra[obra.id]&&novedadesPorObra[obra.id].length>0;
     if(yaCargadas){
-      setVistaDirectorCategoria(null);setOrigenDirectorCategoria(null);
+      setVistaDirectorCategoria(null);setOrigenDirectorCategoria(null);setOrigenBitacora(true);
       setVistaRaiz("obra");setObraActual(obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
       return;
     }
     // Si todavía no tenemos los datos de esta obra, esperamos a que lleguen antes de cambiar de pantalla (evita el pestañeo)
     supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
       if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));}
-      setVistaDirectorCategoria(null);setOrigenDirectorCategoria(null);
+      setVistaDirectorCategoria(null);setOrigenDirectorCategoria(null);setOrigenBitacora(true);
       setVistaRaiz("obra");setObraActual(obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
     });
   };
@@ -3021,6 +3022,7 @@ export default function App({ session }) {
       if (!obra) return;
       setObraActual(obra);
       setVistaRaiz("obra");
+      setOrigenBitacora(false);
       setDetalleId(alerta.novId);
       setVista("detalle");
       const novReal=(novedadesPorObra[alerta.obraId]||[]).find(n=>n.id===alerta.novId);
@@ -3509,7 +3511,7 @@ export default function App({ session }) {
             <div key={titulo}><p style={{margin:"4px 0 8px",fontSize:13,color:"#55555A",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>{titulo}</p>
               {lista.map(nov=>{const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);return(
                 <button key={nov.id} style={{width:"100%",background:"#fff",borderRadius:16,border:"1px solid #ECECEF",padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",marginBottom:8,boxShadow:"0 1px 3px rgba(0,0,0,0.05)",opacity:nov.resuelta?0.65:1}}
-                  onClick={()=>{setDetalleId(nov.id);setMiembroSel(null);setVistaEquipo(false);setVista("detalle");setComentariosAbiertos((nov.comentarios||[]).length>0);}}>
+                  onClick={()=>{setDetalleId(nov.id);setMiembroSel(null);setVistaEquipo(false);setOrigenBitacora(false);setVista("detalle");setComentariosAbiertos((nov.comentarios||[]).length>0);}}>
                   <div style={{display:"flex",alignItems:"center"}}>
                     {nov.fotos.length>0
                       ?<div style={{position:"relative",width:72,height:72,flexShrink:0,marginLeft:11}}>
@@ -3913,7 +3915,7 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <div style={{background:"#fff",padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #F0F0F0",flexShrink:0}}>
-          <button onClick={()=>{if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);setTabActiva("obras");}else{setVista("lista");}}} style={{width:34,height:34,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}><ChevronLeft size={20} color="#1C1C1E"/></button>
+          <button onClick={()=>{if(origenBitacora){setOrigenBitacora(false);setVistaBitacora(true);}else if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);setTabActiva("obras");}else{setVista("lista");}}} style={{width:34,height:34,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}><ChevronLeft size={20} color="#1C1C1E"/></button>
           <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{detalle.descripcion}</p>
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
@@ -4221,7 +4223,7 @@ export default function App({ session }) {
           const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);
           return(
             <button key={nov.id} style={{width:"100%",flexShrink:0,background:"#fff",borderRadius:16,border:"1px solid #ECECEF",padding:0,cursor:"pointer",textAlign:"left",overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.05)",opacity:nov.resuelta?0.65:1}}
-              onClick={()=>{setDetalleId(nov.id);setVista("detalle");setComentariosAbiertos((nov.comentarios||[]).length>0);}}
+              onClick={()=>{setDetalleId(nov.id);setOrigenBitacora(false);setVista("detalle");setComentariosAbiertos((nov.comentarios||[]).length>0);}}
               onContextMenu={e=>{e.preventDefault();setMenuContextual({novId:nov.id});}}
               onPointerDown={e=>{const t=setTimeout(()=>setMenuContextual({novId:nov.id}),600);e.currentTarget._t=t;}} onPointerUp={e=>clearTimeout(e.currentTarget._t)} onPointerLeave={e=>clearTimeout(e.currentTarget._t)}
               onTouchStart={e=>{e.currentTarget._tt=setTimeout(()=>setMenuContextual({novId:nov.id}),600);}} onTouchEnd={e=>clearTimeout(e.currentTarget._tt)} onTouchMove={e=>clearTimeout(e.currentTarget._tt)}>
