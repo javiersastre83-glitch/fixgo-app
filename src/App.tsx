@@ -2879,7 +2879,7 @@ export default function App({ session }) {
           {filtradas.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:30}}>Todavía no guardaste nada en tu Bitácora.</p>}
           {Object.keys(porObra).map(nombreObra=>(
             <div key={nombreObra}>
-              <p style={{margin:"18px 16px 8px",display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:800,color:"#7C5CFC",textTransform:"uppercase",letterSpacing:0.5}}><Building2 size={13} strokeWidth={2.5}/><span style={{color:"#B7ABEE",fontWeight:700}}>Obra</span>·{nombreObra}</p>
+              <p style={{margin:"18px 16px 8px",display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:800,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}><Building2 size={13} strokeWidth={2.5}/><span style={{color:"#8E8E93",fontWeight:700}}>Obra</span>·{nombreObra}</p>
               {porObra[nombreObra].map(e=>(
                 <div key={e.id} onClick={()=>irANovedadDesdeBitacora(e)}
                   style={{background:"#fff",borderRadius:16,padding:"13px 15px",margin:"0 16px 10px",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",display:"flex",gap:12,alignItems:"flex-start",cursor:"pointer",opacity:e.hablado?0.6:1}}>
