@@ -891,7 +891,11 @@ export default function App({ session }) {
   };
   const cargarInvitacionesPendientes=async()=>{
     if(!obraActual?.id)return;
-    const{data}=await supabase.from("invitaciones").select("codigo,rol,especialidad,nombre,telefono,created_at").eq("obra_id",obraActual.id).eq("usada",false).order("created_at",{ascending:false});
+    // Limpieza automática: cualquier invitación sin usar de más de 5 días se borra sola
+    // (incluye las rechazadas por "ya es miembro" y las que nadie tocó nunca)
+    const limite=new Date(Date.now()-5*24*60*60*1000).toISOString();
+    await supabase.from("invitaciones").delete().eq("obra_id",obraActual.id).eq("usada",false).lt("created_at",limite);
+    const{data}=await supabase.from("invitaciones").select("codigo,rol,especialidad,nombre,telefono,created_at,motivo_rechazo").eq("obra_id",obraActual.id).eq("usada",false).order("created_at",{ascending:false});
     setInvitacionesPendientes(data||[]);
   };
   useEffect(()=>{if(vistaEquipo&&obraActual?.id)cargarInvitacionesPendientes();},[vistaEquipo,obraActual?.id]);
@@ -1241,6 +1245,9 @@ export default function App({ session }) {
         // Se aceptó la invitación (usada pasó a true): sacarla de la lista de pendientes en vivo
         if(payload.new.usada){
           setInvitacionesPendientes(p=>p.filter(i=>i.codigo!==payload.new.codigo));
+        }else if(payload.new.motivo_rechazo){
+          // Alguien intentó aceptarla pero ya era miembro: reflejar el nuevo estado sin refrescar
+          setInvitacionesPendientes(p=>p.map(i=>i.codigo===payload.new.codigo?{...i,motivo_rechazo:payload.new.motivo_rechazo}:i));
         }
       })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"invitaciones"},(payload)=>{
@@ -3635,17 +3642,20 @@ export default function App({ session }) {
           {invitacionesPendientes.length>0&&<div>
             <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Invitaciones pendientes ({invitacionesPendientes.length})</p>
             <div style={{display:"flex",flexDirection:"column",gap:11}}>
-              {invitacionesPendientes.map(inv=>(
+              {invitacionesPendientes.map(inv=>{
+                const rechazada=inv.motivo_rechazo==="ya_es_miembro";
+                return(
                 <div key={inv.codigo} style={{background:"#fff",borderRadius:16,padding:"12px 14px",boxShadow:"0 1px 3px rgba(0,0,0,0.06)",display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:40,height:40,borderRadius:"50%",background:"#FF950015",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:17}}>⏳</div>
+                  <div style={{width:40,height:40,borderRadius:"50%",background:rechazada?"#FF3B3015":"#FF950015",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:17}}>{rechazada?"⚠️":"⏳"}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <p style={{margin:0,fontSize:14.5,fontWeight:700,color:"#1C1C1E"}}>{inv.nombre||(inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":inv.especialidad)||"Sin nombre"}</p>
-                    <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>{inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":`Operario · ${inv.especialidad}`} · Esperando que acepte</p>
+                    <p style={{margin:"1px 0 0",fontSize:12,color:rechazada?"#FF3B30":"#55555A",fontWeight:rechazada?600:400}}>{inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":`Operario · ${inv.especialidad}`} · {rechazada?"Ya es integrante de tu equipo":"Esperando que acepte"}</p>
                   </div>
-                  <button onClick={()=>reenviarInvitacion(inv)} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",flexShrink:0}}><Share2 size={15} color="#1C1C1E"/></button>
+                  {!rechazada&&<button onClick={()=>reenviarInvitacion(inv)} style={{background:"#F2F2F7",border:"none",borderRadius:10,padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",flexShrink:0}}><Share2 size={15} color="#1C1C1E"/></button>}
                   <button onClick={()=>cancelarInvitacion(inv.codigo)} style={{background:"none",border:"none",cursor:"pointer",padding:6,display:"flex",alignItems:"center",flexShrink:0}}><Trash2 size={16} color="#C7C7CC"/></button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>}
           <button style={{width:"100%",border:"2px dashed #C7C7CC",background:"transparent",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"18px",cursor:"pointer"}} onClick={()=>abrirModalInvitar()}>
