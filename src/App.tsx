@@ -1752,7 +1752,9 @@ export default function App({ session }) {
   const borrarNotaBitacora=async(bitacoraId,notaId)=>{
     const{error}=await supabase.from("bitacora_notas").delete().eq("id",notaId);
     if(error){alert("No se pudo borrar la nota: "+error.message);return;}
-    setNotasBitacora(n=>({...n,[bitacoraId]:(n[bitacoraId]||[]).filter(x=>x.id!==notaId)}));
+    const notasRestantes=(notasBitacora[bitacoraId]||[]).filter(x=>x.id!==notaId);
+    setNotasBitacora(n=>({...n,[bitacoraId]:notasRestantes}));
+    if(notasRestantes.length===0)await sacarDeBitacora(bitacoraId); // Sin notas, no tiene sentido seguir en la Bitácora
   };
 
   const marcarSelloDirector=async(id,valor)=>{
@@ -2887,6 +2889,7 @@ export default function App({ session }) {
                     <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{e.novedad.fecha?formatFecha(e.novedad.fecha):""}</p>
                     <p style={{margin:"5px 0 0",fontSize:12.5,color:"#7A7A80"}}>💬 {(notasBitacora[e.id]||[]).length} nota{(notasBitacora[e.id]||[]).length!==1?"s":""}{(notasBitacora[e.id]||[]).length>0?` · última: "${(notasBitacora[e.id]||[]).slice(-1)[0].texto.slice(0,40)}${(notasBitacora[e.id]||[]).slice(-1)[0].texto.length>40?"...":""}"`:""}</p>
                   </div>
+                  <button onClick={ev=>{ev.stopPropagation();if(confirm("¿Sacar esta novedad de tu Bitácora? Se borran también sus notas."))sacarDeBitacora(e.id);}} style={{background:"none",border:"none",padding:6,marginTop:-2,marginRight:-6,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center"}}><Trash2 size={16} color="#C7C7CC"/></button>
                 </div>
               ))}
             </div>
