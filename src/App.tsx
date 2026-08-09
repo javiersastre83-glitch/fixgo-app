@@ -2075,8 +2075,17 @@ export default function App({ session }) {
     cargarNovedadesDeObraSiFalta(obra);
   };
   const irANovedadDesdeBitacora=(entrada)=>{
-    cargarNovedadesDeObraSiFalta(entrada.obra);
-    setObraActual(entrada.obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
+    const obra=entrada.obra;
+    const yaCargadas=usuarioReal&&obra&&typeof obra.id==="string"&&novedadesPorObra[obra.id]&&novedadesPorObra[obra.id].length>0;
+    if(yaCargadas){
+      setObraActual(obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
+      return;
+    }
+    // Si todavía no tenemos los datos de esta obra, esperamos a que lleguen antes de cambiar de pantalla (evita el pestañeo)
+    supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
+      if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));}
+      setObraActual(obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
+    });
   };
 
   const modalFotoResolucionJSX = modalFotoResolucion&&<div style={s.overlay} onClick={()=>{if(!subiendoFotoResolucion)setModalFotoResolucion(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
