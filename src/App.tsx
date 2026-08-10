@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye } from "lucide-react";
+import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -331,9 +331,10 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
         <>
         <div style={{position:"fixed",inset:0,zIndex:49}} onClick={()=>{setAbierto(false);setBusqueda("");}}/>
         <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",borderRadius:14,border:"1.5px solid #E5E5EA",boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50,maxHeight:280,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          <div style={{padding:"10px",borderBottom:"1px solid #F2F2F7"}}>
-            <input autoFocus value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar oficio..."
-              style={{width:"100%",padding:"10px 12px",borderRadius:10,border:"1.5px solid #E5E5EA",fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
+          <div style={{padding:"10px",borderBottom:"1px solid #F2F2F7",position:"relative"}}>
+            <Search size={15} color="#B0B0B5" style={{position:"absolute",left:24,top:"50%",transform:"translateY(-50%)"}}/>
+            <input autoFocus value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="Buscar oficio..."
+              style={{width:"100%",padding:"10px 12px 10px 34px",borderRadius:10,border:"1.5px solid #E5E5EA",fontSize:15,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
           </div>
           <div style={{overflowY:"auto",flex:1}}>
             {filtrados.length===0 && <p style={{padding:"14px",margin:0,fontSize:14,color:"#55555A",textAlign:"center"}}>Sin resultados</p>}
@@ -429,16 +430,19 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
         <div style={s.overlay} onClick={()=>{setAbierto(false);setBusqueda("");}}>
           <div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
             <p style={{margin:"0 0 10px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
-            <input autoFocus style={{...s.input,marginBottom:12}} placeholder="🔍 Buscar persona u oficio..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
+            <div style={{position:"relative",marginBottom:12}}>
+              <Search size={15} color="#B0B0B5" style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)"}}/>
+              <input autoFocus style={{...s.input,paddingLeft:34}} placeholder="Buscar persona u oficio..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
+            </div>
             <div style={{overflowY:"auto",flex:1,margin:"0 -20px",padding:"0 20px"}}>
-              {miembrosFiltrados.length>0 && <p style={{padding:"8px 0 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A"}}>👥 Mi equipo</p>}
+              {miembrosFiltrados.length>0 && <p style={{padding:"8px 0 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A",display:"flex",alignItems:"center",gap:5}}><Users size={13}/>Mi equipo</p>}
               {miembrosFiltrados.map(m => (
                 <button type="button" key={m.uid} onClick={()=>{onChange({responsable:m.especialidad||"",usuarioId:m.uid});setAbierto(false);setBusqueda("");}}
                   style={{width:"100%",padding:"12px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:usuarioId===m.uid?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:usuarioId===m.uid?color:"#1C1C1E",fontWeight:usuarioId===m.uid?700:400,fontFamily:"inherit"}}>
                   {m.nombre}{m.especialidad?<span style={{color:"#55555A",fontWeight:400}}> — {m.especialidad}</span>:null}
                 </button>
               ))}
-              {oficiosFiltrados.length>0 && <p style={{padding:"8px 0 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A"}}>🔧 Oficio genérico</p>}
+              {oficiosFiltrados.length>0 && <p style={{padding:"8px 0 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A",display:"flex",alignItems:"center",gap:5}}><Wrench size={13}/>Oficio genérico</p>}
               {oficiosFiltrados.map(r => (
                 <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setAbierto(false);setBusqueda("");}}
                   style={{width:"100%",padding:"12px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:(!usuarioId&&value===r)?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(!usuarioId&&value===r)?color:"#1C1C1E",fontWeight:(!usuarioId&&value===r)?700:400,fontFamily:"inherit"}}>
@@ -541,7 +545,7 @@ const ModalTelefono = ({ modalTelefono, setModalTelefono, telInput, setTelInput,
         {typeof navigator!=="undefined"&&(navigator as any).contacts&&
           <button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}}
             style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            <span>📱</span>Elegir de mis contactos
+            <Smartphone size={16}/>Elegir de mis contactos
           </button>}
         <input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/>
         <button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button>
@@ -798,12 +802,12 @@ export default function App({ session }) {
     const vencidaMasVieja=vencidasActuales.sort((a,b)=>new Date(a.fechaLimite).getTime()-new Date(b.fechaLimite).getTime())[0];
     const diasVencidaMasVieja=vencidaMasVieja?Math.floor((hoyMs-new Date(vencidaMasVieja.fechaLimite).getTime())/864e5):0;
     const insights=[];
-    if(deltaRep.tipo!=="neutral")insights.push({icono:"📈",texto:`Las novedades reportadas ${deltaRep.pct>=0?"subieron":"bajaron"} un ${Math.abs(deltaRep.pct)}% respecto del período anterior.`});
-    if(oficioCritico)insights.push({icono:"🔧",texto:`El oficio con más atrasos es ${oficioCritico.nombre}.`});
-    if(vencidaMasVieja)insights.push({icono:"⚠️",texto:`Hay una novedad vencida hace ${diasVencidaMasVieja} día${diasVencidaMasVieja!==1?"s":""} que necesita atención.`});
-    if(porSector[0])insights.push({icono:"📍",texto:`El sector ${porSector[0].nombre} concentra el ${Math.round((porSector[0].cant/actual.reportadas.length)*100)}% de las novedades del período.`});
-    if(actual.resueltas.length>0)insights.push({icono:"⏱️",texto:`El tiempo promedio de resolución es de ${actual.tiempoProm.toFixed(1)} días.`});
-    else insights.push({icono:"⏱️",texto:"Todavía no hay novedades resueltas en este período para calcular un tiempo promedio."});
+    if(deltaRep.tipo!=="neutral")insights.push({icono:deltaRep.pct>=0?<TrendingUp size={15}/>:<TrendingDown size={15}/>,texto:`Las novedades reportadas ${deltaRep.pct>=0?"subieron":"bajaron"} un ${Math.abs(deltaRep.pct)}% respecto del período anterior.`});
+    if(oficioCritico)insights.push({icono:<Wrench size={15}/>,texto:`El oficio con más atrasos es ${oficioCritico.nombre}.`});
+    if(vencidaMasVieja)insights.push({icono:<AlertTriangle size={15}/>,texto:`Hay una novedad vencida hace ${diasVencidaMasVieja} día${diasVencidaMasVieja!==1?"s":""} que necesita atención.`});
+    if(porSector[0])insights.push({icono:<MapPin size={15}/>,texto:`El sector ${porSector[0].nombre} concentra el ${Math.round((porSector[0].cant/actual.reportadas.length)*100)}% de las novedades del período.`});
+    if(actual.resueltas.length>0)insights.push({icono:<Clock size={15}/>,texto:`El tiempo promedio de resolución es de ${actual.tiempoProm.toFixed(1)} días.`});
+    else insights.push({icono:<Clock size={15}/>,texto:"Todavía no hay novedades resueltas en este período para calcular un tiempo promedio."});
 
     setReporteData({
       desde,hasta,
@@ -2217,7 +2221,7 @@ export default function App({ session }) {
       <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Nombre o empresa <span style={{fontWeight:400}}>(opcional)</span></p>
       <input style={{...s.input,marginBottom:12}} placeholder="Ej: Jorge, Cuadrilla 2..." value={invitarNombre} onChange={e=>setInvitarNombre(e.target.value)} maxLength={40}/>
       <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
-      {typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["name","tel"],{multiple:false});if(c&&c[0]){if(c[0].tel?.[0])setInvitarTelefono(c[0].tel[0].replace(/\s/g,""));if(c[0].name?.[0]&&!invitarNombre.trim())setInvitarNombre(c[0].name[0]);}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span>📱</span>Elegir de mis contactos</button>}
+      {typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["name","tel"],{multiple:false});if(c&&c[0]){if(c[0].tel?.[0])setInvitarTelefono(c[0].tel[0].replace(/\s/g,""));if(c[0].name?.[0]&&!invitarNombre.trim())setInvitarNombre(c[0].name[0]);}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Smartphone size={16}/>Elegir de mis contactos</button>}
       <input style={{...s.input,marginBottom:4}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
       <p style={{margin:"0 0 16px",fontSize:11,color:"#C7C7CC"}}>Para contactarlo rápido desde Estadísticas</p>
       <button style={{...s.btnPrincipal,background:"#1C1C1E",opacity:generandoLink?0.5:1}} disabled={generandoLink} onClick={generarInvitacion}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{generandoLink?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Generando...</>:"Generar link de invitación"}</span></button>
@@ -2538,7 +2542,7 @@ export default function App({ session }) {
               <p style={{fontSize:10.5,color:GRAY,margin:"5px 0 0",lineHeight:1.4}}>Vista rápida de las incidencias registradas en el período.</p>
             </div>
             <div style={{display:"flex",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:13,padding:"12px 8px",gap:13,flexShrink:0}}>
-              {[["✓",rd.resueltas,"Resueltas","#E4F5EC","#1a8a3d"],["🕐",Math.max(0,rd.pendientes-rd.vencidas),"Pendientes","#FDF1DE","#9a6b00"],["⚠️",rd.vencidas,"Vencida","#FBE7E6","#D0342C"],["📄",rd.reportadas,"Total","#F2F2F7",INK]].map(([ic,val,lbl,bg,color]:any,i)=>(
+              {[[<CheckCircle size={14}/>,rd.resueltas,"Resueltas","#E4F5EC","#1a8a3d"],[<Clock size={14}/>,Math.max(0,rd.pendientes-rd.vencidas),"Pendientes","#FDF1DE","#9a6b00"],[<AlertTriangle size={14}/>,rd.vencidas,"Vencida","#FBE7E6","#D0342C"],[<FileText size={14}/>,rd.reportadas,"Total","#F2F2F7",INK]].map(([ic,val,lbl,bg,color]:any,i)=>(
                 <div key={i} style={{textAlign:"center",width:48}}>
                   <div style={{width:28,height:28,borderRadius:"50%",background:bg,color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,margin:"0 auto 4px"}}>{ic}</div>
                   <b style={{fontSize:15,display:"block",fontWeight:800}}>{val}</b>
@@ -2919,7 +2923,7 @@ export default function App({ session }) {
                   <div style={{flex:1,minWidth:0}}>
                     <p style={{margin:0,fontSize:14.5,fontWeight:700,textDecoration:e.hablado?"line-through":"none",color:e.hablado?"#55555A":"#1C1C1E"}}>{e.novedad.descripcion}</p>
                     <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{e.novedad.fecha?formatFecha(e.novedad.fecha):""}</p>
-                    <p style={{margin:"5px 0 0",fontSize:12.5,color:"#7A7A80"}}>💬 {(notasBitacora[e.id]||[]).length} nota{(notasBitacora[e.id]||[]).length!==1?"s":""}{(notasBitacora[e.id]||[]).length>0?` · última: "${(notasBitacora[e.id]||[]).slice(-1)[0].texto.slice(0,40)}${(notasBitacora[e.id]||[]).slice(-1)[0].texto.length>40?"...":""}"`:""}</p>
+                    <p style={{margin:"5px 0 0",fontSize:12.5,color:"#7A7A80",display:"flex",alignItems:"center",gap:5}}><MessageCircle size={12}/>{(notasBitacora[e.id]||[]).length} nota{(notasBitacora[e.id]||[]).length!==1?"s":""}{(notasBitacora[e.id]||[]).length>0?` · última: "${(notasBitacora[e.id]||[]).slice(-1)[0].texto.slice(0,40)}${(notasBitacora[e.id]||[]).slice(-1)[0].texto.length>40?"...":""}"`:""}</p>
                   </div>
                   <button onClick={ev=>{ev.stopPropagation();if(confirm("¿Sacar esta novedad de tu Bitácora? Se borran también sus notas."))sacarDeBitacora(e.id);}} style={{background:"none",border:"none",padding:6,marginTop:-2,marginRight:-6,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center"}}><Trash2 size={16} color="#C7C7CC"/></button>
                 </div>
@@ -3674,7 +3678,7 @@ export default function App({ session }) {
                 const rechazada=inv.motivo_rechazo==="ya_es_miembro";
                 return(
                 <div key={inv.codigo} style={{background:"#fff",borderRadius:16,padding:"12px 14px",boxShadow:"0 1px 3px rgba(0,0,0,0.06)",display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:40,height:40,borderRadius:"50%",background:rechazada?"#FF3B3015":"#FF950015",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:17}}>{rechazada?"⚠️":"⏳"}</div>
+                  <div style={{width:40,height:40,borderRadius:"50%",background:rechazada?"#FF3B3015":"#FF950015",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{rechazada?<AlertTriangle size={17} color="#FF3B30"/>:<Clock size={17} color="#FF9500"/>}</div>
                   <div style={{flex:1,minWidth:0}}>
                     <p style={{margin:0,fontSize:14.5,fontWeight:700,color:"#1C1C1E"}}>{inv.nombre||(inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":inv.especialidad)||"Sin nombre"}</p>
                     <p style={{margin:"1px 0 0",fontSize:12,color:rechazada?"#FF3B30":"#55555A",fontWeight:rechazada?600:400}}>{inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":`Operario · ${inv.especialidad}`} · {rechazada?"Ya es integrante de tu equipo":"Esperando que acepte"}</p>
@@ -4073,7 +4077,7 @@ export default function App({ session }) {
 
                 {miEntrada&&<div style={{display:"flex",alignItems:"center",background:miEntrada.hablado?"#EAFBEF":"#fff",borderRadius:12,padding:"9px 12px",marginBottom:12,border:"1.5px solid "+(miEntrada.hablado?"#34C759":"#E5E5EA")}}>
                   <span onClick={()=>toggleHabladoBitacora(miEntrada.id,!miEntrada.hablado)} style={{fontSize:12.5,fontWeight:700,color:miEntrada.hablado?"#1a8a3d":"#55555A",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-                    {miEntrada.hablado?"✓ Hablado con el equipo":"○ Marcar como hablado"}
+                    {miEntrada.hablado?<CheckCircle size={14}/>:<Circle size={14}/>}{miEntrada.hablado?"Hablado con el equipo":"Marcar como hablado"}
                   </span>
                 </div>}
 
