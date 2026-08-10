@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2 } from "lucide-react";
+import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -4011,13 +4011,13 @@ export default function App({ session }) {
           
           {(empresaPropia&&obraActual?.empresa_id===empresaPropia.id)?(
             <div style={{display:"flex",gap:8,margin:"0 0 12px",alignItems:"center",flexWrap:"wrap"}}>
-              <div onClick={()=>marcarSelloDirector(detalle.id,"like")} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:99,border:detalle.selloDirector==="like"?"1.5px solid #34C759":"1.5px solid #E5E5EA",background:detalle.selloDirector==="like"?"#EAFBEF":"#fff",cursor:"pointer",fontSize:12,fontWeight:700,color:detalle.selloDirector==="like"?"#1a8a3d":"#55555A"}}><span style={{fontSize:14}}>👍</span>Destacar</div>
-              <div onClick={()=>marcarSelloDirector(detalle.id,"atencion")} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:99,border:detalle.selloDirector==="atencion"?"1.5px solid #FFB800":"1.5px solid #E5E5EA",background:detalle.selloDirector==="atencion"?"#FFF8E5":"#fff",cursor:"pointer",fontSize:12,fontWeight:700,color:detalle.selloDirector==="atencion"?"#9a6b00":"#55555A"}}><span style={{fontSize:14}}>⚠️</span>Atención</div>
-              <span style={{fontSize:10.5,color:"#B0B0B5"}}>👁️ {getUserById(detalle.responsable_usuario_id)?.nombre||"El responsable"} lo ve</span>
+              <div onClick={()=>marcarSelloDirector(detalle.id,"like")} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:99,border:detalle.selloDirector==="like"?"1.5px solid #34C759":"1.5px solid #E5E5EA",background:detalle.selloDirector==="like"?"#EAFBEF":"#fff",cursor:"pointer",fontSize:12,fontWeight:700,color:detalle.selloDirector==="like"?"#1a8a3d":"#55555A"}}><ThumbsUp size={14} strokeWidth={2.3}/>Destacar</div>
+              <div onClick={()=>marcarSelloDirector(detalle.id,"atencion")} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:99,border:detalle.selloDirector==="atencion"?"1.5px solid #FFB800":"1.5px solid #E5E5EA",background:detalle.selloDirector==="atencion"?"#FFF8E5":"#fff",cursor:"pointer",fontSize:12,fontWeight:700,color:detalle.selloDirector==="atencion"?"#9a6b00":"#55555A"}}><AlertTriangle size={14} strokeWidth={2.3}/>Atención</div>
+              <span style={{fontSize:10.5,color:"#B0B0B5",display:"flex",alignItems:"center",gap:4}}><Eye size={12}/>{getUserById(detalle.responsable_usuario_id)?.nombre||"El responsable"} lo ve</span>
             </div>
           ):detalle.selloDirector?(
             <div style={{display:"flex",alignItems:"center",gap:6,margin:"0 0 12px",padding:"8px 12px",borderRadius:12,background:detalle.selloDirector==="like"?"#EAFBEF":"#FFF8E5",fontSize:12.5,fontWeight:600,color:detalle.selloDirector==="like"?"#1a8a3d":"#9a6b00"}}>
-              {detalle.selloDirector==="like"?"👍 Tu Director destacó esta novedad":"⚠️ Tu Director marcó esta novedad para prestarle atención"}
+              {detalle.selloDirector==="like"?<><ThumbsUp size={14} strokeWidth={2.3}/>Tu Director destacó esta novedad</>:<><AlertTriangle size={14} strokeWidth={2.3}/>Tu Director marcó esta novedad para prestarle atención</>}
             </div>
           ):null}
 
@@ -4049,7 +4049,7 @@ export default function App({ session }) {
                 <button type="button" onClick={cancelarGrabacion} style={{width:28,height:28,borderRadius:"50%",border:"none",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><X size={14} color="#55555A"/></button>
               </div>
             ):(
-              <input style={{...s.input,flex:1,background:"#F2F2F7",border:"none"}} placeholder="Escribile algo al equipo..." value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
+              <input style={{...s.input,flex:1,background:"#F2F2F7",border:"none"}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`} value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
             )}
             {grabandoAudio?(
               <button type="button" onClick={detenerGrabacionYEnviar} style={{width:40,height:40,background:"#FF3B30",border:"none",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Send size={16} color="#fff"/></button>
@@ -4065,12 +4065,11 @@ export default function App({ session }) {
             const miEntrada=bitacoraItems.find(b=>b.novedad_id===detalle.id);
             const notas=miEntrada?(notasBitacora[miEntrada.id]||[]):[];
             return(
-              <div style={{background:"linear-gradient(135deg,#F7F5FF,#FBFAFF)",border:"1.5px dashed #D9CFFF",borderRadius:20,padding:"16px 18px",marginTop:20,marginBottom:12}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:2}}>
+              <div style={{background:"linear-gradient(135deg,#F7F5FF,#FBFAFF)",border:"1.5px dashed #D9CFFF",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
                   <p style={{margin:0,fontSize:15,fontWeight:800,color:"#7C5CFC",display:"flex",alignItems:"center",gap:7}}>📔 Mi Bitácora</p>
                   {miEntrada&&<span onClick={()=>{if(confirm("¿Sacar esta novedad de tu Bitácora? Se borran también las notas."))sacarDeBitacora(miEntrada.id);}} style={{fontSize:11,color:"#D0342C",fontWeight:600,cursor:"pointer"}}>Quitar</span>}
                 </div>
-                <p style={{margin:"0 0 12px",fontSize:11.5,color:"#9B8FD9",fontWeight:600}}>🔒 Privado — solo vos ves esto, el equipo no lo lee</p>
 
                 {miEntrada&&<div style={{display:"flex",alignItems:"center",background:miEntrada.hablado?"#EAFBEF":"#fff",borderRadius:12,padding:"9px 12px",marginBottom:12,border:"1.5px solid "+(miEntrada.hablado?"#34C759":"#E5E5EA")}}>
                   <span onClick={()=>toggleHabladoBitacora(miEntrada.id,!miEntrada.hablado)} style={{fontSize:12.5,fontWeight:700,color:miEntrada.hablado?"#1a8a3d":"#55555A",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
@@ -4100,7 +4099,7 @@ export default function App({ session }) {
                 {!notas.length&&!miEntrada&&<p style={{margin:"0 0 10px",fontSize:12.5,color:"#8E8E93"}}>Escribí algo para guardarla en tu Bitácora.</p>}
 
                 <div style={{display:"flex",gap:8,marginTop:4}}>
-                  <input value={nuevaNotaTexto} onChange={e=>setNuevaNotaTexto(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarNotaBitacoraAuto(detalle.id,miEntrada,nuevaNotaTexto)} placeholder="🔒 Nota privada..." style={{flex:1,background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:12,padding:"10px 13px",fontSize:13.5}}/>
+                  <input value={nuevaNotaTexto} onChange={e=>setNuevaNotaTexto(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarNotaBitacoraAuto(detalle.id,miEntrada,nuevaNotaTexto)} placeholder="Agregar nota..." style={{flex:1,background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:12,padding:"10px 13px",fontSize:13.5}}/>
                   <button onClick={()=>agregarNotaBitacoraAuto(detalle.id,miEntrada,nuevaNotaTexto)} style={{width:40,height:40,background:"#7C5CFC",border:"none",borderRadius:12,color:"#fff",fontSize:16,flexShrink:0,cursor:"pointer"}}>＋</button>
                 </div>
               </div>
