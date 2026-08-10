@@ -1151,8 +1151,8 @@ export default function App({ session }) {
       const error=null;
    if(!error){
      const obrasConEquipo=await Promise.all((data||[]).map(async(obra)=>{
-       const{data:miembros}=await supabase.from("equipo_obra").select("usuario_id,rol_en_obra,nombre,especialidad,invitado_por,telefono").eq("obra_id",obra.id);
-       const equipo=(miembros||[]).map(m=>({uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null}));
+       const{data:miembros}=await supabase.from("equipo_obra").select("id,usuario_id,rol_en_obra,nombre,especialidad,invitado_por,telefono").eq("obra_id",obra.id);
+       const equipo=(miembros||[]).map(m=>({equipoObraId:m.id,uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null}));
        return{...obra,equipo};
      }));
      setObras(obrasConEquipo);
@@ -1232,33 +1232,43 @@ export default function App({ session }) {
         });
       })
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"equipo_obra"},(payload)=>{
-        const m=payload.new;const obraId=m.obra_id;const nuevoMiembro={uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
+        const m=payload.new;const obraId=m.obra_id;const nuevoMiembro={equipoObraId:m.id,uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
         setObras(os=>os.map(o=>{if(o.id!==obraId)return o;if((o.equipo||[]).some(x=>x.uid===nuevoMiembro.uid))return o;return{...o,equipo:[...(o.equipo||[]),nuevoMiembro]};}));
         setObraActual(oa=>{if(!oa||oa.id!==obraId)return oa;if((oa.equipo||[]).some(x=>x.uid===nuevoMiembro.uid))return oa;return{...oa,equipo:[...(oa.equipo||[]),nuevoMiembro]};});
       })
       .on("postgres_changes",{event:"UPDATE",schema:"public",table:"equipo_obra"},(payload)=>{
-        const m=payload.new;const obraId=m.obra_id;const actualizado={rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
+        const m=payload.new;const obraId=m.obra_id;const actualizado={equipoObraId:m.id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null};
         setObras(os=>os.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:o));
         setObraActual(oa=>(oa&&oa.id===obraId)?{...oa,equipo:(oa.equipo||[]).map(x=>x.uid===m.usuario_id?{...x,...actualizado}:x)}:oa);
       })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"equipo_obra"},(payload)=>{
-        const obraId=payload.old.obra_id;const uidBorrado=payload.old.usuario_id;
-        if(uidBorrado&&uidBorrado===usuarioReal.id){
-          // ── Me sacaron a mí de esta obra: se la saco de mi lista y aviso ──
-          const obraSaliente=obras.find(o=>o.id===obraId);
-          setObras(os=>os.filter(o=>o.id!==obraId));
-          setNovedadesPorObra(p=>{const{[obraId]:_omitido,...resto}=p;return resto;});
-          if(obraActual?.id===obraId){setObraActual(null);setVistaRaiz("inicio");}
-          setAvisoObraEliminada(obraSaliente?.nombre||"una obra");
-          // Avisamos también al otro sistema (el que compara al recargar) para que no repita el mismo aviso después
-          try{
-            const cachePrev=JSON.parse(localStorage.getItem("fixgo_obras_cache")||"[]");
-            localStorage.setItem("fixgo_obras_cache",JSON.stringify(cachePrev.filter((o:any)=>o.id!==obraId)));
-          }catch(e){}
-          return;
-        }
-        setObras(os=>os.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).filter(x=>x.uid!==uidBorrado)}:o));
-        setObraActual(oa=>(oa&&oa.id===obraId)?{...oa,equipo:(oa.equipo||[]).filter(x=>x.uid!==uidBorrado)}:oa);
+        // IMPORTANTE: en los borrados, Supabase NUNCA manda obra_id ni usuario_id (solo el id de la fila),
+        // porque la política de seguridad no puede evaluarse contra una fila que ya no existe.
+        // Por eso identificamos a la persona buscando ese id entre lo que ya tenemos cargado en memoria.
+        const filaIdBorrada=payload.old.id;
+        setObras(osActuales=>{
+          let obraId=null,uidBorrado=null;
+          for(const o of osActuales){
+            const encontrado=(o.equipo||[]).find(x=>x.equipoObraId===filaIdBorrada);
+            if(encontrado){obraId=o.id;uidBorrado=encontrado.uid;break;}
+          }
+          if(!obraId)return osActuales; // no lo teníamos cargado, nada que actualizar
+          if(uidBorrado&&uidBorrado===usuarioReal.id){
+            // ── Me sacaron a mí de esta obra: se la saco de mi lista y aviso ──
+            const obraSaliente=osActuales.find(o=>o.id===obraId);
+            setNovedadesPorObra(p=>{const{[obraId]:_omitido,...resto}=p;return resto;});
+            setObraActual(oa=>oa?.id===obraId?null:oa);
+            if(obraActual?.id===obraId)setVistaRaiz("inicio");
+            setAvisoObraEliminada(obraSaliente?.nombre||"una obra");
+            try{
+              const cachePrev=JSON.parse(localStorage.getItem("fixgo_obras_cache")||"[]");
+              localStorage.setItem("fixgo_obras_cache",JSON.stringify(cachePrev.filter((o:any)=>o.id!==obraId)));
+            }catch(e){}
+            return osActuales.filter(o=>o.id!==obraId);
+          }
+          setObraActual(oa=>(oa&&oa.id===obraId)?{...oa,equipo:(oa.equipo||[]).filter(x=>x.equipoObraId!==filaIdBorrada)}:oa);
+          return osActuales.map(o=>o.id===obraId?{...o,equipo:(o.equipo||[]).filter(x=>x.equipoObraId!==filaIdBorrada)}:o);
+        });
       })
       .on("postgres_changes",{event:"UPDATE",schema:"public",table:"invitaciones"},(payload)=>{
         // Se aceptó la invitación (usada pasó a true): sacarla de la lista de pendientes en vivo
