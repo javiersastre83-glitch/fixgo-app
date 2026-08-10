@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown } from "lucide-react";
+import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer } from "lucide-react";
 import { supabase } from './supabase';
 
 const PRIORIDADES = [
@@ -257,10 +257,10 @@ const PALETA_PASTEL = ["#C9A6E8","#F5C77E","#A8C7E8","#E8A6B8","#A6D4C4","#D4C4A
 const colorPastelDe = (id) => { const s=String(id||""); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))&0xffffffff; return PALETA_PASTEL[Math.abs(h)%PALETA_PASTEL.length]; };
 const colorPorIndice = (idx) => PALETA_PASTEL[idx%PALETA_PASTEL.length];
 const ROLES_SISTEMA = [
-  { id:"profesional", label:"Profesional", emoji:"📐", color:"#0057FF", desc:"Arquitecto, Ingeniero o Idóneo." },
-  { id:"co_profesional", label:"Colega", emoji:"🤝", color:"#0057FF", desc:"Mismos poderes que el dueño sobre esta obra." },
-  { id:"capataz",     label:"Capataz",     emoji:"🦺",   color:"#FF6B00", desc:"Gestiona subcontratos y hace seguimiento." },
-  { id:"operario",    label:"Operario",    emoji:"👷",   color:"#8E44AD", desc:"Ejecuta las novedades." },
+  { id:"profesional", label:"Profesional", Icon: Ruler, color:"#0057FF", desc:"Arquitecto, Ingeniero o Idóneo." },
+  { id:"co_profesional", label:"Colega", Icon: Handshake, color:"#0057FF", desc:"Mismos poderes que el dueño sobre esta obra." },
+  { id:"capataz",     label:"Capataz",     Icon: HardHat,   color:"#FF6B00", desc:"Gestiona subcontratos y hace seguimiento." },
+  { id:"operario",    label:"Operario",    Icon: Hammer,   color:"#8E44AD", desc:"Ejecuta las novedades." },
 ];
 const USUARIOS_DEMO = [
   { id:"u1", nombre:"Javier",  rolSistema:"profesional", especialidad:"Arquitecto", avatar:"📐", color:"#0057FF" },
@@ -2201,11 +2201,12 @@ export default function App({ session }) {
     {!linkGenerado?<>
       <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Rol</p>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["operario","👷 Operario"],["capataz","🦺 Capataz"]].map(([val,lbl])=>(
-          <button key={val} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol===val?"#0057FF":"#E5E5EA"}`,background:invitarRol===val?"#0057FF15":"#fff",color:invitarRol===val?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol===val?700:400,cursor:"pointer"}} onClick={()=>setInvitarRol(val)}>{lbl}</button>
+        {[["operario",Hammer,"Operario"],["capataz",HardHat,"Capataz"]].map(([val,IconRol,lbl]:any)=>(
+          <button key={val} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol===val?"#0057FF":"#E5E5EA"}`,background:invitarRol===val?"#0057FF15":"#fff",color:invitarRol===val?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol===val?700:400,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}} onClick={()=>setInvitarRol(val)}><IconRol size={18}/>{lbl}</button>
         ))}
-        <button onClick={()=>{if(esVersionPro)setInvitarRol("co_profesional");else setModalPro(true);}} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol==="co_profesional"?"#0057FF":"#E5E5EA"}`,background:invitarRol==="co_profesional"?"#0057FF15":"#fff",color:invitarRol==="co_profesional"?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol==="co_profesional"?700:400,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:esVersionPro?1:0.7}}>
-          <span>🤝 Colega</span>
+        <button onClick={()=>{if(esVersionPro)setInvitarRol("co_profesional");else setModalPro(true);}} style={{flex:1,padding:"12px",borderRadius:12,border:`2px solid ${invitarRol==="co_profesional"?"#0057FF":"#E5E5EA"}`,background:invitarRol==="co_profesional"?"#0057FF15":"#fff",color:invitarRol==="co_profesional"?"#0057FF":"#636366",fontSize:14,fontWeight:invitarRol==="co_profesional"?700:400,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,opacity:esVersionPro?1:0.7}}>
+          <Handshake size={18}/>
+          <span>Colega</span>
           {!esVersionPro&&<span style={{fontSize:9,fontWeight:800,color:"#FFB800"}}>🔒 PRO</span>}
         </button>
       </div>
@@ -2937,11 +2938,11 @@ export default function App({ session }) {
       <div style={{...s.root,background:modoOscuro?"#1C1C1E":"#F2F2F7"}}>
         <div style={{padding:"14px 12px 4px",flexShrink:0}}>
           <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"18px 18px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:60,height:60,borderRadius:99,background:"rgba(255,255,255,0.12)",border:"2px solid rgba(255,255,255,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,flexShrink:0}}>{usuarioActivo.avatar}</div>
+            <div style={{width:60,height:60,borderRadius:99,background:"rgba(255,255,255,0.12)",border:"2px solid rgba(255,255,255,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,fontWeight:800,color:"#fff",flexShrink:0}}>{(perfilForm.nombre||usuarioActivo.nombre||"?")[0].toUpperCase()}</div>
             <div style={{flex:1,minWidth:0}}>
               <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff"}}>{perfilForm.nombre}</p>
               <div style={{display:"flex",gap:7,alignItems:"center",marginTop:5,flexWrap:"wrap"}}>
-                {rolInfo2&&<span style={{fontSize:11,fontWeight:700,color:"#fff",background:"rgba(255,255,255,0.18)",padding:"2px 9px",borderRadius:99}}>{rolInfo2.emoji} {rolInfo2.label}</span>}
+                {rolInfo2&&<span style={{fontSize:11,fontWeight:700,color:"#fff",background:"rgba(255,255,255,0.18)",padding:"2px 9px",borderRadius:99,display:"inline-flex",alignItems:"center",gap:4}}><rolInfo2.Icon size={11}/>{rolInfo2.label}</span>}
                 <span style={{fontSize:13,color:"rgba(255,255,255,0.65)"}}>{perfilForm.especialidad}</span>
               </div>
             </div>
@@ -3508,7 +3509,7 @@ export default function App({ session }) {
           <div style={{background:"#fff",borderRadius:18,padding:"16px",display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:56,height:56,borderRadius:99,background:u.color||colorPastelDe(u.uid),flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:"#fff"}}>{u.nombre?u.nombre[0].toUpperCase():""}</div>
             <div style={{flex:1}}><p style={{margin:0,fontWeight:800,fontSize:18,color:"#1C1C1E"}}>{u.nombre}</p>
-              <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:rolU.color,background:rolU.color+"15",padding:"2px 8px",borderRadius:99}}>{rolU.emoji} {rolU.label}</span>}<span style={{fontSize:13,color:"#55555A"}}>{u.especialidad}</span></div>
+              <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>{rolU&&<span style={{fontSize:11,fontWeight:700,color:rolU.color,background:rolU.color+"15",padding:"2px 8px",borderRadius:99,display:"inline-flex",alignItems:"center",gap:4}}><rolU.Icon size={11}/>{rolU.label}</span>}<span style={{fontSize:13,color:"#55555A"}}>{u.especialidad}</span></div>
               <p style={{margin:"6px 0 0",fontSize:12,color:"#55555A"}}>{esProfesional?"Resumen general de la obra":"Tareas asignadas a "+u.especialidad}</p>
             </div>
           </div>
@@ -3914,7 +3915,7 @@ export default function App({ session }) {
             </div>
           </div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={14}/>Descripción</span></p><textarea style={s.textarea} rows={3} value={formEdit.descripcion} onChange={e=>setFormEdit(f=>({...f,descripcion:e.target.value}))}/></div>
-          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Zap size={14}/>Prioridad</span></p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Zap size={14}/>Prioridad</span></p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><p.Icon size={22} color={p.color} strokeWidth={2.3}/><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><MapPin size={14}/>Sector</span></p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.sector===sec?"#007AFF":"#E5E5EA"}`,background:formEdit.sector===sec?"#007AFF15":"#fff",color:formEdit.sector===sec?"#007AFF":"#3A3A3C",fontWeight:formEdit.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{formEdit.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={formEdit.sectorCustom} onChange={e=>setFormEdit(f=>({...f,sectorCustom:e.target.value}))}/>}</div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={14}/>Responsable</span></p><p style={{margin:"-4px 0 8px",fontSize:12.5,color:"#55555A"}}>Elegí a alguien de tu equipo o un oficio genérico</p><SelectorResponsable value={formEdit.responsable} usuarioId={formEdit.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setFormEdit(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#55555A",fontWeight:400}}>(opcional)</span></p><p style={{margin:"0 0 6px",fontSize:13,color:"#55555A"}}>Seleccioná una fecha:</p><input type="date" style={s.inputDate} value={formEdit.fechaLimite} onChange={e=>setFormEdit(f=>({...f,fechaLimite:e.target.value}))}/></div>
@@ -4157,7 +4158,7 @@ export default function App({ session }) {
             <button style={s.fotoBtn} onClick={()=>fileRef.current.click()}><Camera size={32} color="#636366"/><span style={{color:"#636366",fontSize:14,marginTop:4}}>{form.fotos.length>0?"Agregar más fotos":"Tocá para sacar foto"}</span></button>
           </div>
           <div><p style={s.label}>📝 ¿Qué hay que resolver?</p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
-          <div><p style={s.label}>⚡ Prioridad</p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><span style={{fontSize:24}}>{p.emoji}</span><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Zap size={14}/>Prioridad</span></p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><p.Icon size={22} color={p.color} strokeWidth={2.3}/><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}>👷 ¿Quién lo resuelve?</p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId,token})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId,tokenAsignacionPendiente:token||null})))} /></div>
           <button type="button" onClick={()=>setMasOpciones(o=>!o)} style={{width:"100%",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit"}}>
             <span style={{fontSize:15,fontWeight:600,color:"#1C1C1E"}}>⚙️ Más opciones</span>
@@ -4216,7 +4217,7 @@ export default function App({ session }) {
             <p style={{margin:"3px 0 8px",fontSize:13,color:"rgba(255,255,255,0.6)"}}><MapPin size={13} style={{flexShrink:0}}/> {obraActual?.direccion||"Sin dirección"}</p>
             <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <span style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>{usuarioActivoReal.nombre}</span>
-              {miRolInfo&&<span style={{fontSize:11,fontWeight:700,color:"#fff",background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:99}}>{miRolInfo.emoji} {miRolInfo.label}</span>}
+              {miRolInfo&&<span style={{fontSize:11,fontWeight:700,color:"#fff",background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:99,display:"inline-flex",alignItems:"center",gap:4}}><miRolInfo.Icon size={11}/>{miRolInfo.label}</span>}
             </div>
           </div>
           {puedeGestionar&&<button style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:14,width:60,height:60,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,color:"#fff",cursor:"pointer",flexShrink:0}} onClick={()=>setVistaEquipo(true)}>
