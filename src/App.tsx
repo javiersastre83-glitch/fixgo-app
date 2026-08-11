@@ -874,6 +874,8 @@ export default function App({ session }) {
   const [invitacionesEmpresaPendientes, setInvitacionesEmpresaPendientes] = useState<any[]>([]);
   const [vistaHome,            setVistaHome]            = useState("mias");
   const [misEmpresasComoMiembro, setMisEmpresasComoMiembro] = useState<any[]>([]);
+  const [modalDecidirCompartir, setModalDecidirCompartir] = useState<any>(null); // fila de empresa_miembros pendiente de decidir
+  const [modalElegirObras,      setModalElegirObras]      = useState<any>(null); // empresa_id activa mientras se eligen obras a mano
   const [modalCompartirObra,   setModalCompartirObra]   = useState(null);
   const [vistaDirectorCategoria, setVistaDirectorCategoria] = useState<string|null>(null); // "urgencias"|"novedades"|"resueltas"
   const [filtroObraAlertas,      setFiltroObraAlertas]      = useState<any>(null); // {id,nombre} o null = todas
@@ -906,6 +908,22 @@ export default function App({ session }) {
     if(error){alert("No se pudo actualizar: "+error.message);return;}
     setObras(o=>o.map(x=>x.id===obraId?{...x,empresa_id:empresaId}:x));
     mostrarToast(empresaId?"Obra compartida":"Obra vuelta a privada");
+  };
+  const decidirCompartirTodo=async(miembroId,empresaId,comparteTodo)=>{
+    const{error}=await supabase.from("empresa_miembros").update({comparte_todo:comparteTodo}).eq("id",miembroId);
+    if(error){alert("No se pudo guardar: "+error.message);return;}
+    setMisEmpresasComoMiembro(p=>p.map(em=>em.id===miembroId?{...em,comparte_todo:comparteTodo}:em));
+    if(comparteTodo&&usuarioReal){
+      // Comparte todo: compartimos ahora mismo todas las obras que todavía estaban privadas
+      const idsPrivadas=obras.filter(o=>o.propietario_id===usuarioReal.id&&!o.empresa_id).map(o=>o.id);
+      if(idsPrivadas.length>0){
+        await supabase.from("obras").update({empresa_id:empresaId}).in("id",idsPrivadas);
+        setObras(os=>os.map(o=>idsPrivadas.includes(o.id)?{...o,empresa_id:empresaId}:o));
+      }
+      mostrarToast("Listo, todas tus obras quedaron compartidas");
+    }else{
+      mostrarToast("Listo, vos elegís qué compartir");
+    }
   };
   const cargarInvitacionesPendientes=async()=>{
     if(!obraActual?.id)return;
@@ -1096,10 +1114,14 @@ export default function App({ session }) {
   useEffect(()=>{
     if(!usuarioReal||!invitacionProcesada)return;
     (async()=>{
-      const{data}=await supabase.from("empresa_miembros").select("empresa_id,empresas(nombre)").eq("usuario_id",usuarioReal.id);
+      const{data}=await supabase.from("empresa_miembros").select("id,empresa_id,comparte_todo,empresas(nombre)").eq("usuario_id",usuarioReal.id);
       setMisEmpresasComoMiembro(data||[]);
     })();
   },[usuarioReal,invitacionProcesada]);
+  useEffect(()=>{
+    const sinDecidir=misEmpresasComoMiembro.find(em=>em.comparte_todo===null);
+    if(sinDecidir&&!modalDecidirCompartir)setModalDecidirCompartir(sinDecidir);
+  },[misEmpresasComoMiembro]);
 
   // ── Procesar invitación de EMPRESA una vez logueado ──
   useEffect(()=>{
@@ -1930,7 +1952,7 @@ export default function App({ session }) {
     setModalEditarObra(null);
     mostrarToast("Obra actualizada");
   };
-  const crearObra=async()=>{if(!nuevaObraForm.nombre.trim()||guardando)return;setGuardando(true);if(usuarioReal){const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id}).select().single();if(error){alert("Error al crear la obra: "+error.message);setGuardando(false);return;}await supabase.from("equipo_obra").insert({obra_id:data.id,usuario_id:usuarioReal.id,rol_en_obra:"profesional",nombre:usuarioActivoReal.nombre});const obraConEquipo={...data,equipo:[{uid:usuarioReal.id,rolEnObra:"profesional",nombre:usuarioActivoReal.nombre,especialidad:"Profesional"}]};setObras(o=>[...o,obraConEquipo]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);setGuardando(false);mostrarToast("Obra creada con éxito");};
+  const crearObra=async()=>{if(!nuevaObraForm.nombre.trim()||guardando)return;setGuardando(true);if(usuarioReal){const empresaQueComparteTodo=misEmpresasComoMiembro.find(em=>em.comparte_todo);const{data,error}=await supabase.from("obras").insert({nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,propietario_id:usuarioReal.id,empresa_id:empresaQueComparteTodo?.empresa_id||null}).select().single();if(error){alert("Error al crear la obra: "+error.message);setGuardando(false);return;}await supabase.from("equipo_obra").insert({obra_id:data.id,usuario_id:usuarioReal.id,rol_en_obra:"profesional",nombre:usuarioActivoReal.nombre});const obraConEquipo={...data,equipo:[{uid:usuarioReal.id,rolEnObra:"profesional",nombre:usuarioActivoReal.nombre,especialidad:"Profesional"}]};setObras(o=>[...o,obraConEquipo]);setNovedadesPorObra(p=>({...p,[data.id]:[]}));}else{const nueva={id:Date.now(),nombre:nuevaObraForm.nombre,direccion:nuevaObraForm.direccion,equipo:[{uid:"u1",rolEnObra:"profesional"}]};setObras(o=>[...o,nueva]);setNovedadesPorObra(p=>({...p,[nueva.id]:[]}));}setNuevaObraForm({nombre:"",direccion:""});setModalNuevaObra(false);setGuardando(false);mostrarToast("Obra creada con éxito");};
 
   const abrirModalInvitar=(callback=null)=>{setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarNombre("");setInvitarTelefono("");setLinkGenerado("");setInvitarCallback(()=>callback);setModalInvitar(true);};
   const guardarNombreIntegrante=async(uid)=>{const nuevo=nombreEditado.trim();if(usuarioReal&&obraActual?.id&&typeof obraActual.id==="string"){const{error}=await supabase.from("equipo_obra").update({nombre:nuevo||null}).eq("obra_id",obraActual.id).eq("usuario_id",uid);if(error){alert("No se pudo guardar el nombre: "+error.message);return;}}setObras(os=>os.map(o=>o.id===obraActual.id?{...o,equipo:(o.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:o));setObraActual(oa=>oa?{...oa,equipo:(oa.equipo||[]).map(m=>m.uid===uid?{...m,nombre:nuevo||m.nombre}:m)}:oa);setEditandoNombreId(null);setNombreEditado("");mostrarToast("Nombre actualizado");};
@@ -2239,6 +2261,34 @@ export default function App({ session }) {
       <p style={{margin:0,fontSize:14,color:"#55555A"}}>El administrador eliminó esa obra o te quitó del equipo.</p>
     </div>
     <button style={s.btnPrincipal} onClick={()=>setAvisoObraEliminada(null)}>Entendido</button>
+  </div></div>;
+
+  const modalDecidirCompartirJSX = modalDecidirCompartir&&<div style={s.overlay}><div style={s.modal}>
+    <div style={{textAlign:"center",marginBottom:18}}>
+      <Handshake size={36} color="#0057FF" style={{marginBottom:8}}/>
+      <p style={{margin:"0 0 8px",fontSize:19,fontWeight:800}}>¿Querés compartir todas tus obras con "{modalDecidirCompartir.empresas?.nombre||"tu equipo"}"?</p>
+      <p style={{margin:0,fontSize:14,color:"#55555A"}}>Si decís que sí, tus obras (las de ahora y las que crees después) quedan visibles para el Director, sin que tengas que hacer nada más. Podés cambiar esto cuando quieras desde tu Perfil.</p>
+    </div>
+    <button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={async()=>{await decidirCompartirTodo(modalDecidirCompartir.id,modalDecidirCompartir.empresa_id,true);setModalDecidirCompartir(null);}}>Sí, compartir todo</button>
+    <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={async()=>{await decidirCompartirTodo(modalDecidirCompartir.id,modalDecidirCompartir.empresa_id,false);setModalElegirObras(modalDecidirCompartir.empresa_id);setModalDecidirCompartir(null);}}>No, elijo yo qué compartir</button>
+  </div></div>;
+
+  const modalElegirObrasJSX = modalElegirObras&&<div style={s.overlay} onClick={()=>setModalElegirObras(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+    <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>¿Cuáles querés compartir?</p>
+    <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>Tildá las obras que querés que vea tu Director. Las demás quedan privadas.</p>
+    <div style={{maxHeight:"50vh",overflowY:"auto",marginBottom:16}}>
+      {obras.filter(o=>usuarioReal?o.propietario_id===usuarioReal.id:true).map(o=>{
+        const compartida=!!o.empresa_id;
+        return(
+          <div key={o.id} onClick={()=>compartirObraConEmpresa(o.id,compartida?null:modalElegirObras)}
+            style={{display:"flex",alignItems:"center",gap:12,padding:"12px 4px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}}>
+            <div style={{width:22,height:22,borderRadius:7,border:"2px solid "+(compartida?"#34C759":"#D9D9DE"),background:compartida?"#34C759":"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff"}}>{compartida?<Check size={13} strokeWidth={3}/>:""}</div>
+            <span style={{fontSize:15,fontWeight:600,color:"#1C1C1E"}}>{o.nombre}</span>
+          </div>
+        );
+      })}
+    </div>
+    <button style={s.btnPrincipal} onClick={()=>setModalElegirObras(null)}>Listo</button>
   </div></div>;
 
   const modalInvitarJSX = modalInvitar&&<div style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarCallback(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
@@ -3032,6 +3082,20 @@ export default function App({ session }) {
             </div>
             <p style={{margin:"8px 0 0",fontSize:11,color:"#C7C7CC"}}>Máximo 2MB. Se muestra tal cual es, sin recortar.</p>
           </div>
+          {misEmpresasComoMiembro.map(em=>(
+            <div key={em.id} style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,padding:"16px",flexShrink:0}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                <div style={{flex:1}}>
+                  <p style={{margin:0,fontSize:15,fontWeight:700,color:modoOscuro?"#fff":"#1C1C1E",display:"flex",alignItems:"center",gap:6}}><Handshake size={15} color="#0057FF"/>Compartir con "{em.empresas?.nombre||"tu equipo"}"</p>
+                  <p style={{margin:"2px 0 0",fontSize:12,color:"#55555A"}}>{em.comparte_todo?"Todas tus obras (incluidas las que crees después)":"Solo las que elegiste vos"}</p>
+                </div>
+                <button onClick={()=>decidirCompartirTodo(em.id,em.empresa_id,!em.comparte_todo)} style={{flexShrink:0,width:50,height:30,borderRadius:99,border:"none",cursor:"pointer",background:em.comparte_todo?"#0057FF":"#C7C7CC",position:"relative",transition:"background 0.2s"}}>
+                  <span style={{position:"absolute",top:3,left:em.comparte_todo?23:3,width:24,height:24,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
+                </button>
+              </div>
+              {!em.comparte_todo&&<button onClick={()=>setModalElegirObras(em.empresa_id)} style={{marginTop:10,background:"none",border:"none",padding:0,color:"#0057FF",fontSize:12.5,fontWeight:700,cursor:"pointer"}}>Elegir cuáles compartir →</button>}
+            </div>
+          ))}
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,padding:"16px",flexShrink:0,border:"1.5px dashed #FFB800"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
               <div style={{flex:1}}>
@@ -3475,6 +3539,8 @@ export default function App({ session }) {
         )}
         {offlineBannerJSX}
         {vistaHome==="tareas"&&avisoObraEliminadaJSX}
+        {modalDecidirCompartirJSX}
+        {modalElegirObrasJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
         {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
