@@ -1282,6 +1282,24 @@ export default function App({ session }) {
         // Se canceló la invitación: sacarla de la lista de pendientes en vivo
         setInvitacionesPendientes(p=>p.filter(i=>i.codigo!==payload.old.codigo));
       })
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"obras"},(payload)=>{
+        // Se borró una obra donde tenías tareas: sacarla de tu lista en vivo (sin esperar a que refresques)
+        const obraId=payload.old.id;
+        setObras(osActuales=>{
+          const existia=osActuales.some(o=>o.id===obraId);
+          if(!existia)return osActuales; // no la teníamos cargada, nada que hacer
+          const obraSaliente=osActuales.find(o=>o.id===obraId);
+          setNovedadesPorObra(p=>{const{[obraId]:_omitido,...resto}=p;return resto;});
+          setObraActual(oa=>oa?.id===obraId?null:oa);
+          if(obraActual?.id===obraId)setVistaRaiz("inicio");
+          setAvisoObraEliminada(obraSaliente?.nombre||"una obra");
+          try{
+            const cachePrev=JSON.parse(localStorage.getItem("fixgo_obras_cache")||"[]");
+            localStorage.setItem("fixgo_obras_cache",JSON.stringify(cachePrev.filter((o:any)=>o.id!==obraId)));
+          }catch(e){}
+          return osActuales.filter(o=>o.id!==obraId);
+        });
+      })
       .subscribe();
     return()=>{supabase.removeChannel(canal);};
   },[usuarioReal?.id]);
@@ -1510,10 +1528,18 @@ export default function App({ session }) {
   const enviarAprobacion=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({estado_aprobacion:"pendiente"}).eq("id",id);if(error){alert("No se pudo enviar a aprobación: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,estadoAprobacion:"pendiente"}:x));};
   const aprobar=async(id)=>{const ahora=new Date().toISOString();if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);if(error){alert("No se pudo aprobar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,resueltaAt:ahora}:x));};
   const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null,resuelta_at:null}).eq("id",id);if(error){alert("No se pudo rechazar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null,resueltaAt:null}:x));};
+  const enVueloRef = useRef(new Set()); // tempIds que se están subiendo AHORA MISMO (petición ya en camino, no se puede cancelar)
+  const borrarAlSincronizarRef = useRef(new Set()); // tempIds que el usuario borró mientras estaban en vuelo: hay que borrarlos del servidor apenas terminen de subir
   const eliminar=async(id)=>{
     if(typeof id==="string"&&id.startsWith("local-")){
-      // Todavía ni se subió, la sacamos también de la cola de sincronización
-      setColaOffline(c=>c.filter(item=>item.tempId!==id));
+      if(enVueloRef.current.has(id)){
+        // Ya salió el pedido al servidor, no se puede cancelar a mitad de camino.
+        // Lo anotamos para borrarlo del servidor apenas termine de subir (así los demás no lo ven quedarse "pegado").
+        borrarAlSincronizarRef.current.add(id);
+      }else{
+        // Todavía ni se subió, la sacamos también de la cola de sincronización
+        setColaOffline(c=>c.filter(item=>item.tempId!==id));
+      }
       setNovedades(n=>n.filter(x=>x.id!==id));
       setVista("lista");
       return;
@@ -1544,6 +1570,7 @@ export default function App({ session }) {
     for(const item of pendientes){
       try{
         if(item.tipo==="crear_novedad"){
+          enVueloRef.current.add(item.tempId);
           const fotosFinales=await Promise.all((item.payload.fotos||[]).map(async(f)=>{
             if(typeof f==="string"&&f.startsWith("data:")){
               try{return await subirFotoNovedad(f,item.payload.obra_id);}
@@ -1552,7 +1579,16 @@ export default function App({ session }) {
             return f;
           }));
           const{data,error}=await supabase.from("novedades").insert({...item.payload,fotos:fotosFinales}).select().single();
+          enVueloRef.current.delete(item.tempId);
           if(error)throw error;
+          if(borrarAlSincronizarRef.current.has(item.tempId)){
+            // El usuario lo borró mientras se estaba subiendo: lo borramos del servidor recién ahora, ya con el id real
+            borrarAlSincronizarRef.current.delete(item.tempId);
+            await supabase.from("novedades").delete().eq("id",data.id);
+            setNovedadesPorObra(p=>{const obraKey=item.payload.obra_id;const lista=p[obraKey]||[];return{...p,[obraKey]:lista.filter(x=>x.id!==item.tempId&&x.id!==data.id)};});
+            quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
+            continue;
+          }
           if(item.comentario){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:item.comentario});}
           const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,resueltaAt:data.resuelta_at||null,fotoResolucion:data.foto_resolucion||null,comentarios:item.comentario?[{texto:item.comentario,autorId:usuarioReal.id,ts:Date.now()}]:[]};
           setNovedadesPorObra(p=>{
