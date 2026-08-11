@@ -1282,6 +1282,16 @@ export default function App({ session }) {
         // Se canceló la invitación: sacarla de la lista de pendientes en vivo
         setInvitacionesPendientes(p=>p.filter(i=>i.codigo!==payload.old.codigo));
       })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"invitaciones_empresa"},(payload)=>{
+        // Se aceptó la invitación al estudio: sacarla de "pendientes" en vivo, sin esperar a refrescar
+        if(payload.new.usada){
+          setInvitacionesEmpresaPendientes(p=>p.filter(i=>i.codigo!==payload.new.codigo));
+        }
+      })
+      .on("postgres_changes",{event:"DELETE",schema:"public",table:"invitaciones_empresa"},(payload)=>{
+        // Se canceló la invitación al estudio: sacarla de la lista de pendientes en vivo
+        setInvitacionesEmpresaPendientes(p=>p.filter(i=>i.codigo!==payload.old.codigo));
+      })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"obras"},(payload)=>{
         // Se borró una obra donde tenías tareas: sacarla de tu lista en vivo (sin esperar a que refresques)
         const obraId=payload.old.id;
