@@ -876,6 +876,7 @@ export default function App({ session }) {
   const [misEmpresasComoMiembro, setMisEmpresasComoMiembro] = useState<any[]>([]);
   const [modalDecidirCompartir, setModalDecidirCompartir] = useState<any>(null); // fila de empresa_miembros pendiente de decidir
   const [modalElegirObras,      setModalElegirObras]      = useState<any>(null); // empresa_id activa mientras se eligen obras a mano
+  const [confirmarEliminarMiembroEmpresa, setConfirmarEliminarMiembroEmpresa] = useState<any>(null);
   const [modalCompartirObra,   setModalCompartirObra]   = useState(null);
   const [vistaDirectorCategoria, setVistaDirectorCategoria] = useState<string|null>(null); // "urgencias"|"novedades"|"resueltas"
   const [filtroObraAlertas,      setFiltroObraAlertas]      = useState<any>(null); // {id,nombre} o null = todas
@@ -908,6 +909,16 @@ export default function App({ session }) {
     if(error){alert("No se pudo actualizar: "+error.message);return;}
     setObras(o=>o.map(x=>x.id===obraId?{...x,empresa_id:empresaId}:x));
     mostrarToast(empresaId?"Obra compartida":"Obra vuelta a privada");
+  };
+  const eliminarMiembroEmpresa=async(usuarioId,empresaId)=>{
+    const{error}=await supabase.from("empresa_miembros").delete().eq("usuario_id",usuarioId).eq("empresa_id",empresaId);
+    if(error){alert("No se pudo eliminar: "+error.message);return;}
+    // Al cortar la relación, sus obras dejan de estar compartidas con vos
+    await supabase.from("obras").update({empresa_id:null}).eq("propietario_id",usuarioId).eq("empresa_id",empresaId);
+    setMiembrosEmpresa(m=>m.filter(x=>x.usuario_id!==usuarioId));
+    setObrasEmpresa(o=>o.filter(x=>!(x.propietario_id===usuarioId&&x.empresa_id===empresaId)));
+    setConfirmarEliminarMiembroEmpresa(null);
+    mostrarToast("Se sacó del equipo");
   };
   const decidirCompartirTodo=async(miembroId,empresaId,comparteTodo)=>{
     const{error}=await supabase.from("empresa_miembros").update({comparte_todo:comparteTodo}).eq("id",miembroId);
@@ -2858,6 +2869,7 @@ export default function App({ session }) {
                     <p style={{margin:0,fontSize:15,fontWeight:800}}>{nombre}</p>
                     <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{obrasDeEste.length} obra{obrasDeEste.length!==1?"s":""} a cargo{obrasDeEste.length>0?`: ${obrasDeEste.map(o=>o.nombre).join(", ")}`:""}</p>
                   </div>
+                  <button onClick={()=>setConfirmarEliminarMiembroEmpresa({usuarioId:m.usuario_id,empresaId:empresaPropia?.id,nombre})} style={{background:"none",border:"none",cursor:"pointer",padding:6,flexShrink:0,display:"flex",alignItems:"center"}}><Trash2 size={17} color="#C7C7CC"/></button>
                 </div>
 
                 {/* Teléfono: llamar / WhatsApp / editar — mismo estilo que en Equipo */}
@@ -2897,6 +2909,13 @@ export default function App({ session }) {
           <input style={{...s.input,marginBottom:16}} type="email" placeholder="mail@ejemplo.com" value={emailContactoInput} onChange={e=>setEmailContactoInput(e.target.value)}/>
           <button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarEmailContacto}>Guardar</button>
           <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalEmailContacto(null)}>Cancelar</button>
+        </div></div>}
+        {confirmarEliminarMiembroEmpresa&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembroEmpresa(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+          <Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/>
+          <p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Sacar a {confirmarEliminarMiembroEmpresa.nombre} de tu equipo?</p>
+          <p style={{margin:"0 0 20px",fontSize:14,color:"#55555A"}}>Deja de formar parte de tu estudio. Sus obras dejan de estar compartidas con vos — no se borran, simplemente vos ya no las ves acá.</p>
+          <button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembroEmpresa(confirmarEliminarMiembroEmpresa.usuarioId,confirmarEliminarMiembroEmpresa.empresaId)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, sacarlo</span></button>
+          <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembroEmpresa(null)}>Cancelar</button>
         </div></div>}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);setVistaProfesionales(false);irInicio();}} onPerfil={()=>{setVistaProfesionales(false);setVistaPerfil(true);}} />
       </div>
