@@ -1121,6 +1121,33 @@ export default function App({ session }) {
   const [subiendoLogo,     setSubiendoLogo]     = useState(false);
   const fileRefLogo = useRef();
   const [nombrePersonalizado, setNombrePersonalizado] = useState("");
+  const [novedadesVistas, setNovedadesVistas] = useState<Record<string,string>>({}); // {novedadId: visto_at ISO}
+  useEffect(()=>{
+    if(!usuarioReal)return;
+    supabase.from("novedades_vistas").select("novedad_id,visto_at").eq("usuario_id",usuarioReal.id).then(({data})=>{
+      const mapa:Record<string,string>={};
+      (data||[]).forEach(r=>{mapa[r.novedad_id]=r.visto_at;});
+      setNovedadesVistas(mapa);
+    });
+  },[usuarioReal?.id]);
+  useEffect(()=>{
+    if(!usuarioReal||vista!=="detalle"||!detalleId)return;
+    const ahora=new Date().toISOString();
+    setNovedadesVistas(m=>({...m,[detalleId]:ahora})); // optimista, no esperamos la respuesta del servidor
+    supabase.from("novedades_vistas").upsert({usuario_id:usuarioReal.id,novedad_id:detalleId,visto_at:ahora}).then(()=>{});
+  },[vista,detalleId,usuarioReal?.id]);
+  const esNovedadNueva=(nov)=>{
+    if(!nov)return false;
+    const ultimosComentarios=(nov.comentarios||[]).map(c=>c.ts||0);
+    const ultimaActividad=Math.max(
+      nov.created_at?new Date(nov.created_at).getTime():0,
+      nov.resueltaAt?new Date(nov.resueltaAt).getTime():0,
+      ...ultimosComentarios,0
+    );
+    const vistoAt=novedadesVistas[nov.id];
+    if(!vistoAt)return true; // nunca la vio
+    return ultimaActividad>new Date(vistoAt).getTime();
+  };
   const [vioOnboarding,    setVioOnboarding]    = useState<boolean|null>(null); // null = todavía no sabemos
   useEffect(()=>{
     if(!usuarioReal){setEsProReal(false);return;}
@@ -3832,7 +3859,7 @@ export default function App({ session }) {
                         <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
                         {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                       </div>
-                      <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
+                      <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?800:700,color:"#1C1C1E",lineHeight:1.25,display:"flex",alignItems:"center",gap:6}}>{esNovedadNueva(nov)&&<span style={{width:7,height:7,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}{nov.descripcion}</p>
                       <p style={{margin:0,fontSize:12,color:"#636366"}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {nov.sector}</p>
                     </div>
                     <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
@@ -4551,7 +4578,7 @@ export default function App({ session }) {
                     {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                     {nov.pendienteSync&&<span style={{fontSize:9.5,fontWeight:800,color:"#FFB800",background:"#FFB80015",padding:"2px 7px",borderRadius:99,textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:3}}><WifiOff size={9}/>Pendiente</span>}
                   </div>
-                  <p style={{margin:"0 0 3px",fontSize:15,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
+                  <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?800:700,color:"#1C1C1E",lineHeight:1.25,display:"flex",alignItems:"center",gap:6}}>{esNovedadNueva(nov)&&<span style={{width:7,height:7,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}{nov.descripcion}</p>
                   <p style={{margin:0,fontSize:12,color:"#636366",display:"flex",alignItems:"center",gap:4,flexWrap:"nowrap",minWidth:0}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?<span style={{width:18,height:18,borderRadius:"50%",background:colorPastelDe(miembro.uid),flexShrink:0,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff"}}>{miembro.nombre?miembro.nombre[0].toUpperCase():""}</span>:<Wrench size={12} color="#55555A" style={{flexShrink:0}}/>;})()}<span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0,fontWeight:nov.responsable_usuario_id?700:400,color:nov.responsable_usuario_id?"#1C1C1E":"#636366"}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?miembro.nombre:nov.responsable;})()}</span><span style={{color:"#C7C7CC",margin:"0 2px",flexShrink:0}}>·</span><MapPin size={12} color="#55555A" style={{flexShrink:0}}/><span style={{whiteSpace:"nowrap",flexShrink:0}}>{nov.sector}</span></p>
                   {!nov.resuelta&&!nov.responsable_usuario_id&&<span style={{marginTop:5,display:"inline-flex",alignItems:"center",gap:5,background:"#FAEEDA",color:"#854F0B",padding:"3px 8px",borderRadius:8,fontSize:10.5,fontWeight:700,width:"fit-content"}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#854F0B" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" strokeDasharray="3 3"/></svg>{nov.responsable} · Sin responsable</span>}
                   {nov.comentarios.length>0&&<span style={{marginTop:5,fontSize:11.5,color:"#55555A",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><MessageCircle size={12}/> {nov.comentarios.length} comentario{nov.comentarios.length!==1?"s":""}</span>}
