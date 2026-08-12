@@ -601,51 +601,69 @@ const OnboardingOverlay = ({ onFinish }) => {
     setTourPaso(t=>t+1);
   };
 
-  const ICONOS = {
-    1:<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/><circle cx="12" cy="12" r="3"/></svg>,
-    2:<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>,
-    3:<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  const FOTOS = {
+    1:"https://www.fixgo.ar/onboarding-fondo.jpg",
+    2:"https://www.fixgo.ar/onboarding-fondo-2.jpg",
+    3:"https://www.fixgo.ar/onboarding-fondo-3.jpg",
   };
 
   if(paso<4){
     const contenido = {
-      1:{eyebrow:null,titulo:"Cada imprevisto, bajo control.",cuerpo:<p style={{margin:0,fontSize:15,lineHeight:1.55,color:"#55555A",textAlign:"center"}}>Fixgo es el registro de obra para las novedades.<br/>Da trazabilidad: qué pasó, quién la vio, cómo se resolvió.<br/>Todo en un solo lugar.</p>},
+      1:{eyebrow:null,titulo:"Cada imprevisto, bajo control.",cuerpo:<p style={{margin:0,fontSize:14.5,lineHeight:1.5,color:"#55555A",textAlign:"center"}}>Fixgo es el registro de obra para las novedades.<br/>Da trazabilidad: qué pasó, quién la vio, cómo se resolvió.<br/>Todo en un solo lugar.</p>},
       2:{eyebrow:"Cómo se usa",titulo:"Registrá tus novedades fuera del plan.",cuerpo:(
         <>
-          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+          <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:12}}>
             {["Sacás una foto.","Escribís qué pasó.","Elegís quién lo resuelve."].map(t=>(
               <div key={t} style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{width:22,height:22,borderRadius:7,background:"#EAF6F1",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><CheckCircle size={13} color="#3DAE8C"/></span>
-                <span style={{fontSize:15,color:"#1C1C1E",fontWeight:600}}>{t}</span>
+                <span style={{width:23,height:23,borderRadius:7,background:"#FDEEE3",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><CheckCircle size={13} color="#E8752B"/></span>
+                <span style={{fontSize:14.5,color:"#1C1C1E",fontWeight:600}}>{t}</span>
               </div>
             ))}
           </div>
-          <p style={{margin:0,fontSize:15,lineHeight:1.5,color:"#55555A",textAlign:"center"}}>Listo, ya quedó ordenada en Fixgo.</p>
+          <p style={{margin:0,fontSize:14.5,lineHeight:1.5,color:"#55555A",textAlign:"center"}}>Listo, ya quedó ordenada en Fixgo.</p>
         </>
       )},
-      3:{eyebrow:"Tu equipo",titulo:"Cada uno ve lo que le toca.",cuerpo:<p style={{margin:0,fontSize:15,lineHeight:1.55,color:"#55555A",textAlign:"center"}}>Vos cargás la novedad. Tu equipo ve lo que le corresponde a cada uno, en un solo lugar.</p>},
+      3:{eyebrow:"Tu equipo",titulo:"Cada uno ve lo que le toca.",cuerpo:<p style={{margin:0,fontSize:14.5,lineHeight:1.5,color:"#55555A",textAlign:"center"}}>Vos cargás la novedad. Tu equipo ve lo que le corresponde a cada uno, en un solo lugar.</p>},
     }[paso];
     return(
-      <div style={{position:"fixed",inset:0,zIndex:9999,background:"linear-gradient(180deg,#1C2B3A 0%,#2E3A4B 45%,#fff 45%)",display:"flex",flexDirection:"column"}}>
-        <button onClick={()=>{setPaso(4);}} style={{position:"absolute",top:"max(24px,env(safe-area-inset-top))",right:20,zIndex:2,background:"rgba(255,255,255,0.14)",border:"none",color:"#fff",fontSize:13,fontWeight:700,padding:"8px 14px",borderRadius:99,cursor:"pointer"}}>Omitir</button>
-        <div style={{flex:"0 0 240px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,paddingTop:20}}>
-          <div style={{textAlign:"center"}}>
-            <h3 style={{margin:0,color:"#fff",fontSize:20,fontWeight:800,letterSpacing:-0.3}}>Fixgo</h3>
-            <p style={{margin:"2px 0 0",color:"rgba(255,255,255,0.6)",fontSize:12}}>Gestión simple de novedades</p>
+      <div style={{position:"fixed",inset:0,zIndex:9999,background:"#FFFCF8",display:"flex",flexDirection:"column"}}>
+        <button onClick={()=>setPaso(4)} style={{position:"absolute",top:"max(24px,env(safe-area-inset-top))",right:20,zIndex:2,background:"rgba(255,255,255,0.22)",backdropFilter:"blur(6px)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",fontSize:13,fontWeight:700,padding:"8px 14px",borderRadius:99,cursor:"pointer"}}>Omitir</button>
+        <div style={{flex:paso===1?"0 0 280px":"0 0 200px",position:"relative",backgroundImage:`url(${FOTOS[paso]})`,backgroundSize:"cover",backgroundPosition:"center"}}>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(20,25,35,0.15) 0%, rgba(20,25,35,0.55) 65%, #FFFCF8 100%)"}}/>
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,paddingTop:26}}>
+            <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:paso===1?78:60,height:paso===1?78:60,borderRadius:20,boxShadow:"0 10px 26px rgba(0,0,0,0.4)"}}/>
+            {paso===1&&<div style={{textAlign:"center"}}>
+              <h3 style={{margin:0,color:"#fff",fontSize:20,fontWeight:800,letterSpacing:-0.3,textShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>Fixgo</h3>
+              <p style={{margin:"3px 0 0",color:"rgba(255,255,255,0.85)",fontSize:12.5}}>Gestión simple de novedades</p>
+            </div>}
           </div>
-          <div style={{width:104,height:104,borderRadius:28,background:"rgba(255,255,255,0.12)",border:"1.5px solid rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center"}}>{ICONOS[paso]}</div>
         </div>
-        <div style={{flex:1,background:"#fff",borderRadius:"28px 28px 0 0",marginTop:-24,padding:"34px 26px max(26px,env(safe-area-inset-bottom))",display:"flex",flexDirection:"column"}}>
-          {contenido.eyebrow&&<p style={{fontSize:11,fontWeight:800,letterSpacing:1.5,color:"#3DAE8C",textTransform:"uppercase",margin:"0 0 10px",textAlign:"center"}}>{contenido.eyebrow}</p>}
-          <h1 style={{fontSize:25,lineHeight:1.22,fontWeight:800,color:"#1C1C1E",margin:"0 0 14px",letterSpacing:-0.3,textAlign:"center"}}>{contenido.titulo}</h1>
+        <div style={{flex:1,background:"#FFFCF8",borderRadius:"26px 26px 0 0",marginTop:-22,padding:"26px 26px max(26px,env(safe-area-inset-bottom))",display:"flex",flexDirection:"column"}}>
+          {contenido.eyebrow&&<p style={{fontSize:11,fontWeight:800,letterSpacing:1.5,color:"#E8752B",textTransform:"uppercase",margin:"0 0 10px",textAlign:"center"}}>{contenido.eyebrow}</p>}
+          <h1 style={{fontSize:24,lineHeight:1.24,fontWeight:800,color:"#1C1C1E",margin:"0 0 12px",letterSpacing:-0.3,textAlign:"center"}}>{contenido.titulo}</h1>
           {contenido.cuerpo}
-          <div style={{flex:1}}/>
-          <div style={{display:"flex",gap:7,justifyContent:"center",margin:"22px 0 18px"}}>
-            {[1,2,3].map(n=><span key={n} style={{width:n===paso?22:7,height:7,borderRadius:99,background:n===paso?"#1C2B3A":"#E5E5EA",transition:"all .25s"}}/>)}
+          {paso===1&&(
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:118,position:"relative",margin:"6px 0 8px"}}>
+              <div style={{position:"absolute",left:"calc(50% - 96px)",top:8,width:74,height:104,borderRadius:14,background:"#fff",border:"3px solid #1C1C1E",boxShadow:"0 8px 18px rgba(0,0,0,0.12)",transform:"rotate(-8deg)",opacity:0.55,display:"flex",alignItems:"center",justifyContent:"center"}}><AlertTriangle size={18} color="#E8752B"/></div>
+              <div style={{position:"relative",zIndex:2,width:88,height:118,borderRadius:14,background:"#1C2B3A",border:"3px solid #1C2B3A",padding:"8px 7px"}}>
+                <p style={{color:"#fff",fontSize:9,fontWeight:800,textAlign:"center",margin:"0 0 6px"}}>Fixgo</p>
+                {[0,1,2].map(i=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:4,background:"#fff",borderRadius:5,padding:"3px 4px",marginBottom:3}}>
+                    <span style={{width:10,height:10,borderRadius:3,background:"#E8752B",flexShrink:0}}/>
+                    <span style={{flex:1,height:4,background:"#E5E5EA",borderRadius:2}}/>
+                  </div>
+                ))}
+              </div>
+              <div style={{position:"absolute",right:"calc(50% - 96px)",top:8,width:74,height:104,borderRadius:14,background:"#fff",border:"3px solid #1C1C1E",boxShadow:"0 8px 18px rgba(0,0,0,0.12)",transform:"rotate(8deg)",opacity:0.55,display:"flex",alignItems:"center",justifyContent:"center"}}><CheckCircle size={18} color="#3DAE8C"/></div>
+            </div>
+          )}
+          <div style={{flex:1,minHeight:10}}/>
+          <div style={{display:"flex",gap:7,justifyContent:"center",margin:"16px 0 16px"}}>
+            {[1,2,3].map(n=><span key={n} style={{width:n===paso?22:7,height:7,borderRadius:99,background:n===paso?"#E8752B":"#E5E5EA",transition:"all .25s"}}/>)}
           </div>
           <div style={{display:"flex",gap:10}}>
             {paso>1&&<button onClick={()=>setPaso(paso-1)} style={{flex:"0 0 90px",background:"#F2F2F7",color:"#1C1C1E",border:"none",borderRadius:16,padding:16,fontSize:16,fontWeight:800,cursor:"pointer"}}>Atrás</button>}
-            <button onClick={()=>paso<3?setPaso(paso+1):setPaso(4)} style={{flex:1,background:"#1C2B3A",color:"#fff",border:"none",borderRadius:16,padding:16,fontSize:16,fontWeight:800,cursor:"pointer"}}>{paso<3?"Siguiente":"Mostrame la app"}</button>
+            <button onClick={()=>paso<3?setPaso(paso+1):setPaso(4)} style={{flex:1,background:"linear-gradient(90deg,#E8752B,#F0A23D)",color:"#fff",border:"none",borderRadius:16,padding:16,fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 8px 20px rgba(232,117,43,0.35)"}}>{paso<3?"Siguiente":"Mostrame la app"}</button>
           </div>
         </div>
       </div>
@@ -664,11 +682,11 @@ const OnboardingOverlay = ({ onFinish }) => {
       <div style={{position:"fixed",top:spot.top-8,left:spot.left-10,width:spot.width+20,height:spot.height+16,borderRadius:18,boxShadow:"0 0 0 9999px rgba(10,14,20,0.72)",pointerEvents:"none"}}/>
       <button onClick={onFinish} style={{position:"fixed",top:"max(24px,env(safe-area-inset-top))",right:20,background:"rgba(255,255,255,0.92)",border:"none",color:"#1C1C1E",fontSize:12,fontWeight:700,padding:"7px 13px",borderRadius:99,cursor:"pointer"}}>Saltear recorrido</button>
       <div style={{position:"fixed",top:tipTop,left:tipLeft,width:270,background:"#fff",borderRadius:16,padding:"16px 18px",boxShadow:"0 12px 30px rgba(0,0,0,0.35)"}}>
-        <p style={{fontSize:13,fontWeight:800,color:"#3DAE8C",textTransform:"uppercase",letterSpacing:0.4,margin:"0 0 6px"}}>{p.name}</p>
+        <p style={{fontSize:13,fontWeight:800,color:"#E8752B",textTransform:"uppercase",letterSpacing:0.4,margin:"0 0 6px"}}>{p.name}</p>
         <p style={{fontSize:14,color:"#1C1C1E",lineHeight:1.45,margin:"0 0 14px"}}>{p.txt}</p>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <span style={{fontSize:11,color:"#55555A",fontWeight:700}}>{tourPaso+1} de {PASOS_TOUR_ONBOARDING.length}</span>
-          <button onClick={siguienteTour} style={{background:tourPaso===PASOS_TOUR_ONBOARDING.length-1?"#3DAE8C":"#1C2B3A",color:"#fff",border:"none",borderRadius:99,padding:"8px 16px",fontSize:12.5,fontWeight:800,cursor:"pointer"}}>{tourPaso===PASOS_TOUR_ONBOARDING.length-1?"Empezar":"Siguiente"}</button>
+          <button onClick={siguienteTour} style={{background:tourPaso===PASOS_TOUR_ONBOARDING.length-1?"linear-gradient(90deg,#E8752B,#F0A23D)":"#1C2B3A",color:"#fff",border:"none",borderRadius:99,padding:"8px 16px",fontSize:12.5,fontWeight:800,cursor:"pointer"}}>{tourPaso===PASOS_TOUR_ONBOARDING.length-1?"Empezar":"Siguiente"}</button>
         </div>
       </div>
     </div>
