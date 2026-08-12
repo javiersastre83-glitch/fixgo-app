@@ -3850,9 +3850,10 @@ export default function App({ session }) {
                     {nov.fotos.length>0
                       ?<div style={{position:"relative",width:72,height:72,flexShrink:0,marginLeft:11}}>
                          <img src={nov.fotos[0]} alt="" style={{width:72,height:72,objectFit:"cover",display:"block",borderRadius:10}}/>
+                         {nov.selloDirector&&<span style={{position:"absolute",left:4,top:4,width:20,height:20,borderRadius:"50%",background:nov.selloDirector==="like"?"#34C759":"#FFB800",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}>{nov.selloDirector==="like"?<ThumbsUp size={11} color="#fff"/>:<AlertTriangle size={11} color="#fff"/>}</span>}
                          {nov.fotos.length>1&&<span style={{position:"absolute",right:4,bottom:4,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:99,lineHeight:1}}>+{nov.fotos.length-1}</span>}
                        </div>
-                      :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:11}}><Camera size={26} color="#C7C7CC"/></div>}
+                      :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:11,position:"relative"}}>{nov.selloDirector&&<span style={{position:"absolute",left:4,top:4,width:20,height:20,borderRadius:"50%",background:nov.selloDirector==="like"?"#34C759":"#FFB800",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}>{nov.selloDirector==="like"?<ThumbsUp size={11} color="#fff"/>:<AlertTriangle size={11} color="#fff"/>}</span>}<Camera size={26} color="#C7C7CC"/></div>}
                     <div style={{padding:"11px 12px",flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
                         <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
@@ -4568,9 +4569,10 @@ export default function App({ session }) {
                 {nov.fotos.length>0
                   ?<div style={{position:"relative",width:72,height:72,flexShrink:0,marginLeft:11}}>
                      <img src={nov.fotos[0]} alt="" style={{width:72,height:72,objectFit:"cover",display:"block",borderRadius:10}}/>
+                     {nov.selloDirector&&<span style={{position:"absolute",left:4,top:4,width:20,height:20,borderRadius:"50%",background:nov.selloDirector==="like"?"#34C759":"#FFB800",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}>{nov.selloDirector==="like"?<ThumbsUp size={11} color="#fff"/>:<AlertTriangle size={11} color="#fff"/>}</span>}
                      {nov.fotos.length>1&&<span style={{position:"absolute",right:4,bottom:4,background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:99,lineHeight:1}}>+{nov.fotos.length-1}</span>}
                    </div>
-                  :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:11}}><Camera size={26} color="#C7C7CC"/></div>}
+                  :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:11,position:"relative"}}>{nov.selloDirector&&<span style={{position:"absolute",left:4,top:4,width:20,height:20,borderRadius:"50%",background:nov.selloDirector==="like"?"#34C759":"#FFB800",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}>{nov.selloDirector==="like"?<ThumbsUp size={11} color="#fff"/>:<AlertTriangle size={11} color="#fff"/>}</span>}<Camera size={26} color="#C7C7CC"/></div>}
                 <div style={{padding:"11px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center",minHeight:94}}>
                   <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
                     <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
