@@ -558,7 +558,7 @@ const NavBar = ({ tabActiva, onTab, onPerfil }) => (
       {key:"alertas", Icon:Zap,       label:"Urgencias"},
       {key:"perfil",  Icon:User,      label:"Perfil"},
     ].map(({key,Icon,label})=>(
-      <button key={key} onClick={()=>key==="perfil"?onPerfil():onTab(key)}
+      <button id={"tour-nav-"+(key==="obras"?"inicio":key==="alertas"?"urgencias":"perfil")} key={key} onClick={()=>key==="perfil"?onPerfil():onTab(key)}
         style={{flex:1,background:"none",border:"none",padding:"10px 4px 8px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
         <Icon size={22} color={tabActiva===key?"#1C1C1E":"#55555A"} strokeWidth={tabActiva===key?2.5:1.8}/>
         <span style={{fontSize:10,fontWeight:tabActiva===key?700:400,color:tabActiva===key?"#1C1C1E":"#55555A"}}>{label}</span>
@@ -567,6 +567,113 @@ const NavBar = ({ tabActiva, onTab, onPerfil }) => (
     ))}
   </div>
 );
+
+const PASOS_TOUR_ONBOARDING = [
+  {sel:"#tour-tab-obras",    name:"Mis obras",  txt:"Las obras de las que sos dueño."},
+  {sel:"#tour-tab-tareas",   name:"Mis tareas", txt:"Lo que te asignaron en obras de otros profesionales."},
+  {sel:"#tour-tab-director", name:"Director",   txt:"El panorama completo de las obras que comparte tu equipo."},
+  {sel:"#tour-nav-inicio",    name:"Inicio",     txt:"Tus obras, tus novedades y tu equipo, todo desde acá."},
+  {sel:"#tour-nav-urgencias", name:"Urgencias",  txt:"Acá encontrás lo que marcaste como urgente y lo que se venció."},
+  {sel:"#tour-nav-perfil",    name:"Perfil",     txt:"Tus datos, tu equipo y las opciones de tu cuenta."},
+];
+
+const OnboardingOverlay = ({ onFinish }) => {
+  const [paso, setPaso] = useState(1); // 1,2,3 = pantallas de texto · 4 = recorrido guiado
+  const [tourPaso, setTourPaso] = useState(0);
+  const [spot, setSpot] = useState<any>(null);
+
+  useEffect(()=>{
+    if(paso!==4)return;
+    const medir=()=>{
+      const p=PASOS_TOUR_ONBOARDING[tourPaso];
+      const el=document.querySelector(p.sel);
+      if(el)setSpot(el.getBoundingClientRect());
+      else if(tourPaso<PASOS_TOUR_ONBOARDING.length-1)setTourPaso(t=>t+1); // no se encontró el botón (ej. bloqueado), saltamos al siguiente
+      else onFinish();
+    };
+    const t=setTimeout(medir,120);
+    window.addEventListener("resize",medir);
+    return ()=>{clearTimeout(t);window.removeEventListener("resize",medir);};
+  },[paso,tourPaso]);
+
+  const siguienteTour=()=>{
+    if(tourPaso>=PASOS_TOUR_ONBOARDING.length-1){onFinish();return;}
+    setTourPaso(t=>t+1);
+  };
+
+  const ICONOS = {
+    1:<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/><path d="M15 21h4a2 2 0 0 0 2-2v-4"/><circle cx="12" cy="12" r="3"/></svg>,
+    2:<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>,
+    3:<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  };
+
+  if(paso<4){
+    const contenido = {
+      1:{eyebrow:null,titulo:"Cada imprevisto, bajo control.",cuerpo:<p style={{margin:0,fontSize:15,lineHeight:1.55,color:"#55555A",textAlign:"center"}}>Fixgo es el registro de obra para las novedades.<br/>Da trazabilidad: qué pasó, quién la vio, cómo se resolvió.<br/>Todo en un solo lugar.</p>},
+      2:{eyebrow:"Cómo se usa",titulo:"Registrá tus novedades fuera del plan.",cuerpo:(
+        <>
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+            {["Sacás una foto.","Escribís qué pasó.","Elegís quién lo resuelve."].map(t=>(
+              <div key={t} style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{width:22,height:22,borderRadius:7,background:"#EAF6F1",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><CheckCircle size={13} color="#3DAE8C"/></span>
+                <span style={{fontSize:15,color:"#1C1C1E",fontWeight:600}}>{t}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{margin:0,fontSize:15,lineHeight:1.5,color:"#55555A",textAlign:"center"}}>Listo, ya quedó ordenada en Fixgo.</p>
+        </>
+      )},
+      3:{eyebrow:"Tu equipo",titulo:"Cada uno ve lo que le toca.",cuerpo:<p style={{margin:0,fontSize:15,lineHeight:1.55,color:"#55555A",textAlign:"center"}}>Vos cargás la novedad. Tu equipo ve lo que le corresponde a cada uno, en un solo lugar.</p>},
+    }[paso];
+    return(
+      <div style={{position:"fixed",inset:0,zIndex:9999,background:"linear-gradient(180deg,#1C2B3A 0%,#2E3A4B 45%,#fff 45%)",display:"flex",flexDirection:"column"}}>
+        <button onClick={()=>{setPaso(4);}} style={{position:"absolute",top:"max(24px,env(safe-area-inset-top))",right:20,zIndex:2,background:"rgba(255,255,255,0.14)",border:"none",color:"#fff",fontSize:13,fontWeight:700,padding:"8px 14px",borderRadius:99,cursor:"pointer"}}>Omitir</button>
+        <div style={{flex:"0 0 240px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,paddingTop:20}}>
+          <div style={{textAlign:"center"}}>
+            <h3 style={{margin:0,color:"#fff",fontSize:20,fontWeight:800,letterSpacing:-0.3}}>Fixgo</h3>
+            <p style={{margin:"2px 0 0",color:"rgba(255,255,255,0.6)",fontSize:12}}>Gestión simple de novedades</p>
+          </div>
+          <div style={{width:104,height:104,borderRadius:28,background:"rgba(255,255,255,0.12)",border:"1.5px solid rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center"}}>{ICONOS[paso]}</div>
+        </div>
+        <div style={{flex:1,background:"#fff",borderRadius:"28px 28px 0 0",marginTop:-24,padding:"34px 26px max(26px,env(safe-area-inset-bottom))",display:"flex",flexDirection:"column"}}>
+          {contenido.eyebrow&&<p style={{fontSize:11,fontWeight:800,letterSpacing:1.5,color:"#3DAE8C",textTransform:"uppercase",margin:"0 0 10px",textAlign:"center"}}>{contenido.eyebrow}</p>}
+          <h1 style={{fontSize:25,lineHeight:1.22,fontWeight:800,color:"#1C1C1E",margin:"0 0 14px",letterSpacing:-0.3,textAlign:"center"}}>{contenido.titulo}</h1>
+          {contenido.cuerpo}
+          <div style={{flex:1}}/>
+          <div style={{display:"flex",gap:7,justifyContent:"center",margin:"22px 0 18px"}}>
+            {[1,2,3].map(n=><span key={n} style={{width:n===paso?22:7,height:7,borderRadius:99,background:n===paso?"#1C2B3A":"#E5E5EA",transition:"all .25s"}}/>)}
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            {paso>1&&<button onClick={()=>setPaso(paso-1)} style={{flex:"0 0 90px",background:"#F2F2F7",color:"#1C1C1E",border:"none",borderRadius:16,padding:16,fontSize:16,fontWeight:800,cursor:"pointer"}}>Atrás</button>}
+            <button onClick={()=>paso<3?setPaso(paso+1):setPaso(4)} style={{flex:1,background:"#1C2B3A",color:"#fff",border:"none",borderRadius:16,padding:16,fontSize:16,fontWeight:800,cursor:"pointer"}}>{paso<3?"Siguiente":"Mostrame la app"}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // paso 4: recorrido guiado sobre la pantalla real
+  if(!spot)return null;
+  const p=PASOS_TOUR_ONBOARDING[tourPaso];
+  let tipTop=spot.bottom+16;
+  const tipAlto=150;
+  if(tipTop+tipAlto>window.innerHeight)tipTop=spot.top-tipAlto-10;
+  let tipLeft=Math.max(16,Math.min(spot.left+spot.width/2-135,window.innerWidth-286));
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:9999}}>
+      <div style={{position:"fixed",top:spot.top-8,left:spot.left-10,width:spot.width+20,height:spot.height+16,borderRadius:18,boxShadow:"0 0 0 9999px rgba(10,14,20,0.72)",pointerEvents:"none"}}/>
+      <button onClick={onFinish} style={{position:"fixed",top:"max(24px,env(safe-area-inset-top))",right:20,background:"rgba(255,255,255,0.92)",border:"none",color:"#1C1C1E",fontSize:12,fontWeight:700,padding:"7px 13px",borderRadius:99,cursor:"pointer"}}>Saltear recorrido</button>
+      <div style={{position:"fixed",top:tipTop,left:tipLeft,width:270,background:"#fff",borderRadius:16,padding:"16px 18px",boxShadow:"0 12px 30px rgba(0,0,0,0.35)"}}>
+        <p style={{fontSize:13,fontWeight:800,color:"#3DAE8C",textTransform:"uppercase",letterSpacing:0.4,margin:"0 0 6px"}}>{p.name}</p>
+        <p style={{fontSize:14,color:"#1C1C1E",lineHeight:1.45,margin:"0 0 14px"}}>{p.txt}</p>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span style={{fontSize:11,color:"#55555A",fontWeight:700}}>{tourPaso+1} de {PASOS_TOUR_ONBOARDING.length}</span>
+          <button onClick={siguienteTour} style={{background:tourPaso===PASOS_TOUR_ONBOARDING.length-1?"#3DAE8C":"#1C2B3A",color:"#fff",border:"none",borderRadius:99,padding:"8px 16px",fontSize:12.5,fontWeight:800,cursor:"pointer"}}>{tourPaso===PASOS_TOUR_ONBOARDING.length-1?"Empezar":"Siguiente"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ══════════════════════════════════════════════════════
 // HEADER con breadcrumb
@@ -996,16 +1103,22 @@ export default function App({ session }) {
   const [subiendoLogo,     setSubiendoLogo]     = useState(false);
   const fileRefLogo = useRef();
   const [nombrePersonalizado, setNombrePersonalizado] = useState("");
+  const [vioOnboarding,    setVioOnboarding]    = useState<boolean|null>(null); // null = todavía no sabemos
   useEffect(()=>{
     if(!usuarioReal){setEsProReal(false);return;}
-    supabase.from("usuarios").select("es_pro,nombre_estudio,logo_estudio_url,nombre_personalizado").eq("id",usuarioReal.id).single().then(({data})=>{
+    supabase.from("usuarios").select("es_pro,nombre_estudio,logo_estudio_url,nombre_personalizado,vio_onboarding").eq("id",usuarioReal.id).single().then(({data})=>{
       setEsProReal(!!data?.es_pro);
       setNombreEstudio(data?.nombre_estudio||"");
       setNombreEstudioInput(data?.nombre_estudio||"");
       setLogoEstudioUrl(data?.logo_estudio_url||"");
       setNombrePersonalizado(data?.nombre_personalizado||"");
+      setVioOnboarding(!!data?.vio_onboarding);
     });
   },[usuarioReal?.id]);
+  const terminarOnboarding=async()=>{
+    setVioOnboarding(true); // primero en pantalla, para que se sienta instantáneo
+    if(usuarioReal)await supabase.from("usuarios").update({vio_onboarding:true}).eq("id",usuarioReal.id);
+  };
   const simularPro=async(valor)=>{
     if(!usuarioReal)return;
     setEsProReal(valor);
@@ -3310,9 +3423,9 @@ export default function App({ session }) {
           </div>
         </div>
         <div style={{padding:"10px 16px 14px",flexShrink:0,display:"flex",gap:8}}>
-          <button onClick={()=>cambiarVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
-          <button onClick={()=>cambiarVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
-          <button onClick={()=>{if(!esVersionPro){setModalProObra(true);return;}cambiarVistaHome("director");}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{!esVersionPro&&<Lock size={11}/>}Director</button>
+          <button id="tour-tab-obras" onClick={()=>cambiarVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
+          <button id="tour-tab-tareas" onClick={()=>cambiarVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
+          <button id="tour-tab-director" onClick={()=>{if(!esVersionPro){setModalProObra(true);return;}cambiarVistaHome("director");}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{!esVersionPro&&<Lock size={11}/>}Director</button>
         </div>
         {vistaHome==="director"?(
         <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
@@ -3560,6 +3673,7 @@ export default function App({ session }) {
         {vistaHome==="tareas"&&avisoObraEliminadaJSX}
         {modalDecidirCompartirJSX}
         {modalElegirObrasJSX}
+        {usuarioReal&&vioOnboarding===false&&<OnboardingOverlay onFinish={terminarOnboarding}/>}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
         {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
