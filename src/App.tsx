@@ -3504,23 +3504,23 @@ export default function App({ session }) {
         <div style={{padding:"10px 16px 14px",flexShrink:0,display:"flex",gap:8}}>
           <button id="tour-tab-obras" onClick={()=>cambiarVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
           <button id="tour-tab-tareas" onClick={()=>cambiarVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
-          <button id="tour-tab-director" onClick={()=>{if(!esVersionPro){setModalProObra(true);return;}cambiarVistaHome("director");}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{!esVersionPro&&<Lock size={11}/>}Director</button>
+          <button id="tour-tab-director" onClick={()=>cambiarVistaHome("director")} style={{flex:(empresaPropia&&miembrosEmpresa.length>0)?1:"0 0 46px",padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:(empresaPropia&&miembrosEmpresa.length>0)?13:17,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{(empresaPropia&&miembrosEmpresa.length>0)?"Estudio":"+"}</button>
         </div>
         {vistaHome==="director"?(
         <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
           {!empresaPropia?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
               <Compass size={36} color="#8E8E93" style={{margin:"0 0 10px"}}/>
-              <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>Todavía no armaste tu equipo de profesionales</p>
-              <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Sabé al instante quién está al día y quién necesita ayuda.</p>
-              <button onClick={()=>{setNombreEmpresaInput(nombreEstudio);setModalCrearEmpresa(true);}} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Crear mi equipo de profesionales</button>
+              <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>Sumá profesionales a tu estudio</p>
+              <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A",lineHeight:1.5}}>Enterate de las novedades en las obras que dirigen tus profesionales.<br/><br/>Vas a poder verlas todas, dejar notas privadas, y reaccionar a lo que encuentres.</p>
+              <button onClick={()=>{if(!esVersionPro){setModalProObra(true);return;}setNombreEmpresaInput(nombreEstudio);setModalCrearEmpresa(true);}} style={{...s.btnPrincipal,background:"#2E3A4B",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>{!esVersionPro&&<Lock size={13}/>}Invitar profesional</button>
             </div>
           ):miembrosEmpresa.length===0?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
               <Compass size={36} color="#8E8E93" style={{margin:"0 0 10px"}}/>
               <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>{nombreEstudio||empresaPropia.nombre} todavía no tiene profesionales</p>
               <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Invitá a los profesionales de tu equipo para verlos acá.</p>
-              <button onClick={()=>setModalInvitarArq(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Invitar profesional</button>
+              <button onClick={()=>{if(!esVersionPro){setModalProObra(true);return;}setModalInvitarArq(true);}} style={{...s.btnPrincipal,background:"#2E3A4B",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>{!esVersionPro&&<Lock size={13}/>}Invitar profesional</button>
             </div>
           ):(
             <>
