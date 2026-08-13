@@ -571,7 +571,7 @@ const NavBar = ({ tabActiva, onTab, onPerfil }) => (
 const PASOS_TOUR_ONBOARDING = [
   {sel:"#tour-tab-obras",    name:"Mis obras",  txt:"Las obras de las que sos dueño."},
   {sel:"#tour-tab-tareas",   name:"Mis tareas", txt:"Lo que te asignaron en obras de otros profesionales."},
-  {sel:"#tour-tab-director", name:"Director",   txt:"El panorama completo de las obras que comparte tu equipo."},
+  {sel:"#tour-tab-director", name:"Estudio",    txt:"Sumá profesionales para ver las novedades de las obras que dirigen."},
   {sel:"#tour-nav-inicio",    name:"Inicio",     txt:"Tus obras, tus novedades y tu equipo, todo desde acá."},
   {sel:"#tour-nav-urgencias", name:"Urgencias",  txt:"Acá encontrás lo que marcaste como urgente y lo que se venció."},
   {sel:"#tour-nav-perfil",    name:"Perfil",     txt:"Tus datos, tu equipo y las opciones de tu cuenta."},
@@ -2216,7 +2216,7 @@ export default function App({ session }) {
     if(empresaPropia&&nombreFinal){
       const{error:errorEmpresa}=await supabase.from("empresas").update({nombre:nombreFinal}).eq("id",empresaPropia.id);
       if(errorEmpresa){
-        console.error("No se pudo sincronizar el nombre en Modo Director:",errorEmpresa.message);
+        console.error("No se pudo sincronizar el nombre en Estudio:",errorEmpresa.message);
       }else{
         setEmpresaPropia(e=>e?({...e,nombre:nombreFinal}):e);
       }
@@ -2908,7 +2908,7 @@ export default function App({ session }) {
             <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",fontSize:12.5,color:"#55555A"}}>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>1 obra</span>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Novedades ilimitadas</span>
-              <span style={{display:"flex",alignItems:"center",gap:3}}><X size={12} color="#FF3B30"/>Offline, Modo Director, dibujo sobre fotos</span>
+              <span style={{display:"flex",alignItems:"center",gap:3}}><X size={12} color="#FF3B30"/>Offline, Estudio, dibujo sobre fotos</span>
             </div>
           </div>
           <div style={{padding:"14px 16px",background:"#FFB80008"}}>
@@ -2919,7 +2919,7 @@ export default function App({ session }) {
             <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",fontSize:12.5,color:"#55555A",marginBottom:10}}>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Obras ilimitadas</span>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Offline</span>
-              <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Modo Director</span>
+              <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Estudio</span>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Dibujar sobre fotos</span>
             </div>
             <button style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><Rocket size={16}/>Activar Plan Pro</button>
@@ -2973,11 +2973,11 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>{setVistaDirectorCategoria(null);setTabActiva("obras");irInicio();}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
+          <button onClick={()=>{setVistaDirectorCategoria(null);setTabActiva("obras");irInicio();}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"0 16px 24px"}}>
           <p style={{margin:"4px 0 4px",fontSize:22,fontWeight:800,color:"#1C1C1E"}}>{vistaDirectorCategoria==="obrasActivas"?cfg.titulo:`${cfg.titulo} por obra`}</p>
-          <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>{vistaDirectorCategoria==="obrasActivas"?`${cfg.lista.length} obra${cfg.lista.length!==1?"s":""} bajo tu Modo Director`:`${cfg.valor} ${cfg.tituloPlural} repartidas en ${cfg.lista.length} obra${cfg.lista.length!==1?"s":""}`}</p>
+          <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>{vistaDirectorCategoria==="obrasActivas"?`${cfg.lista.length} obra${cfg.lista.length!==1?"s":""} en tu Estudio`:`${cfg.valor} ${cfg.tituloPlural} repartidas en ${cfg.lista.length} obra${cfg.lista.length!==1?"s":""}`}</p>
           {cfg.lista.length===0&&<div style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:20}}><PartyPopper size={22} style={{marginBottom:6}}/><p style={{margin:0}}>Nada por acá</p></div>}
           {vistaDirectorCategoria==="obrasActivas"?(
             cfg.lista.map((item:any)=>(
@@ -3036,7 +3036,7 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>setVistaProfesionales(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
+          <button onClick={()=>setVistaProfesionales(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             {logoEstudioUrl&&<ImgCacheada src={logoEstudioUrl} style={{width:36,height:36,borderRadius:9,objectFit:"contain",border:"1.5px solid #E5E5EA",flexShrink:0}}/>}
             <div>
@@ -3124,7 +3124,7 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>setVistaTuEquipo(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
+          <button onClick={()=>setVistaTuEquipo(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
           <p style={{fontSize:24,margin:0,fontWeight:800,letterSpacing:-0.4}}>Tu equipo</p>
           <p style={{fontSize:12.5,color:"#55555A",margin:"4px 0 0"}}>{miembrosEmpresa.length} profesional{miembrosEmpresa.length!==1?"es":""} en {nombreEstudio||empresaPropia?.nombre}</p>
         </div>
@@ -3216,7 +3216,7 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"14px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>setVistaBitacora(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>
+          <button onClick={()=>setVistaBitacora(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
           <h1 style={{fontSize:20,margin:0,fontWeight:800,display:"flex",alignItems:"center",gap:8}}><Book size={19}/>Mi Bitácora</h1>
         </div>
         <div style={{padding:"12px 16px",display:"flex",gap:8,flexShrink:0}}>
@@ -3405,7 +3405,7 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <div style={{padding:"14px 12px 4px",flexShrink:0}}>
-          {filtroObraAlertas&&<button onClick={()=>{setFiltroObraAlertas(null);if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{setTabActiva("obras");}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Director</button>}
+          {filtroObraAlertas&&<button onClick={()=>{setFiltroObraAlertas(null);if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{setTabActiva("obras");}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>}
           <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"20px 18px"}}>
             <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff",display:"flex",alignItems:"center",gap:9}}><Bell size={22}/>Urgencias</p>
             <p style={{margin:"5px 0 0",fontSize:13,color:"rgba(255,255,255,0.6)"}}>
@@ -3504,23 +3504,23 @@ export default function App({ session }) {
         <div style={{padding:"10px 16px 14px",flexShrink:0,display:"flex",gap:8}}>
           <button id="tour-tab-obras" onClick={()=>cambiarVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
           <button id="tour-tab-tareas" onClick={()=>cambiarVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
-          <button id="tour-tab-director" onClick={()=>cambiarVistaHome("director")} style={{flex:(empresaPropia&&miembrosEmpresa.length>0)?1:"0 0 46px",padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:(empresaPropia&&miembrosEmpresa.length>0)?13:17,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{(empresaPropia&&miembrosEmpresa.length>0)?"Estudio":"+"}</button>
+          <button id="tour-tab-director" onClick={()=>{if(!esVersionPro){setModalProObra(true);return;}cambiarVistaHome("director");}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{!esVersionPro&&<Lock size={11}/>}Director</button>
         </div>
         {vistaHome==="director"?(
         <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
           {!empresaPropia?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
               <Compass size={36} color="#8E8E93" style={{margin:"0 0 10px"}}/>
-              <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>Sumá profesionales a tu estudio</p>
-              <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A",lineHeight:1.5}}>Enterate de las novedades en las obras que dirigen tus profesionales.<br/><br/>Vas a poder verlas todas, dejar notas privadas, y reaccionar a lo que encuentres.</p>
-              <button onClick={()=>{if(!esVersionPro){setModalProObra(true);return;}setNombreEmpresaInput(nombreEstudio);setModalCrearEmpresa(true);}} style={{...s.btnPrincipal,background:"#2E3A4B",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>{!esVersionPro&&<Lock size={13}/>}Invitar profesional</button>
+              <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>Todavía no armaste tu equipo de profesionales</p>
+              <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Sabé al instante quién está al día y quién necesita ayuda.</p>
+              <button onClick={()=>{setNombreEmpresaInput(nombreEstudio);setModalCrearEmpresa(true);}} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Crear mi equipo de profesionales</button>
             </div>
           ):miembrosEmpresa.length===0?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
               <Compass size={36} color="#8E8E93" style={{margin:"0 0 10px"}}/>
               <p style={{margin:"0 0 6px",fontSize:17,fontWeight:800,color:"#1C1C1E"}}>{nombreEstudio||empresaPropia.nombre} todavía no tiene profesionales</p>
               <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Invitá a los profesionales de tu equipo para verlos acá.</p>
-              <button onClick={()=>{if(!esVersionPro){setModalProObra(true);return;}setModalInvitarArq(true);}} style={{...s.btnPrincipal,background:"#2E3A4B",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>{!esVersionPro&&<Lock size={13}/>}Invitar profesional</button>
+              <button onClick={()=>setModalInvitarArq(true)} style={{...s.btnPrincipal,background:"#2E3A4B"}}>Invitar profesional</button>
             </div>
           ):(
             <>
@@ -3632,7 +3632,7 @@ export default function App({ session }) {
                 <ClipboardList size={40} color="#C7C7CC" style={{marginBottom:4}}/>
                 {esGestorDeAlgunaObra?(<>
                   <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>No tenés tareas asignadas a tu nombre</p>
-                  <p style={{fontSize:14,margin:0}}>Las novedades de tus obras las administrás desde "Mis obras" o "Director".</p>
+                  <p style={{fontSize:14,margin:0}}>Las novedades de tus obras las administrás desde "Mis obras" o "Estudio".</p>
                 </>):(<>
                   <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>Aún no tenés tareas asignadas</p>
                   <p style={{fontSize:14,margin:0}}>Cuando un profesional te sume a una obra, la vas a ver acá.</p>
@@ -3698,7 +3698,7 @@ export default function App({ session }) {
                       {esDueno?<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#1C1C1E",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}><Star size={10} fill="#fff"/>Tu obra</span>
                       :<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#0057FF",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}><Handshake size={10}/>Colega</span>}
                       {tieneCoProfesional&&<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#0057FF12",color:"#0057FF",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}><Handshake size={10}/>En equipo</span>}
-                      {enModoDirector&&<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#2E3A4B12",color:"#2E3A4B",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}><Compass size={10}/>En Modo Director</span>}
+                      {enModoDirector&&<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#2E3A4B12",color:"#2E3A4B",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}><Compass size={10}/>En tu Estudio</span>}
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
                       <CirculoProg radius={38} pct={prog} size={90}/>
@@ -3787,7 +3787,7 @@ export default function App({ session }) {
         </div></div>}
         {modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
               <div style={{textAlign:"left",marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
-                {["Obras ilimitadas","Modo offline","Marcar y dibujar sobre fotos","Informe de novedades registradas","Gestión en equipo para una misma obra","Modo Director para estar al tanto de las obras que lleva tu equipo"].map(t=>(
+                {["Obras ilimitadas","Modo offline","Marcar y dibujar sobre fotos","Informe de novedades registradas","Gestión en equipo para una misma obra","Estudio para estar al tanto de las obras que dirige tu equipo"].map(t=>(
                   <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><CheckCircle size={16} color="#34C759"/>{t}</div>
                 ))}
               </div>
@@ -4544,7 +4544,7 @@ export default function App({ session }) {
   return(
     <div style={{...s.root,position:"relative"}}>
       <div style={{padding:"14px 12px 4px",flexShrink:0}}>
-        <button onClick={()=>{if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{irInicio();}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>{origenDirectorCategoria?"Director":"Inicio"}</button>
+        <button onClick={()=>{if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{irInicio();}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>{origenDirectorCategoria?"Estudio":"Inicio"}</button>
         <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"18px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
             <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
