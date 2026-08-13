@@ -581,6 +581,29 @@ const OnboardingOverlay = ({ onFinish }) => {
   const [paso, setPaso] = useState(1); // 1,2,3 = pantallas de texto · 4 = recorrido guiado
   const [tourPaso, setTourPaso] = useState(0);
   const [spot, setSpot] = useState<any>(null);
+  const [arrastreX, setArrastreX] = useState(0); // desplazamiento en vivo mientras el dedo arrastra (px)
+  const [arrastrando, setArrastrando] = useState(false);
+  const startXRef = useRef(0);
+  const anchoRef = useRef(typeof window!=="undefined"?window.innerWidth:390);
+  const onTouchStartCarrusel=(e)=>{
+    if(paso>=4)return;
+    startXRef.current=e.touches[0].clientX;
+    setArrastrando(true);
+  };
+  const onTouchMoveCarrusel=(e)=>{
+    if(!arrastrando)return;
+    let delta=e.touches[0].clientX-startXRef.current;
+    if(paso===1&&delta>0)delta=delta*0.3; // resistencia elástica en el borde inicial
+    if(paso===3&&delta<0)delta=delta*0.3; // resistencia elástica en el borde final (no hay loop)
+    setArrastreX(delta);
+  };
+  const onTouchEndCarrusel=()=>{
+    setArrastrando(false);
+    const umbral=anchoRef.current*0.18;
+    if(arrastreX<-umbral&&paso<3)setPaso(p=>p+1);
+    else if(arrastreX>umbral&&paso>1)setPaso(p=>p-1);
+    setArrastreX(0);
+  };
 
   useEffect(()=>{
     if(paso!==4)return;
@@ -624,47 +647,58 @@ const OnboardingOverlay = ({ onFinish }) => {
         </>
       )},
       3:{eyebrow:"Tu equipo",titulo:"Cada uno ve lo que le toca.",cuerpo:<p style={{margin:0,fontSize:14.5,lineHeight:1.5,color:"#55555A",textAlign:"center"}}>Vos cargás la novedad. Tu equipo ve lo que le corresponde a cada uno, en un solo lugar.</p>},
-    }[paso];
-    return(
-      <div style={{position:"fixed",inset:0,zIndex:9999,background:"#FFFCF8",display:"flex",flexDirection:"column"}}>
-        <button onClick={()=>setPaso(4)} style={{position:"absolute",top:"max(24px,env(safe-area-inset-top))",right:20,zIndex:2,background:"rgba(255,255,255,0.22)",backdropFilter:"blur(6px)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",fontSize:13,fontWeight:700,padding:"8px 14px",borderRadius:99,cursor:"pointer"}}>Omitir</button>
-        <div style={{flex:paso===1?"0 0 280px":"0 0 200px",position:"relative",backgroundImage:`url(${FOTOS[paso]})`,backgroundSize:"cover",backgroundPosition:"center"}}>
-          <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(20,25,35,0.15) 0%, rgba(20,25,35,0.55) 65%, #FFFCF8 100%)"}}/>
-          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,paddingTop:26}}>
-            <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:paso===1?78:60,height:paso===1?78:60,borderRadius:20,boxShadow:"0 10px 26px rgba(0,0,0,0.4)"}}/>
-            {paso===1&&<div style={{textAlign:"center"}}>
-              <h3 style={{margin:0,color:"#fff",fontSize:20,fontWeight:800,letterSpacing:-0.3,textShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>Fixgo</h3>
-              <p style={{margin:"3px 0 0",color:"rgba(255,255,255,0.85)",fontSize:12.5}}>Gestión simple de novedades</p>
-            </div>}
+    };
+    const renderSlide=(n)=>{
+      const c=contenido[n];
+      return(
+        <div key={n} style={{width:anchoRef.current,height:"100%",flexShrink:0,display:"flex",flexDirection:"column"}}>
+          <div style={{flex:n===1?"0 0 280px":"0 0 200px",position:"relative",backgroundImage:`url(${FOTOS[n]})`,backgroundSize:"cover",backgroundPosition:"center"}}>
+            <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(20,25,35,0.15) 0%, rgba(20,25,35,0.55) 65%, #FFFCF8 100%)"}}/>
+            <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,paddingTop:26}}>
+              <img src="/Fixgo_logo.png" alt="Fixgo" style={{width:n===1?78:60,height:n===1?78:60,borderRadius:20,boxShadow:"0 10px 26px rgba(0,0,0,0.4)"}}/>
+              {n===1&&<div style={{textAlign:"center"}}>
+                <h3 style={{margin:0,color:"#fff",fontSize:20,fontWeight:800,letterSpacing:-0.3,textShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>Fixgo</h3>
+                <p style={{margin:"3px 0 0",color:"rgba(255,255,255,0.85)",fontSize:12.5}}>Gestión simple de novedades</p>
+              </div>}
+            </div>
+          </div>
+          <div style={{flex:1,background:"#FFFCF8",borderRadius:"26px 26px 0 0",marginTop:-22,padding:"26px 26px max(26px,env(safe-area-inset-bottom))",display:"flex",flexDirection:"column"}}>
+            {c.eyebrow&&<p style={{fontSize:11,fontWeight:800,letterSpacing:1.5,color:"#E8752B",textTransform:"uppercase",margin:"0 0 10px",textAlign:"center"}}>{c.eyebrow}</p>}
+            <h1 style={{fontSize:24,lineHeight:1.24,fontWeight:800,color:"#1C1C1E",margin:"0 0 12px",letterSpacing:-0.3,textAlign:"center"}}>{c.titulo}</h1>
+            {c.cuerpo}
+            {n===1&&(
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:118,position:"relative",margin:"6px 0 8px"}}>
+                <div style={{position:"absolute",left:"calc(50% - 96px)",top:8,width:74,height:104,borderRadius:14,background:"#fff",border:"3px solid #1C1C1E",boxShadow:"0 8px 18px rgba(0,0,0,0.12)",transform:"rotate(-8deg)",opacity:0.55,display:"flex",alignItems:"center",justifyContent:"center"}}><AlertTriangle size={18} color="#E8752B"/></div>
+                <div style={{position:"relative",zIndex:2,width:88,height:118,borderRadius:14,background:"#1C2B3A",border:"3px solid #1C2B3A",padding:"8px 7px"}}>
+                  <p style={{color:"#fff",fontSize:9,fontWeight:800,textAlign:"center",margin:"0 0 6px"}}>Fixgo</p>
+                  {[0,1,2].map(i=>(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:4,background:"#fff",borderRadius:5,padding:"3px 4px",marginBottom:3}}>
+                      <span style={{width:10,height:10,borderRadius:3,background:"#E8752B",flexShrink:0}}/>
+                      <span style={{flex:1,height:4,background:"#E5E5EA",borderRadius:2}}/>
+                    </div>
+                  ))}
+                </div>
+                <div style={{position:"absolute",right:"calc(50% - 96px)",top:8,width:74,height:104,borderRadius:14,background:"#fff",border:"3px solid #1C1C1E",boxShadow:"0 8px 18px rgba(0,0,0,0.12)",transform:"rotate(8deg)",opacity:0.55,display:"flex",alignItems:"center",justifyContent:"center"}}><CheckCircle size={18} color="#3DAE8C"/></div>
+              </div>
+            )}
+            <div style={{flex:1,minHeight:10}}/>
+            <div style={{display:"flex",gap:7,justifyContent:"center",margin:"16px 0 16px"}}>
+              {[1,2,3].map(dn=><span key={dn} style={{width:dn===paso?22:7,height:7,borderRadius:99,background:dn===paso?"#E8752B":"#E5E5EA",transition:"all .25s"}}/>)}
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              {paso>1&&<button onClick={()=>setPaso(paso-1)} style={{flex:"0 0 90px",background:"#F2F2F7",color:"#1C1C1E",border:"none",borderRadius:16,padding:16,fontSize:16,fontWeight:800,cursor:"pointer"}}>Atrás</button>}
+              <button onClick={()=>paso<3?setPaso(paso+1):setPaso(4)} style={{flex:1,background:"linear-gradient(90deg,#E8752B,#F0A23D)",color:"#fff",border:"none",borderRadius:16,padding:16,fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 8px 20px rgba(232,117,43,0.35)"}}>{paso<3?"Siguiente":"Mostrame la app"}</button>
+            </div>
           </div>
         </div>
-        <div style={{flex:1,background:"#FFFCF8",borderRadius:"26px 26px 0 0",marginTop:-22,padding:"26px 26px max(26px,env(safe-area-inset-bottom))",display:"flex",flexDirection:"column"}}>
-          {contenido.eyebrow&&<p style={{fontSize:11,fontWeight:800,letterSpacing:1.5,color:"#E8752B",textTransform:"uppercase",margin:"0 0 10px",textAlign:"center"}}>{contenido.eyebrow}</p>}
-          <h1 style={{fontSize:24,lineHeight:1.24,fontWeight:800,color:"#1C1C1E",margin:"0 0 12px",letterSpacing:-0.3,textAlign:"center"}}>{contenido.titulo}</h1>
-          {contenido.cuerpo}
-          {paso===1&&(
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:118,position:"relative",margin:"6px 0 8px"}}>
-              <div style={{position:"absolute",left:"calc(50% - 96px)",top:8,width:74,height:104,borderRadius:14,background:"#fff",border:"3px solid #1C1C1E",boxShadow:"0 8px 18px rgba(0,0,0,0.12)",transform:"rotate(-8deg)",opacity:0.55,display:"flex",alignItems:"center",justifyContent:"center"}}><AlertTriangle size={18} color="#E8752B"/></div>
-              <div style={{position:"relative",zIndex:2,width:88,height:118,borderRadius:14,background:"#1C2B3A",border:"3px solid #1C2B3A",padding:"8px 7px"}}>
-                <p style={{color:"#fff",fontSize:9,fontWeight:800,textAlign:"center",margin:"0 0 6px"}}>Fixgo</p>
-                {[0,1,2].map(i=>(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:4,background:"#fff",borderRadius:5,padding:"3px 4px",marginBottom:3}}>
-                    <span style={{width:10,height:10,borderRadius:3,background:"#E8752B",flexShrink:0}}/>
-                    <span style={{flex:1,height:4,background:"#E5E5EA",borderRadius:2}}/>
-                  </div>
-                ))}
-              </div>
-              <div style={{position:"absolute",right:"calc(50% - 96px)",top:8,width:74,height:104,borderRadius:14,background:"#fff",border:"3px solid #1C1C1E",boxShadow:"0 8px 18px rgba(0,0,0,0.12)",transform:"rotate(8deg)",opacity:0.55,display:"flex",alignItems:"center",justifyContent:"center"}}><CheckCircle size={18} color="#3DAE8C"/></div>
-            </div>
-          )}
-          <div style={{flex:1,minHeight:10}}/>
-          <div style={{display:"flex",gap:7,justifyContent:"center",margin:"16px 0 16px"}}>
-            {[1,2,3].map(n=><span key={n} style={{width:n===paso?22:7,height:7,borderRadius:99,background:n===paso?"#E8752B":"#E5E5EA",transition:"all .25s"}}/>)}
-          </div>
-          <div style={{display:"flex",gap:10}}>
-            {paso>1&&<button onClick={()=>setPaso(paso-1)} style={{flex:"0 0 90px",background:"#F2F2F7",color:"#1C1C1E",border:"none",borderRadius:16,padding:16,fontSize:16,fontWeight:800,cursor:"pointer"}}>Atrás</button>}
-            <button onClick={()=>paso<3?setPaso(paso+1):setPaso(4)} style={{flex:1,background:"linear-gradient(90deg,#E8752B,#F0A23D)",color:"#fff",border:"none",borderRadius:16,padding:16,fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 8px 20px rgba(232,117,43,0.35)"}}>{paso<3?"Siguiente":"Mostrame la app"}</button>
-          </div>
+      );
+    };
+    return(
+      <div style={{position:"fixed",inset:0,zIndex:9999,background:"#FFFCF8",overflow:"hidden"}}
+        onTouchStart={onTouchStartCarrusel} onTouchMove={onTouchMoveCarrusel} onTouchEnd={onTouchEndCarrusel}>
+        <button onClick={()=>setPaso(4)} style={{position:"absolute",top:"max(24px,env(safe-area-inset-top))",right:20,zIndex:2,background:"rgba(255,255,255,0.22)",backdropFilter:"blur(6px)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",fontSize:13,fontWeight:700,padding:"8px 14px",borderRadius:99,cursor:"pointer"}}>Omitir</button>
+        <div style={{display:"flex",height:"100%",transform:`translateX(${-(paso-1)*anchoRef.current+arrastreX}px)`,transition:arrastrando?"none":"transform .3s ease"}}>
+          {[1,2,3].map(n=>renderSlide(n))}
         </div>
       </div>
     );
