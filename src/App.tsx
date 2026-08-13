@@ -1036,6 +1036,7 @@ export default function App({ session }) {
   const [modalDecidirCompartir, setModalDecidirCompartir] = useState<any>(null); // fila de empresa_miembros pendiente de decidir
   const [modalElegirObras,      setModalElegirObras]      = useState<any>(null); // empresa_id activa mientras se eligen obras a mano
   const [confirmarEliminarMiembroEmpresa, setConfirmarEliminarMiembroEmpresa] = useState<any>(null);
+  const [confirmarEliminarEstudio, setConfirmarEliminarEstudio] = useState(false);
   const [modalCompartirObra,   setModalCompartirObra]   = useState(null);
   const [vistaDirectorCategoria, setVistaDirectorCategoria] = useState<string|null>(null); // "urgencias"|"novedades"|"resueltas"
   const [filtroObraAlertas,      setFiltroObraAlertas]      = useState<any>(null); // {id,nombre} o null = todas
@@ -1078,6 +1079,24 @@ export default function App({ session }) {
     setObrasEmpresa(o=>o.filter(x=>!(x.propietario_id===usuarioId&&x.empresa_id===empresaId)));
     setConfirmarEliminarMiembroEmpresa(null);
     mostrarToast("Se sacó del equipo");
+  };
+  const eliminarEstudioCompleto=async()=>{
+    if(!empresaPropia)return;
+    const empresaId=empresaPropia.id;
+    // Se corta la relación con todos los profesionales, y sus obras dejan de estar compartidas
+    await supabase.from("obras").update({empresa_id:null}).eq("empresa_id",empresaId);
+    await supabase.from("empresa_miembros").delete().eq("empresa_id",empresaId);
+    await supabase.from("invitaciones_empresa").delete().eq("empresa_id",empresaId);
+    const{error}=await supabase.from("empresas").delete().eq("id",empresaId);
+    if(error){alert("No se pudo eliminar el Estudio: "+error.message);return;}
+    setEmpresaPropia(null);
+    setMiembrosEmpresa([]);
+    setObrasEmpresa(o=>o.filter(x=>x.empresa_id!==empresaId));
+    setNombreEstudio("");
+    setNombreEstudioInput("");
+    setConfirmarEliminarEstudio(false);
+    cambiarVistaHome("mias"); // ya no existe Estudio, volvemos a Mis obras
+    mostrarToast("Estudio eliminado");
   };
   const decidirCompartirTodo=async(miembroId,empresaId,comparteTodo)=>{
     const{error}=await supabase.from("empresa_miembros").update({comparte_todo:comparteTodo}).eq("id",miembroId);
@@ -3501,11 +3520,12 @@ export default function App({ session }) {
             </div>
           </div>
         </div>
-        <div style={{padding:"10px 16px 14px",flexShrink:0,display:"flex",gap:8}}>
-          <button id="tour-tab-obras" onClick={()=>cambiarVistaHome("mias")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="mias"?"#2E3A4B":"#F2F2F7",color:vistaHome==="mias"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis obras</button>
-          <button id="tour-tab-tareas" onClick={()=>cambiarVistaHome("tareas")} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#F2F2F7",color:vistaHome==="tareas"?"#fff":"#55555A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Mis tareas</button>
-          <button id="tour-tab-director" onClick={()=>cambiarVistaHome("director")} style={{flex:(empresaPropia&&miembrosEmpresa.length>0)?1:"0 0 46px",padding:"10px",borderRadius:12,border:"none",background:vistaHome==="director"?"#2E3A4B":"#F2F2F7",color:vistaHome==="director"?"#fff":"#55555A",fontSize:(empresaPropia&&miembrosEmpresa.length>0)?13:17,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{(empresaPropia&&miembrosEmpresa.length>0)?"Estudio":"+"}</button>
+        <div style={{padding:"10px 16px 0",flexShrink:0,display:"flex",gap:6,alignItems:"flex-end"}}>
+          <button id="tour-tab-obras" onClick={()=>cambiarVistaHome("mias")} style={{flex:1,padding:vistaHome==="mias"?"12px 10px":"9px 10px",borderRadius:"12px 12px 0 0",border:"none",background:vistaHome==="mias"?"#2E3A4B":"#E5E5EA",color:vistaHome==="mias"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:vistaHome==="mias"?"0 -3px 8px rgba(0,0,0,0.08)":"none",position:"relative",zIndex:vistaHome==="mias"?2:1,transition:"all .2s ease"}}>Mis obras</button>
+          <button id="tour-tab-tareas" onClick={()=>cambiarVistaHome("tareas")} style={{flex:1,padding:vistaHome==="tareas"?"12px 10px":"9px 10px",borderRadius:"12px 12px 0 0",border:"none",background:vistaHome==="tareas"?"#2E3A4B":"#E5E5EA",color:vistaHome==="tareas"?"#fff":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:vistaHome==="tareas"?"0 -3px 8px rgba(0,0,0,0.08)":"none",position:"relative",zIndex:vistaHome==="tareas"?2:1,transition:"all .2s ease"}}>Mis tareas</button>
+          <button id="tour-tab-director" onClick={()=>cambiarVistaHome("director")} style={{flex:(empresaPropia&&miembrosEmpresa.length>0)?1:"0 0 46px",padding:vistaHome==="director"?"12px 10px":"9px 10px",borderRadius:"12px 12px 0 0",border:"none",background:vistaHome==="director"?"#2E3A4B":"#E5E5EA",color:vistaHome==="director"?"#fff":"#8E8E93",fontSize:(empresaPropia&&miembrosEmpresa.length>0)?13:17,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:vistaHome==="director"?"0 -3px 8px rgba(0,0,0,0.08)":"none",position:"relative",zIndex:vistaHome==="director"?2:1,transition:"all .2s ease"}}>{(empresaPropia&&miembrosEmpresa.length>0)?"Estudio":"+"}</button>
         </div>
+        <div style={{height:1,background:"#F5F6F8",flexShrink:0}}/>
         {vistaHome==="director"?(
         <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
           {!empresaPropia?(
@@ -3528,6 +3548,7 @@ export default function App({ session }) {
                 <p style={{margin:0,fontSize:19,fontWeight:800,color:"#1C1C1E",flex:1}}>{nombreEstudio||empresaPropia.nombre}</p>
                 <button onClick={()=>setVistaBitacora(true)} style={{background:"#F7F5FF",color:"#7C5CFC",border:"1.5px solid #D9CFFF",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",gap:5}}><Book size={13}/>Bitácora</button>
                 <button onClick={()=>setModalInvitarArq(true)} style={{background:"#2E3A4B",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Invitar</button>
+                <button onClick={()=>setConfirmarEliminarEstudio(true)} style={{background:"none",border:"none",cursor:"pointer",padding:6,flexShrink:0,display:"flex",alignItems:"center"}}><Trash2 size={16} color="#C7C7CC"/></button>
               </div>
 
               {(()=>{
@@ -3752,6 +3773,13 @@ export default function App({ session }) {
         {vistaHome==="tareas"&&avisoObraEliminadaJSX}
         {modalDecidirCompartirJSX}
         {modalElegirObrasJSX}
+        {confirmarEliminarEstudio&&<div style={s.overlay} onClick={()=>setConfirmarEliminarEstudio(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+          <Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/>
+          <p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar tu Estudio?</p>
+          <p style={{margin:"0 0 20px",fontSize:14,color:"#55555A"}}>Se corta la relación con los {miembrosEmpresa.length} profesional{miembrosEmpresa.length!==1?"es":""} que sumaste. Sus obras dejan de estar compartidas con vos — no se borran, simplemente vos ya no las ves. Podés armar un Estudio nuevo cuando quieras.</p>
+          <button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={eliminarEstudioCompleto}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button>
+          <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarEstudio(false)}>Cancelar</button>
+        </div></div>}
         {usuarioReal&&vioOnboarding===false&&<OnboardingOverlay onFinish={terminarOnboarding}/>}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
