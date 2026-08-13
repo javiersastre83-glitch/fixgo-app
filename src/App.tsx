@@ -3521,12 +3521,12 @@ export default function App({ session }) {
           </div>
         </div>
         <div style={{padding:"10px 16px 0",flexShrink:0,display:"flex",gap:6,alignItems:"flex-end"}}>
-          <button id="tour-tab-obras" onClick={()=>cambiarVistaHome("mias")} style={{flex:1,padding:vistaHome==="mias"?"13px 10px 12px":"9px 10px",borderRadius:"12px 12px 0 0",border:"none",background:vistaHome==="mias"?"#F2F2F7":"#D9D9DE",color:vistaHome==="mias"?"#1C1C1E":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",position:"relative",zIndex:vistaHome==="mias"?2:1,transition:"all .2s ease"}}>Mis obras</button>
-          <button id="tour-tab-tareas" onClick={()=>cambiarVistaHome("tareas")} style={{flex:1,padding:vistaHome==="tareas"?"13px 10px 12px":"9px 10px",borderRadius:"12px 12px 0 0",border:"none",background:vistaHome==="tareas"?"#F2F2F7":"#D9D9DE",color:vistaHome==="tareas"?"#1C1C1E":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",position:"relative",zIndex:vistaHome==="tareas"?2:1,transition:"all .2s ease"}}>Mis tareas</button>
-          <button id="tour-tab-director" onClick={()=>cambiarVistaHome("director")} style={{flex:(empresaPropia&&miembrosEmpresa.length>0)?1:"0 0 46px",padding:vistaHome==="director"?"13px 10px 12px":"9px 10px",borderRadius:"12px 12px 0 0",border:"none",background:vistaHome==="director"?"#F2F2F7":"#D9D9DE",color:vistaHome==="director"?"#1C1C1E":"#8E8E93",fontSize:(empresaPropia&&miembrosEmpresa.length>0)?13:17,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:vistaHome==="director"?2:1,transition:"all .2s ease"}}>{(empresaPropia&&miembrosEmpresa.length>0)?"Estudio":"+"}</button>
+          <button id="tour-tab-obras" onClick={()=>cambiarVistaHome("mias")} style={{flex:1,padding:vistaHome==="mias"?"13px 10px 12px":"9px 10px",borderRadius:"12px 12px 0 0",border:vistaHome==="mias"?"1.5px solid #D9D9DE":"none",borderBottom:"none",background:vistaHome==="mias"?"#F2F2F7":"#D9D9DE",color:vistaHome==="mias"?"#1C1C1E":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",position:"relative",zIndex:vistaHome==="mias"?2:1,transition:"all .2s ease"}}>Mis obras</button>
+          <button id="tour-tab-tareas" onClick={()=>cambiarVistaHome("tareas")} style={{flex:1,padding:vistaHome==="tareas"?"13px 10px 12px":"9px 10px",borderRadius:"12px 12px 0 0",border:vistaHome==="tareas"?"1.5px solid #D9D9DE":"none",borderBottom:"none",background:vistaHome==="tareas"?"#F2F2F7":"#D9D9DE",color:vistaHome==="tareas"?"#1C1C1E":"#8E8E93",fontSize:13,fontWeight:700,cursor:"pointer",position:"relative",zIndex:vistaHome==="tareas"?2:1,transition:"all .2s ease"}}>Mis tareas</button>
+          <button id="tour-tab-director" onClick={()=>cambiarVistaHome("director")} style={{flex:(empresaPropia&&miembrosEmpresa.length>0)?1:"0 0 46px",padding:vistaHome==="director"?"13px 10px 12px":"9px 10px",borderRadius:"12px 12px 0 0",border:vistaHome==="director"?"1.5px solid #D9D9DE":"none",borderBottom:"none",background:vistaHome==="director"?"#F2F2F7":"#D9D9DE",color:vistaHome==="director"?"#1C1C1E":"#8E8E93",fontSize:(empresaPropia&&miembrosEmpresa.length>0)?13:17,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:vistaHome==="director"?2:1,transition:"all .2s ease"}}>{(empresaPropia&&miembrosEmpresa.length>0)?"Estudio":"+"}</button>
         </div>
         {vistaHome==="director"?(
-        <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
+        <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"22px 16px 16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
           {!empresaPropia?(
             <div style={{background:"#fff",borderRadius:20,padding:"28px 20px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
               <Compass size={36} color="#8E8E93" style={{margin:"0 0 10px"}}/>
@@ -3627,7 +3627,7 @@ export default function App({ session }) {
           )}
         </div>
         ):(
-        <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
+        <div key={vistaHome} style={{flex:1,overflowY:"auto",padding:"22px 16px 16px",display:"flex",flexDirection:"column",gap:12,animation:(direccionTab===1?"slideInDcha":"slideInIzq")+" 0.22s ease-out"}}>
           {cargandoDatos?(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,padding:"48px 16px"}}>
               <span style={{width:28,height:28,border:"3px solid #E5E5EA",borderTopColor:"#2E3A4B",borderRadius:"50%",display:"inline-block",animation:"spin 0.8s linear infinite"}}/>
