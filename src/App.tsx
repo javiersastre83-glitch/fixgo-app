@@ -3561,26 +3561,19 @@ export default function App({ session }) {
                   {key:"vencidas",Icon:AlarmClock,label:"Vencidas",valor:stats.totalVencidas,color:"#B8720A",bg:"linear-gradient(160deg,#FFF9EF,#FDECD1)",sub:`en ${stats.porObraVencidas.length} obra${stats.porObraVencidas.length!==1?"s":""}`,preview:stats.previewVencidas,onTap:()=>setVistaDirectorCategoria("vencidas")},
                   {key:"resueltas",Icon:CheckCircle,label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`,preview:stats.previewResueltas,onTap:()=>setVistaDirectorCategoria("resueltas")},
                 ];
-                const NIVELES_EMPRESA=[
-                  {id:"diamante",label:"Diamante",color:"#5AC8FA",Icon:Gem,min:0,max:2,siguiente:null},
-                  {id:"oro",label:"Oro",color:"#E5A400",Icon:Award,min:2,max:4,siguiente:2},
-                  {id:"plata",label:"Plata",color:"#9A9A9A",Icon:Award,min:4,max:7,siguiente:4},
-                  {id:"bronce",label:"Bronce",color:"#CD7F32",Icon:Award,min:7,max:Infinity,siguiente:7},
-                ];
-                const nivelEmpresa=stats.totalNovedades>0?(NIVELES_EMPRESA.find(n=>stats.antiguedadPromEmpresa>=n.min&&stats.antiguedadPromEmpresa<n.max)||NIVELES_EMPRESA[3]):NIVELES_EMPRESA[0];
                 return<>
                 <div style={{background:"#fff",borderRadius:18,padding:16,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A"}}>
                   <div onClick={()=>setVistaTuEquipo(true)} style={{cursor:"pointer"}}>
                     <p style={{margin:"0 0 12px",fontSize:15,fontWeight:700,color:"#1C1C1E",display:"flex",alignItems:"center",justifyContent:"space-between"}}>Tu equipo <span style={{color:"#8E8E93",fontSize:16}}>›</span></p>
-                    <div style={{background:"#EAF6F1",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
-                      <div style={{width:44,height:44,borderRadius:"50%",background:"#DCEFC7",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><nivelEmpresa.Icon size={20} color={nivelEmpresa.color}/></div>
-                      <div style={{flex:1}}>
-                        <p style={{margin:0,fontSize:11,fontWeight:700,color:"#3B6D11",textTransform:"uppercase",letterSpacing:0.3}}>Eficiencia general · {nivelEmpresa.label}</p>
-                        <p style={{margin:"2px 0 0"}}><span style={{fontSize:20,fontWeight:800,color:"#1C1C1E"}}>{stats.antiguedadPromEmpresa<1?"<1":stats.antiguedadPromEmpresa.toFixed(1)}</span> <span style={{fontSize:13,fontWeight:600,color:"#3B6D11"}}>días promedio de resolución</span></p>
+                    <div style={{display:"flex",gap:10,marginBottom:16}}>
+                      <div style={{flex:1,background:"#EAF0FF",borderRadius:14,padding:"14px 16px",textAlign:"center"}}>
+                        <p style={{margin:"0 0 2px",fontSize:11,fontWeight:700,color:"#0057FF",textTransform:"uppercase",letterSpacing:0.3}}>Registradas</p>
+                        <p style={{margin:0,fontSize:26,fontWeight:800,color:"#1C1C1E"}}><NumeroAnimado valor={stats.totalNovedades}/></p>
                       </div>
-                    </div>
-                    <div style={{height:6,background:"#E5E5EA",borderRadius:3,overflow:"hidden",marginBottom:16}}>
-                      <div style={{width:`${nivelEmpresa.siguiente===null?100:Math.max(4,Math.min(100,Math.round(((nivelEmpresa.max===Infinity?nivelEmpresa.min*2:nivelEmpresa.max)-stats.antiguedadPromEmpresa)/((nivelEmpresa.max===Infinity?nivelEmpresa.min*2:nivelEmpresa.max)-nivelEmpresa.min)*100)))}%`,height:"100%",background:"#3DAE8C"}}/>
+                      <div style={{flex:1,background:"#EAF6F1",borderRadius:14,padding:"14px 16px",textAlign:"center"}}>
+                        <p style={{margin:"0 0 2px",fontSize:11,fontWeight:700,color:"#1a8a3d",textTransform:"uppercase",letterSpacing:0.3}}>Resueltas</p>
+                        <p style={{margin:0,fontSize:26,fontWeight:800,color:"#1C1C1E"}}><NumeroAnimado valor={stats.totalResueltas}/></p>
+                      </div>
                     </div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -3592,19 +3585,14 @@ export default function App({ session }) {
                       <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Profesionales activos</p>
                       <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.profesionalesActivos}</p>
                       <div style={{display:"flex",alignItems:"center",marginTop:6}}>
-                        {miembrosEmpresa.slice(0,4).map((m,i)=>(
-                          <div key={m.usuario_id||i} style={{width:22,height:22,borderRadius:"50%",background:colorPorIndice(i),border:"2px solid #F7F8F8",marginLeft:i>0?-7:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#fff"}}>{(m.nombre||"?")[0].toUpperCase()}</div>
-                        ))}
+                        {miembrosEmpresa.slice(0,4).map((m,i)=>{
+                          const nombreM=m.usuarios?.nombre||m.usuarios?.email||"?";
+                          return(
+                          <div key={m.usuario_id||i} style={{width:22,height:22,borderRadius:"50%",background:colorPorIndice(i),border:"2px solid #F7F8F8",marginLeft:i>0?-7:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#fff"}}>{nombreM[0].toUpperCase()}</div>
+                          );
+                        })}
                         {miembrosEmpresa.length>4&&<span style={{marginLeft:4,fontSize:14,fontWeight:800,color:"#8E8E93"}}>···</span>}
                       </div>
-                    </div>
-                    <div onClick={()=>setVistaDirectorCategoria("sinResponsable")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
-                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Novedades sin responsable asignado</p>
-                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.novedadesSinResponsable}</p>
-                    </div>
-                    <div onClick={()=>setVistaDirectorCategoria("novedades")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
-                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Total de novedades</p>
-                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.totalNovedades}</p>
                     </div>
                   </div>
                 </div>
