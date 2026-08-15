@@ -1945,8 +1945,8 @@ export default function App({ session }) {
     const esVencida=(n)=>!n.resuelta&&n.fecha_limite&&n.fecha_limite<hoy;
 
     let totalUrgentes=0,totalPendientes=0,totalResueltas=0,totalVencidas=0,totalNovedades=0;
-    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[],porObraNovedades:any[]=[],porObraVencidas:any[]=[],porObraSinResponsable:any[]=[],porObraTodas:any[]=[];
-    const previewUrgentes:any[]=[],previewNovedades:any[]=[],previewResueltas:any[]=[],previewVencidas:any[]=[],previewSinResponsable:any[]=[];
+    const porObraUrgentes:any[]=[],porObraPendientes:any[]=[],porObraResueltas:any[]=[],porObraNovedades:any[]=[],porObraVencidas:any[]=[],porObraTodas:any[]=[];
+    const previewUrgentes:any[]=[],previewNovedades:any[]=[],previewResueltas:any[]=[],previewVencidas:any[]=[];
 
     obrasEmpresa.forEach(obra=>{
       const novs=obra.novedades||[];
@@ -1954,14 +1954,12 @@ export default function App({ session }) {
       const p=novs.filter(esPendienteAprob).length;
       const r=novs.filter(n=>n.resuelta).length;
       const v=novs.filter(esVencida).length;
-      const sr=novs.filter(n=>!n.resuelta&&!n.responsable_usuario_id).length;
       totalUrgentes+=u;totalPendientes+=p;totalResueltas+=r;totalNovedades+=novs.length;
       totalVencidas+=v;
       const nombreResponsable=miembrosEmpresa.find(m=>m.usuario_id===obra.propietario_id)?.usuarios?.nombre||"Profesional";
       porObraTodas.push({obraId:obra.id,obraNombre:obra.nombre,direccion:obra.direccion,responsable:nombreResponsable,count:novs.length});
       if(u>0)porObraUrgentes.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:u});
       if(v>0)porObraVencidas.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:v});
-      if(sr>0)porObraSinResponsable.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:sr});
       if(p>0){
         const pendientesObra=novs.filter(esPendienteAprob);
         const masVieja=pendientesObra.reduce((min,n)=>!min||n.created_at<min.created_at?n:min,null);
@@ -1972,7 +1970,6 @@ export default function App({ session }) {
       if(novs.length>0)porObraNovedades.push({obraId:obra.id,obraNombre:obra.nombre,responsable:nombreResponsable,count:novs.length});
       novs.filter(esUrgente).forEach(n=>previewUrgentes.push({texto:n.descripcion,obraNombre:obra.nombre}));
       novs.filter(esVencida).forEach(n=>previewVencidas.push({texto:n.descripcion,obraNombre:obra.nombre}));
-      novs.filter(n=>!n.resuelta&&!n.responsable_usuario_id).forEach(n=>previewSinResponsable.push({texto:n.descripcion,obraNombre:obra.nombre}));
       novs.forEach(n=>previewNovedades.push({texto:n.descripcion,obraNombre:obra.nombre}));
       novs.filter(n=>n.resuelta).forEach(n=>previewResueltas.push({texto:n.descripcion,obraNombre:obra.nombre}));
     });
@@ -2009,11 +2006,10 @@ export default function App({ session }) {
     const todasPendientesEmpresa=obrasEmpresa.flatMap(o=>(o.novedades||[]).filter(n=>!n.resuelta));
     const antiguedadPromEmpresa=todasPendientesEmpresa.length>0?todasPendientesEmpresa.reduce((acc,n)=>{const t=n.created_at?new Date(n.created_at).getTime():hoyTs;return acc+(hoyTs-t)/864e5;},0)/todasPendientesEmpresa.length:0;
     const obrasActivas=obrasEmpresa.length;
-    const novedadesSinResponsable=obrasEmpresa.reduce((acc,o)=>acc+(o.novedades||[]).filter(n=>!n.resuelta&&!n.responsable_usuario_id).length,0);
     const profesionalesActivos=porProfesional.filter(p=>p.total>0).length;
-    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,porObraVencidas,porObraSinResponsable,porObraTodas,previewUrgentes,previewNovedades,previewResueltas,previewVencidas,previewSinResponsable,porProfesional,
+    return{totalUrgentes,totalPendientes,totalResueltas,totalVencidas,totalNovedades,porObraUrgentes,porObraPendientes,porObraResueltas,porObraNovedades,porObraVencidas,porObraTodas,previewUrgentes,previewNovedades,previewResueltas,previewVencidas,porProfesional,
       diasPromEmpresa:porProfesional.filter(p=>p.diasProm>0).length>0?(porProfesional.reduce((s,p)=>s+p.diasProm,0)/porProfesional.filter(p=>p.diasProm>0).length):0,
-      antiguedadPromEmpresa,obrasActivas,novedadesSinResponsable,profesionalesActivos};
+      antiguedadPromEmpresa,obrasActivas,profesionalesActivos};
   };
 
   const cargarBitacora=async()=>{
@@ -2363,7 +2359,7 @@ export default function App({ session }) {
   const contadores=useMemo(()=>{
     const esObraPropia=obras.some(o=>o.id===obraActual?.id);
     const base=esObraPropia?novedades:(novedadesPorObra[obraActual?.id]||[]);
-    return{todas:base.length,pendientes:base.filter(n=>!n.resuelta).length,resueltas:base.filter(n=>n.resuelta).length,vencidas:base.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length};
+    return{todas:base.length,pendientes:base.filter(n=>!n.resuelta).length,resueltas:base.filter(n=>n.resuelta).length,vencidas:base.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length,sinResponsable:base.filter(n=>!n.resuelta&&!n.responsable_usuario_id).length};
   },[novedades,novedadesPorObra,obraActual?.id,obras]);
   const detalle=novedades.find(n=>n.id===detalleId)||(novedadesPorObra[obraActual?.id]||[]).find(n=>n.id===detalleId);
 
@@ -2977,7 +2973,6 @@ export default function App({ session }) {
       vencidas:{titulo:"Vencidas",tituloPlural:"vencidas",color:"#B8720A",bg:"linear-gradient(160deg,#FFF9EF,#FDECD1)",badgeBg:"#FDECD1",valor:stats.totalVencidas,lista:stats.porObraVencidas,filtroDestino:"vencidas",unidad:"venc."},
       novedades:{titulo:"Novedades",tituloPlural:"novedades",color:"#6B4FD9",bg:"linear-gradient(160deg,#F8F5FF,#EDE6FF)",badgeBg:"#F0EBFF",valor:stats.totalNovedades,lista:stats.porObraNovedades,filtroDestino:"todas",unidad:"nov."},
       resueltas:{titulo:"Resueltas",tituloPlural:"resueltas",color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",badgeBg:"#E9F9EE",valor:stats.totalResueltas,lista:stats.porObraResueltas,filtroDestino:"resueltas",unidad:"res."},
-      sinResponsable:{titulo:"Sin responsable asignado",tituloPlural:"sin responsable asignado",color:"#854F0B",bg:"linear-gradient(160deg,#FAEEDA,#F5DDB0)",badgeBg:"#FAEEDA",valor:stats.novedadesSinResponsable,lista:stats.porObraSinResponsable,filtroDestino:"sinResponsable",unidad:"nov."},
       obrasActivas:{titulo:"Obras activas",tituloPlural:"obras activas",color:"#2E3A4B",bg:"linear-gradient(160deg,#F2F4F6,#E4E8EC)",badgeBg:"#E4E8EC",valor:stats.obrasActivas,lista:stats.porObraTodas,filtroDestino:"todas",unidad:"nov."},
     };
     const cfg=CONFIG[vistaDirectorCategoria];
@@ -4613,7 +4608,7 @@ export default function App({ session }) {
       <div style={{background:"#fff",borderBottom:"1px solid #F2F2F7",padding:"12px 16px 0",flexShrink:0}}>
         <div style={{position:"relative",marginBottom:10}}><Search size={16} color="#55555A" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/><input style={{...s.input,background:"#F2F2F7",border:"none",paddingLeft:38}} placeholder="Buscar oficios o novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></div>
         <div style={{display:"flex",gap:6,paddingBottom:12}}>
-          {[["todas","Todas",contadores.todas,"#2E3A4B"],["pendientes","Pendientes",contadores.pendientes,"#2E3A4B"],["vencidas","Vencidas",contadores.vencidas,"#2E3A4B"],["resueltas","Resueltas",contadores.resueltas,"#2E3A4B"]].map(([key,lbl,val,col])=>(
+          {[["todas","Todas",contadores.todas,"#2E3A4B"],["pendientes","Pendientes",contadores.pendientes,"#2E3A4B"],["vencidas","Vencidas",contadores.vencidas,"#2E3A4B"],["resueltas","Resueltas",contadores.resueltas,"#2E3A4B"],["sinResponsable","Sin resp.",contadores.sinResponsable,"#854F0B"]].map(([key,lbl,val,col])=>(
             <button key={key} style={{flex:1,minWidth:0,padding:"8px 2px",borderRadius:12,border:`1.5px solid ${filtro===key?col:"#E5E5EA"}`,background:filtro===key?col:"#fff",color:filtro===key?"#fff":"#636366",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1}} onClick={()=>setFiltro(key)}>
               <span style={{fontSize:17,fontWeight:800,lineHeight:1}}>{val}</span>
               <span style={{fontSize:10.5,fontWeight:filtro===key?700:500,whiteSpace:"nowrap"}}>{lbl}</span>
