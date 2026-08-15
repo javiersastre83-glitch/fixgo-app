@@ -3018,9 +3018,9 @@ export default function App({ session }) {
                   <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{item.direccion||item.responsable}</p>
                 </div>
                 <div style={{display:"flex",gap:5,flexShrink:0}}>
-                  <div style={{width:30,height:30,borderRadius:9,border:"2px solid #0057FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0057FF"}}>{totalNovs}</div>
-                  <div style={{width:30,height:30,borderRadius:9,border:"2px solid #1a8a3d",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#1a8a3d"}}>{resueltasNovs}</div>
-                  <div style={{width:30,height:30,borderRadius:9,border:"2px solid #D0342C",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#D0342C"}}>{urgVencNovs}</div>
+                  <div style={{width:30,height:30,borderRadius:9,border:"2px solid #0057FF",background:"#EAF0FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0057FF"}}>{totalNovs}</div>
+                  <div style={{width:30,height:30,borderRadius:9,border:"2px solid #1a8a3d",background:"#E9F9EE",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#1a8a3d"}}>{resueltasNovs}</div>
+                  <div style={{width:30,height:30,borderRadius:9,border:"2px solid #D0342C",background:"#FBE7E6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#D0342C"}}>{urgVencNovs}</div>
                 </div>
                 <span style={{color:"#8E8E93",fontSize:16}}>›</span>
               </div>
