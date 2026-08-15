@@ -1040,6 +1040,7 @@ export default function App({ session }) {
   const [modalCompartirObra,   setModalCompartirObra]   = useState(null);
   const [vistaDirectorCategoria, setVistaDirectorCategoria] = useState<string|null>(null); // "urgencias"|"novedades"|"resueltas"
   const [filtroObraAlertas,      setFiltroObraAlertas]      = useState<any>(null); // {id,nombre} o null = todas
+  const [filtroProfesionalObras, setFiltroProfesionalObras] = useState<any>(null); // {nombre,usuarioId} o null = todos
   const [origenDirectorCategoria,setOrigenDirectorCategoria]= useState<string|null>(null); // para que "volver" desde una obra vuelva a la pastilla correcta
   const [origenBitacora,       setOrigenBitacora]       = useState(false); // para que "volver" desde una novedad vuelva a Mi Bitácora si vinimos de ahí
   const [vistaTuEquipo,        setVistaTuEquipo]        = useState(false);
@@ -2980,9 +2981,10 @@ export default function App({ session }) {
       obrasActivas:{titulo:"Obras activas",tituloPlural:"obras activas",color:"#2E3A4B",bg:"linear-gradient(160deg,#F2F4F6,#E4E8EC)",badgeBg:"#E4E8EC",valor:stats.obrasActivas,lista:stats.porObraTodas,filtroDestino:"todas",unidad:"nov."},
     };
     const cfg=CONFIG[vistaDirectorCategoria];
+    const listaFiltrada=filtroProfesionalObras?cfg.lista.filter((item:any)=>item.responsable===filtroProfesionalObras.nombre):cfg.lista;
     // Agrupar las obras por el profesional dueño (memoria pendiente 03/08: reemplaza la tarjeta grande de color repetida)
     const gruposPorProfesional=Object.values(
-      cfg.lista.reduce((acc:any,item:any)=>{
+      listaFiltrada.reduce((acc:any,item:any)=>{
         const key=item.responsable||"Profesional";
         if(!acc[key])acc[key]={responsable:key,items:[]};
         acc[key].items.push(item);
@@ -2992,14 +2994,14 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>{setVistaDirectorCategoria(null);setTabActiva("obras");irInicio();}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
+          <button onClick={()=>{setVistaDirectorCategoria(null);setFiltroProfesionalObras(null);if(filtroProfesionalObras){setVistaTuEquipo(true);}else{setTabActiva("obras");irInicio();}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>{filtroProfesionalObras?"Tu equipo":"Estudio"}</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"0 16px 24px"}}>
-          <p style={{margin:"4px 0 4px",fontSize:22,fontWeight:800,color:"#1C1C1E"}}>{vistaDirectorCategoria==="obrasActivas"?cfg.titulo:`${cfg.titulo} por obra`}</p>
-          <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>{vistaDirectorCategoria==="obrasActivas"?`${cfg.lista.length} obra${cfg.lista.length!==1?"s":""} en tu Estudio`:`${cfg.valor} ${cfg.tituloPlural} repartidas en ${cfg.lista.length} obra${cfg.lista.length!==1?"s":""}`}</p>
-          {cfg.lista.length===0&&<div style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:20}}><PartyPopper size={22} style={{marginBottom:6}}/><p style={{margin:0}}>Nada por acá</p></div>}
+          <p style={{margin:"4px 0 4px",fontSize:22,fontWeight:800,color:"#1C1C1E"}}>{filtroProfesionalObras?`Obras de ${filtroProfesionalObras.nombre}`:(vistaDirectorCategoria==="obrasActivas"?cfg.titulo:`${cfg.titulo} por obra`)}</p>
+          <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>{vistaDirectorCategoria==="obrasActivas"?`${listaFiltrada.length} obra${listaFiltrada.length!==1?"s":""}${filtroProfesionalObras?"":" en tu Estudio"}`:`${cfg.valor} ${cfg.tituloPlural} repartidas en ${listaFiltrada.length} obra${listaFiltrada.length!==1?"s":""}`}</p>
+          {listaFiltrada.length===0&&<div style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:20}}><PartyPopper size={22} style={{marginBottom:6}}/><p style={{margin:0}}>Nada por acá</p></div>}
           {vistaDirectorCategoria==="obrasActivas"?(
-            cfg.lista.map((item:any)=>(
+            listaFiltrada.map((item:any)=>(
               <div key={item.obraId} onClick={()=>{
                   const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);
                   if(obra){setOrigenDirectorCategoria(vistaDirectorCategoria);irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}
@@ -3166,7 +3168,7 @@ export default function App({ session }) {
             const ec=ESTADO_CFG[p.estado];
             const circ=2*Math.PI*27;
             return(
-              <div key={p.usuario_id} style={{background:"#fff",borderRadius:18,padding:15,margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A"}}>
+              <div key={p.usuario_id} onClick={()=>{setFiltroProfesionalObras({nombre:p.nombre,usuarioId:p.usuario_id});setVistaDirectorCategoria("obrasActivas");setVistaTuEquipo(false);}} style={{background:"#fff",borderRadius:18,padding:15,margin:"0 16px 10px",border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",cursor:"pointer"}}>
                 <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
                   <div style={{width:44,height:44,borderRadius:"50%",background:ec.bg,color:ec.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800,flexShrink:0,border:`3px solid ${ec.color}`}}>{p.nombre[0]?.toUpperCase()}</div>
                   <div style={{flex:1,minWidth:0}}>
@@ -3562,36 +3564,51 @@ export default function App({ session }) {
                   {key:"resueltas",Icon:CheckCircle,label:"Resueltas",valor:stats.totalResueltas,color:"#1a8a3d",bg:"linear-gradient(160deg,#F2FBF5,#DFF6E6)",sub:`en ${stats.porObraResueltas.length} obra${stats.porObraResueltas.length!==1?"s":""}`,preview:stats.previewResueltas,onTap:()=>setVistaDirectorCategoria("resueltas")},
                 ];
                 return<>
-                <div style={{background:"#fff",borderRadius:18,padding:16,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A"}}>
+                <div style={{background:"#fff",borderRadius:20,padding:16,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A"}}>
                   <div onClick={()=>setVistaTuEquipo(true)} style={{cursor:"pointer"}}>
-                    <p style={{margin:"0 0 12px",fontSize:15,fontWeight:700,color:"#1C1C1E",display:"flex",alignItems:"center",justifyContent:"space-between"}}>Tu equipo <span style={{color:"#8E8E93",fontSize:16}}>›</span></p>
-                    <div style={{display:"flex",gap:10,marginBottom:16}}>
-                      <div style={{flex:1,background:"#EAF0FF",borderRadius:14,padding:"14px 16px",textAlign:"center"}}>
-                        <p style={{margin:"0 0 2px",fontSize:11,fontWeight:700,color:"#0057FF",textTransform:"uppercase",letterSpacing:0.3}}>Registradas</p>
-                        <p style={{margin:0,fontSize:26,fontWeight:800,color:"#1C1C1E"}}><NumeroAnimado valor={stats.totalNovedades}/></p>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+                      <div style={{width:36,height:36,borderRadius:99,background:"#EFEBFF",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Users size={18} color="#6D5AE6"/></div>
+                      <div style={{flex:1}}>
+                        <p style={{margin:0,fontSize:15.5,fontWeight:800,color:"#1C1C1E"}}>Tu equipo</p>
+                        <p style={{margin:0,fontSize:11.5,color:"#55555A"}}>Resumen general</p>
                       </div>
-                      <div style={{flex:1,background:"#EAF6F1",borderRadius:14,padding:"14px 16px",textAlign:"center"}}>
-                        <p style={{margin:"0 0 2px",fontSize:11,fontWeight:700,color:"#1a8a3d",textTransform:"uppercase",letterSpacing:0.3}}>Resueltas</p>
-                        <p style={{margin:0,fontSize:26,fontWeight:800,color:"#1C1C1E"}}><NumeroAnimado valor={stats.totalResueltas}/></p>
+                      <div style={{width:30,height:30,borderRadius:99,background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",color:"#8E8E93",flexShrink:0}}>›</div>
+                    </div>
+                    <div style={{display:"flex",gap:10,marginBottom:12}}>
+                      <div style={{flex:1,borderRadius:16,padding:14,color:"#fff",position:"relative",overflow:"hidden",minHeight:78,background:"linear-gradient(135deg,#8B7CF6,#6D5AE6)"}}>
+                        <FileText size={44} style={{position:"absolute",top:8,right:8,opacity:0.22}}/>
+                        <p style={{margin:"0 0 4px",fontSize:10.5,fontWeight:800,textTransform:"uppercase",letterSpacing:0.4,position:"relative",zIndex:2}}>Registradas</p>
+                        <p style={{margin:0,fontSize:32,fontWeight:800,lineHeight:1,position:"relative",zIndex:2}}><NumeroAnimado valor={stats.totalNovedades}/></p>
+                      </div>
+                      <div style={{flex:1,borderRadius:16,padding:14,color:"#fff",position:"relative",overflow:"hidden",minHeight:78,background:"linear-gradient(135deg,#3DD9A8,#22B389)"}}>
+                        <CheckCircle size={44} style={{position:"absolute",top:8,right:8,opacity:0.22}}/>
+                        <p style={{margin:"0 0 4px",fontSize:10.5,fontWeight:800,textTransform:"uppercase",letterSpacing:0.4,position:"relative",zIndex:2}}>Resueltas</p>
+                        <p style={{margin:0,fontSize:32,fontWeight:800,lineHeight:1,position:"relative",zIndex:2}}><NumeroAnimado valor={stats.totalResueltas}/></p>
                       </div>
                     </div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                    <div onClick={()=>setVistaDirectorCategoria("obrasActivas")} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
-                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Obras activas</p>
-                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.obrasActivas}</p>
+                    <div onClick={()=>setVistaDirectorCategoria("obrasActivas")} style={{background:"#F7F8F8",borderRadius:14,padding:12,cursor:"pointer",textAlign:"center",display:"flex",flexDirection:"column",gap:6}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"center"}}>
+                        <div style={{width:26,height:26,borderRadius:99,background:"#EFEBFF",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Building2 size={13} color="#6D5AE6"/></div>
+                        <p style={{margin:0,fontSize:11,fontWeight:700,color:"#55555A"}}>Obras activas</p>
+                      </div>
+                      <p style={{margin:0,fontSize:26,fontWeight:800,color:"#1C1C1E"}}>{stats.obrasActivas}</p>
                     </div>
-                    <div onClick={()=>setVistaProfesionales(true)} style={{background:"#F7F8F8",borderRadius:12,padding:12,cursor:"pointer"}}>
-                      <p style={{margin:"0 0 4px",fontSize:11,fontWeight:700,color:"#55555A"}}>Profesionales activos</p>
-                      <p style={{margin:0,fontSize:18,fontWeight:800,color:"#1C1C1E"}}>{stats.profesionalesActivos}</p>
-                      <div style={{display:"flex",alignItems:"center",marginTop:6}}>
+                    <div onClick={()=>setVistaProfesionales(true)} style={{background:"#F7F8F8",borderRadius:14,padding:12,cursor:"pointer",textAlign:"center",display:"flex",flexDirection:"column",gap:6}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"center"}}>
+                        <div style={{width:26,height:26,borderRadius:99,background:"#E5F9F1",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><User size={13} color="#22B389"/></div>
+                        <p style={{margin:0,fontSize:11,fontWeight:700,color:"#55555A"}}>Profesionales activos</p>
+                      </div>
+                      <p style={{margin:0,fontSize:26,fontWeight:800,color:"#1C1C1E"}}>{stats.profesionalesActivos}</p>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
                         {miembrosEmpresa.slice(0,4).map((m,i)=>{
                           const nombreM=m.usuarios?.nombre||m.usuarios?.email||"?";
                           return(
-                          <div key={m.usuario_id||i} style={{width:22,height:22,borderRadius:"50%",background:colorPorIndice(i),border:"2px solid #F7F8F8",marginLeft:i>0?-7:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#fff"}}>{nombreM[0].toUpperCase()}</div>
+                          <div key={m.usuario_id||i} style={{width:20,height:20,borderRadius:"50%",background:colorPorIndice(i),border:"2px solid #F7F8F8",marginLeft:i>0?-6:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff"}}>{nombreM[0].toUpperCase()}</div>
                           );
                         })}
-                        {miembrosEmpresa.length>4&&<span style={{marginLeft:4,fontSize:14,fontWeight:800,color:"#8E8E93"}}>···</span>}
+                        {miembrosEmpresa.length>4&&<span style={{marginLeft:4,fontSize:13,fontWeight:800,color:"#8E8E93"}}>···</span>}
                       </div>
                     </div>
                   </div>
