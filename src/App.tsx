@@ -2972,7 +2972,6 @@ export default function App({ session }) {
   // ─────────────────────────────
   if(vistaDirectorCategoria){
     const stats=calcularStatsEmpresa();
-    const hoyStr=new Date().toISOString().slice(0,10);
     const CONFIG:any={
       urgencias:{titulo:"Urgentes",tituloPlural:"urgentes",color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",badgeBg:"#FFEDEC",valor:stats.totalUrgentes,lista:stats.porObraUrgentes,unidad:"urg.",esAlertas:true},
       vencidas:{titulo:"Vencidas",tituloPlural:"vencidas",color:"#B8720A",bg:"linear-gradient(160deg,#FFF9EF,#FDECD1)",badgeBg:"#FDECD1",valor:stats.totalVencidas,lista:stats.porObraVencidas,filtroDestino:"vencidas",unidad:"venc."},
@@ -3006,8 +3005,8 @@ export default function App({ session }) {
               const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);
               const novs=obra?.novedades||[];
               const totalNovs=novs.length;
-              const resueltasNovs=novs.filter((n:any)=>n.resuelta).length;
-              const urgVencNovs=novs.filter((n:any)=>!n.resuelta&&(n.prioridad===0||(n.fecha_limite&&n.fecha_limite<hoyStr))).length;
+              const pendVenc=novs.filter((n:any)=>!n.resuelta).length;
+              const urgVencNovs=novs.filter((n:any)=>!n.resuelta&&diasRestantes(n.fecha_limite)<0).length;
               return(
               <div key={item.obraId} onClick={()=>{
                   if(obra){setOrigenDirectorCategoria(vistaDirectorCategoria);irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}
@@ -3017,10 +3016,10 @@ export default function App({ session }) {
                   <p style={{margin:0,fontSize:15.5,fontWeight:800}}>{item.obraNombre}</p>
                   <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{item.direccion||item.responsable}</p>
                 </div>
-                <div style={{display:"flex",gap:5,flexShrink:0}}>
-                  <div style={{width:30,height:30,borderRadius:9,background:"#EAF0FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0057FF"}}>{totalNovs}</div>
-                  <div style={{width:30,height:30,borderRadius:9,background:"#E9F9EE",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#1a8a3d"}}>{resueltasNovs}</div>
-                  <div style={{width:30,height:30,borderRadius:9,background:"#FBE7E6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#D0342C"}}>{urgVencNovs}</div>
+                <div style={{display:"flex",gap:6,flexShrink:0,width:150}}>
+                  <div style={{flex:1,background:"#FFF3E8",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#FF6B00"}}>{pendVenc}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
+                  <div style={{flex:1,background:"#FFF0EE",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#FF3B30"}}>{urgVencNovs}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF6B60",textTransform:"uppercase"}}>Venc.</p></div>
+                  <div style={{flex:1,background:"#EAF0FF",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#0057FF"}}>{totalNovs}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#4D82FF",textTransform:"uppercase"}}>Total</p></div>
                 </div>
                 <span style={{color:"#8E8E93",fontSize:16}}>›</span>
               </div>
