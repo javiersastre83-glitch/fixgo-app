@@ -2972,6 +2972,7 @@ export default function App({ session }) {
   // ─────────────────────────────
   if(vistaDirectorCategoria){
     const stats=calcularStatsEmpresa();
+    const hoyStr=new Date().toISOString().slice(0,10);
     const CONFIG:any={
       urgencias:{titulo:"Urgentes",tituloPlural:"urgentes",color:"#D0342C",bg:"linear-gradient(160deg,#FFF4F3,#FFE3E1)",badgeBg:"#FFEDEC",valor:stats.totalUrgentes,lista:stats.porObraUrgentes,unidad:"urg.",esAlertas:true},
       vencidas:{titulo:"Vencidas",tituloPlural:"vencidas",color:"#B8720A",bg:"linear-gradient(160deg,#FFF9EF,#FDECD1)",badgeBg:"#FDECD1",valor:stats.totalVencidas,lista:stats.porObraVencidas,filtroDestino:"vencidas",unidad:"venc."},
@@ -3001,9 +3002,14 @@ export default function App({ session }) {
           <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>{vistaDirectorCategoria==="obrasActivas"?`${listaFiltrada.length} obra${listaFiltrada.length!==1?"s":""}${filtroProfesionalObras?"":" en tu Estudio"}`:`${cfg.valor} ${cfg.tituloPlural} repartidas en ${listaFiltrada.length} obra${listaFiltrada.length!==1?"s":""}`}</p>
           {listaFiltrada.length===0&&<div style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:20}}><PartyPopper size={22} style={{marginBottom:6}}/><p style={{margin:0}}>Nada por acá</p></div>}
           {vistaDirectorCategoria==="obrasActivas"?(
-            listaFiltrada.map((item:any)=>(
+            listaFiltrada.map((item:any)=>{
+              const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);
+              const novs=obra?.novedades||[];
+              const totalNovs=novs.length;
+              const resueltasNovs=novs.filter((n:any)=>n.resuelta).length;
+              const urgVencNovs=novs.filter((n:any)=>!n.resuelta&&(n.prioridad===0||(n.fecha_limite&&n.fecha_limite<hoyStr))).length;
+              return(
               <div key={item.obraId} onClick={()=>{
-                  const obra=obras.find(o=>o.id===item.obraId)||obrasEmpresa.find(o=>o.id===item.obraId);
                   if(obra){setOrigenDirectorCategoria(vistaDirectorCategoria);irObra(obra);setFiltro(cfg.filtroDestino);setVistaDirectorCategoria(null);}
                 }}
                 style={{background:"#fff",borderRadius:16,padding:"13px 15px",marginBottom:10,border:"2px solid #1C1C1E",boxShadow:"0 2px 8px #0000000A",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
@@ -3011,13 +3017,15 @@ export default function App({ session }) {
                   <p style={{margin:0,fontSize:15.5,fontWeight:800}}>{item.obraNombre}</p>
                   <p style={{margin:"2px 0 0",fontSize:11.5,color:"#55555A"}}>{item.direccion||item.responsable}</p>
                 </div>
-                <div style={{background:cfg.badgeBg,borderRadius:14,padding:"6px 12px",textAlign:"center",flexShrink:0}}>
-                  <p style={{margin:0,fontSize:19,fontWeight:800,color:cfg.color,lineHeight:1}}>{item.count}</p>
-                  <p style={{margin:"1px 0 0",fontSize:8.5,textTransform:"uppercase",fontWeight:700,color:cfg.color}}>{cfg.unidad}</p>
+                <div style={{display:"flex",gap:5,flexShrink:0}}>
+                  <div style={{width:30,height:30,borderRadius:9,border:"2px solid #0057FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0057FF"}}>{totalNovs}</div>
+                  <div style={{width:30,height:30,borderRadius:9,border:"2px solid #1a8a3d",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#1a8a3d"}}>{resueltasNovs}</div>
+                  <div style={{width:30,height:30,borderRadius:9,border:"2px solid #D0342C",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#D0342C"}}>{urgVencNovs}</div>
                 </div>
                 <span style={{color:"#8E8E93",fontSize:16}}>›</span>
               </div>
-            ))
+              );
+            })
           ):gruposPorProfesional.map((grupo:any)=>(
             <div key={grupo.responsable}>
               <p style={{margin:"18px 0 8px 2px",fontSize:11,fontWeight:700,color:"#8E8E93",textTransform:"uppercase",letterSpacing:0.5}}>{grupo.responsable}</p>
