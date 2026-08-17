@@ -4040,7 +4040,7 @@ export default function App({ session }) {
                         <span style={{fontSize:11.5,color:"#55555A",fontWeight:500}}>{u.telefono}</span>
                       </div>}
                     </div>
-                    {!editando&&u.uid!==miId&&u.rolEnObra!=="profesional"&&(miRolEnObra==="profesional"||(miRolEnObra==="capataz"&&u.rolEnObra==="operario"&&u.invitadoPor===miId))&&<button onClick={()=>setConfirmarEliminarMiembro(u)} style={{background:"none",border:"none",cursor:"pointer",flexShrink:0,padding:8,display:"flex",alignItems:"center"}}><Trash2 size={17} color="#C7C7CC"/></button>}
+                    {!editando&&u.uid!==miId&&u.rolEnObra!=="profesional"&&(miRolEnObra==="profesional"||miRolEnObra==="co_profesional")&&<button onClick={()=>setConfirmarEliminarMiembro(u)} style={{background:"none",border:"none",cursor:"pointer",flexShrink:0,padding:8,display:"flex",alignItems:"center"}}><Trash2 size={17} color="#C7C7CC"/></button>}
                   </div>
                 );
               })}
