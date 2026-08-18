@@ -4388,7 +4388,7 @@ export default function App({ session }) {
           </div>
           </div>
           
-          {(empresaPropia&&obraActual?.empresa_id===empresaPropia.id)?(
+          {(empresaPropia&&obraActual?.empresa_id===empresaPropia.id&&detalle.responsable_usuario_id!==usuarioReal?.id)?(
             <div style={{display:"flex",gap:8,margin:"0 0 12px",alignItems:"center",flexWrap:"wrap"}}>
               <div onClick={()=>marcarSelloDirector(detalle.id,"like")} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:99,border:detalle.selloDirector==="like"?"1.5px solid #34C759":"1.5px solid #E5E5EA",background:detalle.selloDirector==="like"?"#EAFBEF":"#fff",cursor:"pointer",fontSize:12,fontWeight:700,color:detalle.selloDirector==="like"?"#1a8a3d":"#55555A"}}><ThumbsUp size={14} strokeWidth={2.3}/>Destacar</div>
               <div onClick={()=>marcarSelloDirector(detalle.id,"atencion")} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:99,border:detalle.selloDirector==="atencion"?"1.5px solid #FFB800":"1.5px solid #E5E5EA",background:detalle.selloDirector==="atencion"?"#FFF8E5":"#fff",cursor:"pointer",fontSize:12,fontWeight:700,color:detalle.selloDirector==="atencion"?"#9a6b00":"#55555A"}}><AlertTriangle size={14} strokeWidth={2.3}/>Atención</div>
