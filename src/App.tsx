@@ -100,7 +100,9 @@ const ModalEditorDibujo = ({ src, onGuardar, onCerrar }) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const cliente = e.touches ? e.touches[0] : e;
-    return { x: cliente.clientX - rect.left, y: cliente.clientY - rect.top };
+    const escalaX = canvas.width / rect.width;
+    const escalaY = canvas.height / rect.height;
+    return { x: (cliente.clientX - rect.left) * escalaX, y: (cliente.clientY - rect.top) * escalaY };
   };
   const empezarTrazo = (e) => {
     e.preventDefault();
