@@ -768,6 +768,7 @@ export default function App({ session }) {
   const [avisoObraEliminada, setAvisoObraEliminada] = useState<string|null>(null);
   const [cargandoDatos,    setCargandoDatos]    = useState(true);
   const [novedadesPorObra, setNovedadesPorObra] = useState({1:NOVEDADES_DEMO,2:[]});
+  const [ultimaActividadPorObra, setUltimaActividadPorObra] = useState<Record<string,number>>({});
   const [estaOnline,       setEstaOnline]       = useState(typeof navigator!=="undefined"?navigator.onLine:true);
   const [colaOffline,      setColaOffline]      = useState<any[]>(()=>{try{return JSON.parse(localStorage.getItem("fixgo_cola_offline")||"[]");}catch(e){return[];}});
   const [sincronizando,    setSincronizando]    = useState(false);
@@ -1171,11 +1172,8 @@ export default function App({ session }) {
   const esVersionPro = esProReal;
   const misObrasPropiasArr = obras.filter(o=>usuarioReal?o.propietario_id===usuarioReal.id:true);
   const obraMasActivaPropia = misObrasPropiasArr.length>0?misObrasPropiasArr.reduce((mejor,o)=>{
-    const ultimaActividad=(ob)=>{
-      const novs=novedadesPorObra[ob.id]||[];
-      return novs.length?Math.max(...novs.map(n=>new Date(n.fecha||0).getTime())):0;
-    };
-    return ultimaActividad(o)>ultimaActividad(mejor)?o:mejor;
+    const actividad=(ob)=>ultimaActividadPorObra[ob.id]||0; // sin novedades → 0, la más vieja posible
+    return actividad(o)>actividad(mejor)?o:mejor;
   },misObrasPropiasArr[0]):null;
   const obraEstaPausada=(obra)=>{
     if(!obra||esVersionPro)return false;
@@ -1393,6 +1391,13 @@ export default function App({ session }) {
      try{
       // Obras propias (donde es dueño)
       const{data:obrasPropias}=await supabase.from("obras").select("*").eq("propietario_id",usuarioReal.id);
+      // Última actividad real de cada obra propia (consulta directa, no depende de la carga lenta de novedades por obra — usada para decidir cuál obra queda activa si el plan Free tiene más de 1)
+      if(obrasPropias&&obrasPropias.length>0){
+        const{data:ultimasNovs}=await supabase.from("novedades").select("obra_id,created_at").in("obra_id",obrasPropias.map(o=>o.id)).order("created_at",{ascending:false});
+        const mapa:Record<string,number>={};
+        (ultimasNovs||[]).forEach(n=>{if(!mapa[n.obra_id])mapa[n.obra_id]=new Date(n.created_at).getTime();}); // el primero que aparece por obra_id ya es el más reciente, por el order desc
+        setUltimaActividadPorObra(mapa);
+      }
       // Obras donde fue invitado (figura en equipo_obra)
       const{data:miembrosDe}=await supabase.from("equipo_obra").select("obra_id").eq("usuario_id",usuarioReal.id);
       const idsMiembro=(miembrosDe||[]).map(m=>m.obra_id);
@@ -1767,6 +1772,7 @@ export default function App({ session }) {
       if(error){alert("No se pudo guardar la novedad: "+error.message);setGuardando(false);guardandoRef.current=false;return;}
       if(data){
         const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
+        setUltimaActividadPorObra(p=>({...p,[obraActual.id]:new Date(data.created_at).getTime()}));
         if(form.comentario.trim()){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()});nn.comentarios=[{texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
         setNovedades(n=>n.some(x=>x.id===nn.id)?n:[nn,...n]);
       }
@@ -1860,6 +1866,7 @@ export default function App({ session }) {
           }
           if(item.comentario){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:item.comentario});}
           const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,resueltaAt:data.resuelta_at||null,fotoResolucion:data.foto_resolucion||null,comentarios:item.comentario?[{texto:item.comentario,autorId:usuarioReal.id,ts:Date.now()}]:[]};
+          setUltimaActividadPorObra(p=>({...p,[item.payload.obra_id]:new Date(data.created_at).getTime()}));
           setNovedadesPorObra(p=>{
             const lista=p[item.payload.obra_id]||[];
             const yaLaAgregoTiempoReal=lista.some(x=>x.id===data.id);
