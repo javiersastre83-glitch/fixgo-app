@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer, Flame, AlarmClock, UserX, Gem, Award, HelpCircle, Bug, Lock, Star, Compass, WifiOff, PartyPopper, Sparkles, Rocket, Lightbulb, Mail, ExternalLink, Book, Check, Settings } from "lucide-react";
 import { supabase } from './supabase';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 const PRIORIDADES = [
   { label:"URGENTE",  color:"#FF3B30", bg:"#FF3B3015", emoji:"🔴", Icon: AlertTriangle },
@@ -1227,6 +1229,28 @@ export default function App({ session }) {
       setNombrePersonalizado(data?.nombre_personalizado||"");
       setVioOnboarding(!!data?.vio_onboarding);
     });
+  },[usuarioReal?.id]);
+  useEffect(()=>{
+    if(!usuarioReal||!Capacitor.isNativePlatform())return;
+    let montado=true;
+    const registrarPush=async()=>{
+      try{
+        let permiso=await PushNotifications.checkPermissions();
+        if(permiso.receive==="prompt")permiso=await PushNotifications.requestPermissions();
+        if(permiso.receive!=="granted")return;
+        await PushNotifications.register();
+      }catch(e){console.warn("No se pudo registrar notificaciones push:",e);}
+    };
+    PushNotifications.addListener("registration",async(token)=>{
+      if(!montado)return;
+      await supabase.from("usuarios").update({push_token:token.value}).eq("id",usuarioReal.id);
+    });
+    PushNotifications.addListener("registrationError",(err)=>{console.warn("Error de registro push:",err);});
+    registrarPush();
+    return()=>{
+      montado=false;
+      PushNotifications.removeAllListeners();
+    };
   },[usuarioReal?.id]);
   const terminarOnboarding=async()=>{
     setVioOnboarding(true); // primero en pantalla, para que se sienta instantáneo
