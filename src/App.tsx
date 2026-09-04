@@ -924,10 +924,11 @@ export default function App({ session }) {
       const resueltasP=p.novs.filter(n=>n.resuelta).length;
       const vencidasP=p.novs.filter(n=>!n.resuelta&&n.fechaLimite&&new Date(n.fechaLimite).getTime()<hoyMs).length;
       const pendientesP=p.novs.length-resueltasP-vencidasP;
-      let estado="sin_cambios",cant=0,etiqueta="Sin cambios";
-      if(vencidasP>0){estado="vencida";cant=vencidasP;etiqueta=vencidasP===1?"Vencida":"Vencidas";}
-      else if(pendientesP>0){estado="pendiente";cant=pendientesP;etiqueta=pendientesP===1?"Pendiente":"Pendientes";}
-      else if(resueltasP>0){estado="resuelta";cant=resueltasP;etiqueta=resueltasP===1?"Resuelta":"Resueltas";}
+      const cant=p.novs.length;
+      let estado="sin_cambios",etiqueta="Sin cambios";
+      if(vencidasP>0){estado="vencida";etiqueta=vencidasP===1?"Vencida":"Vencidas";}
+      else if(pendientesP>0){estado="pendiente";etiqueta=pendientesP===1?"Pendiente":"Pendientes";}
+      else if(resueltasP>0){estado="resuelta";etiqueta=resueltasP===1?"Resuelta":"Resueltas";}
       const fotos=p.novs.map(n=>n.fotoResolucion||(n.fotos&&n.fotos[0])).filter(Boolean).slice(0,2);
       return{...p,estado,cant,etiqueta,fotos};
     });
