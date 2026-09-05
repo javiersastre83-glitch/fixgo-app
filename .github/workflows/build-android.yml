@@ -44,7 +44,7 @@ jobs:
       - name: Compilar y firmar el AAB de producción
         working-directory: android
         env:
-          FIXGO_KEYSTORE_PATH: app/fixgo-upload-keystore.jks
+          FIXGO_KEYSTORE_PATH: fixgo-upload-keystore.jks
           FIXGO_KEYSTORE_PASSWORD: ${{ secrets.FIXGO_KEYSTORE_PASSWORD }}
           FIXGO_KEY_ALIAS: ${{ secrets.FIXGO_KEY_ALIAS }}
           FIXGO_KEY_PASSWORD: ${{ secrets.FIXGO_KEY_PASSWORD }}
