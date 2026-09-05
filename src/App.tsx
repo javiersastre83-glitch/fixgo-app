@@ -861,7 +861,7 @@ export default function App({ session }) {
     const actual=calcularPeriodo(desdeMs,hastaMs);
     const anterior=calcularPeriodo(desdeAntMs,hastaAntMs);
 
-    const pendientesActuales=actual.reportadas.filter(n=>!n.resuelta);
+    const pendientesActuales=actual.reportadas.filter(n=>!actual.resueltas.includes(n));
     const vencidasActuales=pendientesActuales.filter(n=>n.fechaLimite&&new Date(n.fechaLimite).getTime()<hoyMs);
     const criticasAbiertas=pendientesActuales.filter(n=>n.prioridad===0&&n.fechaLimite&&new Date(n.fechaLimite).getTime()<hoyMs);
 
