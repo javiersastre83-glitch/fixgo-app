@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claves de firma de la app — NUNCA deben subirse a este repo público
+signing/
+*.jks
+*.keystore
+credenciales.txt

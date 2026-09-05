@@ -1,0 +1,62 @@
+name: Build Android (AAB)
+
+# Se puede lanzar manualmente desde la pestaña "Actions" de GitHub (botón "Run workflow"),
+# o automáticamente cada vez que se sube un cambio a la rama main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar Java (necesario para compilar Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependencias del proyecto
+        run: npm ci
+
+      - name: Compilar la app web (Vite)
+        run: npm run build
+
+      - name: Sincronizar el proyecto Android con Capacitor
+        run: npx cap sync android
+
+      - name: Dar permiso de ejecución a gradlew (por si se pierde al subir por la web de GitHub)
+        run: chmod +x android/gradlew
+
+      - name: Restaurar la clave de firma desde el secreto
+        run: |
+          echo "${{ secrets.FIXGO_KEYSTORE_BASE64 }}" | base64 -d > android/app/fixgo-upload-keystore.jks
+
+      - name: Compilar y firmar el AAB de producción
+        working-directory: android
+        env:
+          FIXGO_KEYSTORE_PATH: app/fixgo-upload-keystore.jks
+          FIXGO_KEYSTORE_PASSWORD: ${{ secrets.FIXGO_KEYSTORE_PASSWORD }}
+          FIXGO_KEY_ALIAS: ${{ secrets.FIXGO_KEY_ALIAS }}
+          FIXGO_KEY_PASSWORD: ${{ secrets.FIXGO_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease
+
+      - name: Borrar la clave de firma del entorno (no queda guardada en el runner)
+        if: always()
+        run: rm -f android/app/fixgo-upload-keystore.jks
+
+      - name: Subir el archivo .aab como descarga del workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixgo-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90
