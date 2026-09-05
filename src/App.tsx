@@ -3346,7 +3346,20 @@ export default function App({ session }) {
               <span style={{fontSize:15,color:"#55555A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{perfilForm.email}</span>
               <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#C7C7CC",flexShrink:0}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Google</span>
             </div>
-            <button style={{...s.btnPrincipal,background:"#34C759",marginTop:0}} onClick={async()=>{setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));if(usuarioReal){await supabase.from("usuarios").update({nombre_personalizado:perfilForm.nombre||null}).eq("id",usuarioReal.id);setNombrePersonalizado(perfilForm.nombre||"");}alert("✅ Cambios guardados");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar cambios</span></button>
+            <button style={{...s.btnPrincipal,background:"#34C759",marginTop:0}} onClick={async()=>{
+              const nombreAnterior=usuarioActivo.nombre,especialidadAnterior=usuarioActivo.especialidad;
+              setUsuarioActivo(u=>({...u,nombre:perfilForm.nombre,especialidad:perfilForm.especialidad}));
+              if(usuarioReal){
+                const{error}=await supabase.from("usuarios").update({nombre_personalizado:perfilForm.nombre||null}).eq("id",usuarioReal.id);
+                if(error){
+                  alert("No se pudo guardar: "+error.message);
+                  setUsuarioActivo(u=>({...u,nombre:nombreAnterior,especialidad:especialidadAnterior}));
+                  return;
+                }
+                setNombrePersonalizado(perfilForm.nombre||"");
+              }
+              alert("✅ Cambios guardados");
+            }}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><CheckCircle size={16}/>Guardar cambios</span></button>
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"18px 16px",flexShrink:0}}>
             <p style={{margin:"0 0 4px",fontSize:15,fontWeight:800,color:modoOscuro?"#fff":"#1C1C1E"}}>Tu estudio</p>
