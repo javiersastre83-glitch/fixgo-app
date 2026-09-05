@@ -1232,6 +1232,13 @@ export default function App({ session }) {
     });
   },[usuarioReal?.id]);
   useEffect(()=>{
+    // TEMPORALMENTE DESACTIVADO: todavía no está cargado el archivo de configuración
+    // de Firebase (google-services.json) en el proyecto Android. Sin eso, llamar a
+    // PushNotifications.register() hace que la app nativa se cierre de golpe (crash).
+    // Reactivar este bloque cuando se complete la configuración real de Firebase/FCM
+    // (ítem pendiente "notificaciones push reales" del checklist).
+    return;
+    // eslint-disable-next-line no-unreachable
     if(!usuarioReal||!Capacitor.isNativePlatform())return;
     let montado=true;
     const registrarPush=async()=>{
