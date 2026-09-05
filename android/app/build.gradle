@@ -7,7 +7,8 @@ android {
         applicationId "ar.fixgo.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-           versionCode (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+                   def fixgoVersionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+        versionCode fixgoVersionCode
    versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
