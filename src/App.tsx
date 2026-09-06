@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer, Flame, AlarmClock, UserX, Gem, Award, HelpCircle, Bug, Lock, Star, Compass, WifiOff, PartyPopper, Sparkles, Rocket, Lightbulb, Mail, ExternalLink, Book, Check, Settings } from "lucide-react";
+import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer, Flame, AlarmClock, UserX, Gem, Award, HelpCircle, Bug, Lock, Star, Compass, WifiOff, PartyPopper, Sparkles, Rocket, Lightbulb, Mail, ExternalLink, Book, Check, Settings, Image as ImageIcon } from "lucide-react";
 import { supabase } from './supabase';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
@@ -1275,8 +1275,11 @@ export default function App({ session }) {
   const [modalFotoResolucion, setModalFotoResolucion] = useState(null);
   const [subiendoFotoResolucion, setSubiendoFotoResolucion] = useState(false);
   const fileRefResolucion = useRef();
+  const fileRefResolucionGaleria = useRef();
   const fileRef = useRef();
+  const fileRefGaleria = useRef();
   const fileRefEdit = useRef();
+  const fileRefEditGaleria = useRef();
 
   const novedades    = obraActual?(novedadesPorObra[obraActual.id]||[]):[];
   const setNovedades = (fn)=>setNovedadesPorObra(p=>({...p,[obraActual.id]:typeof fn==="function"?fn(p[obraActual.id]||[]):fn}));
@@ -2469,10 +2472,16 @@ export default function App({ session }) {
   const modalFotoResolucionJSX = modalFotoResolucion&&<div style={s.overlay} onClick={()=>{if(!subiendoFotoResolucion)setModalFotoResolucion(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>¿Cómo quedó resuelto?</p>
     <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Sacale una foto del resultado (opcional). Ayuda a mostrar el avance real.</p>
-    <input ref={fileRefResolucion} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f){if(esVersionPro){const url=URL.createObjectURL(f);setEditorDibujo({src:url,origen:"resolucion",idx:null});}else{confirmarResolucionConFoto(modalFotoResolucion,f);}}}}/>
-    <button disabled={subiendoFotoResolucion} onClick={()=>fileRefResolucion.current.click()} style={{...s.btnPrincipal,background:"#34C759",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>
-      <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{subiendoFotoResolucion?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Subiendo foto...</>:<><Camera size={16}/>Sacar foto y confirmar</>}</span>
-    </button>
+    <input ref={fileRefResolucion} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f){if(esVersionPro){const url=URL.createObjectURL(f);setEditorDibujo({src:url,origen:"resolucion",idx:null});}else{confirmarResolucionConFoto(modalFotoResolucion,f);}}}}/>
+    <input ref={fileRefResolucionGaleria} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f){if(esVersionPro){const url=URL.createObjectURL(f);setEditorDibujo({src:url,origen:"resolucion",idx:null});}else{confirmarResolucionConFoto(modalFotoResolucion,f);}}}}/>
+    <div style={{display:"flex",gap:8,marginBottom:10}}>
+      <button disabled={subiendoFotoResolucion} onClick={()=>fileRefResolucion.current.click()} style={{...s.btnPrincipal,background:"#34C759",marginBottom:0,opacity:subiendoFotoResolucion?0.6:1,flex:1}}>
+        <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{subiendoFotoResolucion?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Subiendo...</>:<><Camera size={16}/>Cámara</>}</span>
+      </button>
+      <button disabled={subiendoFotoResolucion} onClick={()=>fileRefResolucionGaleria.current.click()} style={{...s.btnPrincipal,background:"#34C759",marginBottom:0,opacity:subiendoFotoResolucion?0.6:1,flex:1}}>
+        <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><ImageIcon size={16}/>Galería</span>
+      </button>
+    </div>
     <button disabled={subiendoFotoResolucion} onClick={()=>confirmarSinFoto(modalFotoResolucion)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>Confirmar sin foto</button>
     <button disabled={subiendoFotoResolucion} onClick={()=>setModalFotoResolucion(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",opacity:subiendoFotoResolucion?0.6:1}}>Cancelar</button>
   </div></div>;
@@ -4359,8 +4368,10 @@ export default function App({ session }) {
                   <button onClick={()=>quitarFotoEdit(i)} style={{position:"absolute",top:-7,right:-7,width:24,height:24,borderRadius:"50%",background:"#FF3B30",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><X size={13} color="#fff" strokeWidth={3}/></button>
                 </div>
               ))}
-              <input ref={fileRefEdit} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFotosEdit}/>
-              <button onClick={()=>fileRefEdit.current.click()} style={{width:80,height:80,flexShrink:0,borderRadius:12,border:"2px dashed #C7C7CC",background:"#F9F9FB",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",gap:3}}><Camera size={22} color="#55555A"/><span style={{fontSize:10,color:"#55555A"}}>Agregar</span></button>
+              <input ref={fileRefEdit} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotosEdit}/>
+              <input ref={fileRefEditGaleria} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFotosEdit}/>
+              <button onClick={()=>fileRefEdit.current.click()} style={{width:80,height:80,flexShrink:0,borderRadius:12,border:"2px dashed #C7C7CC",background:"#F9F9FB",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",gap:3}}><Camera size={22} color="#55555A"/><span style={{fontSize:10,color:"#55555A"}}>Cámara</span></button>
+              <button onClick={()=>fileRefEditGaleria.current.click()} style={{width:80,height:80,flexShrink:0,borderRadius:12,border:"2px dashed #C7C7CC",background:"#F9F9FB",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",gap:3}}><ImageIcon size={22} color="#55555A"/><span style={{fontSize:10,color:"#55555A"}}>Galería</span></button>
             </div>
           </div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={14}/>Descripción</span></p><textarea style={s.textarea} rows={3} value={formEdit.descripcion} onChange={e=>setFormEdit(f=>({...f,descripcion:e.target.value}))}/></div>
@@ -4602,9 +4613,13 @@ export default function App({ session }) {
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setForm(FORM_INICIAL);setVista("lista");}},{label:"Novedades",onClick:()=>{setForm(FORM_INICIAL);setVista("lista");}},{label:"Nueva novedad"}]} />
         <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Camera size={14}/>Fotos</span> <span style={{color:"#55555A",fontWeight:400}}>(podés agregar varias)</span></p>
-            <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFotos}/>
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotos}/>
+            <input ref={fileRefGaleria} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFotos}/>
             {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/>{esVersionPro&&<button onClick={()=>abrirEditorDibujo(f,"nueva",i)} style={{position:"absolute",bottom:-7,left:-7,width:24,height:24,borderRadius:"50%",background:"#1C1C1E",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><Edit2 size={11} color="#fff"/></button>}<button style={s.quitarFoto} onClick={()=>quitarFoto(i)}><X size={12}/></button></div>)}</div>}
-            <button style={s.fotoBtn} onClick={()=>fileRef.current.click()}><Camera size={32} color="#636366"/><span style={{color:"#636366",fontSize:14,marginTop:4}}>{form.fotos.length>0?"Agregar más fotos":"Tocá para sacar foto"}</span></button>
+            <div style={{display:"flex",gap:10}}>
+              <button style={{...s.fotoBtn,flex:1}} onClick={()=>fileRef.current.click()}><Camera size={28} color="#636366"/><span style={{color:"#636366",fontSize:13,marginTop:4}}>Cámara</span></button>
+              <button style={{...s.fotoBtn,flex:1}} onClick={()=>fileRefGaleria.current.click()}><ImageIcon size={28} color="#636366"/><span style={{color:"#636366",fontSize:13,marginTop:4}}>Galería</span></button>
+            </div>
           </div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={13}/>¿Qué hay que resolver?</span></p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Zap size={14}/>Prioridad</span></p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><p.Icon size={22} color={p.color} strokeWidth={2.3}/><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
