@@ -2469,7 +2469,7 @@ export default function App({ session }) {
   const modalFotoResolucionJSX = modalFotoResolucion&&<div style={s.overlay} onClick={()=>{if(!subiendoFotoResolucion)setModalFotoResolucion(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>¿Cómo quedó resuelto?</p>
     <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Sacale una foto del resultado (opcional). Ayuda a mostrar el avance real.</p>
-    <input ref={fileRefResolucion} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f){if(esVersionPro){const url=URL.createObjectURL(f);setEditorDibujo({src:url,origen:"resolucion",idx:null});}else{confirmarResolucionConFoto(modalFotoResolucion,f);}}}}/>
+    <input ref={fileRefResolucion} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f){if(esVersionPro){const url=URL.createObjectURL(f);setEditorDibujo({src:url,origen:"resolucion",idx:null});}else{confirmarResolucionConFoto(modalFotoResolucion,f);}}}}/>
     <button disabled={subiendoFotoResolucion} onClick={()=>fileRefResolucion.current.click()} style={{...s.btnPrincipal,background:"#34C759",marginBottom:10,opacity:subiendoFotoResolucion?0.6:1}}>
       <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{subiendoFotoResolucion?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Subiendo foto...</>:<><Camera size={16}/>Sacar foto y confirmar</>}</span>
     </button>
@@ -4359,7 +4359,7 @@ export default function App({ session }) {
                   <button onClick={()=>quitarFotoEdit(i)} style={{position:"absolute",top:-7,right:-7,width:24,height:24,borderRadius:"50%",background:"#FF3B30",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><X size={13} color="#fff" strokeWidth={3}/></button>
                 </div>
               ))}
-              <input ref={fileRefEdit} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotosEdit}/>
+              <input ref={fileRefEdit} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFotosEdit}/>
               <button onClick={()=>fileRefEdit.current.click()} style={{width:80,height:80,flexShrink:0,borderRadius:12,border:"2px dashed #C7C7CC",background:"#F9F9FB",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",gap:3}}><Camera size={22} color="#55555A"/><span style={{fontSize:10,color:"#55555A"}}>Agregar</span></button>
             </div>
           </div>
@@ -4602,7 +4602,7 @@ export default function App({ session }) {
         <Header migas={[{label:"Obras",onClick:irInicio},{label:obraActual?.nombre,onClick:()=>{setForm(FORM_INICIAL);setVista("lista");}},{label:"Novedades",onClick:()=>{setForm(FORM_INICIAL);setVista("lista");}},{label:"Nueva novedad"}]} />
         <div style={{padding:"16px",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:20,paddingBottom:24}}>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Camera size={14}/>Fotos</span> <span style={{color:"#55555A",fontWeight:400}}>(podés agregar varias)</span></p>
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple style={{display:"none"}} onChange={handleFotos}/>
+            <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleFotos}/>
             {form.fotos.length>0&&<div style={{display:"flex",gap:8,overflowX:"auto",marginBottom:10}}>{form.fotos.map((f,i)=><div key={i} style={{position:"relative",flexShrink:0}}><img src={f} alt="" style={{height:100,width:100,objectFit:"cover",borderRadius:12}}/>{esVersionPro&&<button onClick={()=>abrirEditorDibujo(f,"nueva",i)} style={{position:"absolute",bottom:-7,left:-7,width:24,height:24,borderRadius:"50%",background:"#1C1C1E",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0}}><Edit2 size={11} color="#fff"/></button>}<button style={s.quitarFoto} onClick={()=>quitarFoto(i)}><X size={12}/></button></div>)}</div>}
             <button style={s.fotoBtn} onClick={()=>fileRef.current.click()}><Camera size={32} color="#636366"/><span style={{color:"#636366",fontSize:14,marginTop:4}}>{form.fotos.length>0?"Agregar más fotos":"Tocá para sacar foto"}</span></button>
           </div>
@@ -4701,7 +4701,7 @@ export default function App({ session }) {
             </button>
           ))}
         </div>
-        {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"11px",marginBottom:12}}><BarChart2 size={15}/>Ver estadísticas completas<ChevronRight size={15}/></button>}
+        {puedeGestionar&&<button onClick={()=>setVistaStats(true)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:"#F2F2F7",border:"1px solid #E5E5EA",borderRadius:12,cursor:"pointer",color:"#0057FF",fontSize:13.5,fontWeight:700,padding:"11px",marginBottom:12}}><BarChart2 size={15}/>Ver estadísticas e informe{!esVersionPro&&<span style={{fontSize:10,background:"#FFB800",color:"#1C1C1E",padding:"2px 7px",borderRadius:99,fontWeight:800}}>PRO</span>}<ChevronRight size={15}/></button>}
         {filtroSector!=="todos"&&<button onClick={()=>setFiltroSector("todos")} style={{display:"flex",alignItems:"center",gap:6,background:"#0057FF12",border:"1px solid #0057FF30",borderRadius:99,padding:"7px 12px",marginBottom:12,cursor:"pointer",fontFamily:"inherit",width:"fit-content"}}>
           <span style={{fontSize:12.5,fontWeight:700,color:"#0057FF"}}>Filtrando: {filtroSector}</span>
           <X size={13} color="#0057FF" strokeWidth={3}/>
