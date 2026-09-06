@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "996760040202",
+    "project_id": "fixgo-194b2",
+    "storage_bucket": "fixgo-194b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:996760040202:android:98ff3396860132d04940f3",
+        "android_client_info": {
+          "package_name": "ar.fixgo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9BxpuoRs8T9FQmhuaK6FzTMNvafzMmrA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
