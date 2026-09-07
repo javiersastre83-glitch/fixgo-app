@@ -2200,7 +2200,8 @@ export default function App({ session }) {
         if(transcurrido>=DURACION_MAX_AUDIO)mr.stop();
       },1000);
     }catch(e){
-      alert("No se pudo acceder al micrófono. Revisá los permisos de la app/navegador.");
+      console.warn("Error de micrófono:",e);
+      alert("No se pudo acceder al micrófono. Detalle técnico: "+(e&&(e.name||e.message)?`${e.name||""} ${e.message||""}`.trim():String(e)));
     }
   };
   const detenerGrabacionYEnviar=()=>{
