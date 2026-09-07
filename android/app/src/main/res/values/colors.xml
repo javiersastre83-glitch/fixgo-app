@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Color de acento que usa Android para las notificaciones push (fondo del ícono chico) -->
+    <color name="notification_color">#1a1a1a</color>
+</resources>
