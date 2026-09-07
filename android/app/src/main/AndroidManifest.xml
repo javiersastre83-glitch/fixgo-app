@@ -38,5 +38,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <!-- Micrófono: mensajes de voz en comentarios (getUserMedia audio) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Capacitor pide este permiso junto con RECORD_AUDIO para habilitar el micrófono del WebView -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>
