@@ -49,4 +49,7 @@
     <!-- Capacitor pide este permiso junto con RECORD_AUDIO para habilitar el micrófono del WebView -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <!-- Contactos: botón "Elegir de mis contactos" al invitar integrantes -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
 </manifest>

@@ -4,6 +4,35 @@ import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircl
 import { supabase } from './supabase';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { Contacts } from '@capacitor-community/contacts';
+
+// Abre el selector de contactos del teléfono: en la app nativa usa el picker nativo de Android
+// (@capacitor-community/contacts); en la web usa la Contact Picker API de Chrome si está disponible.
+// Devuelve {nombre, telefono} o null si el usuario cancela, cancela el permiso, o no hay forma de acceder.
+async function elegirContacto(){
+  try{
+    if(Capacitor.isNativePlatform()){
+      const {contact}=await Contacts.pickContact({projection:{name:true,phones:true}});
+      const telefono=(contact?.phones?.[0]?.number||"").replace(/\s/g,"");
+      const nombre=contact?.name?.display||"";
+      if(!telefono&&!nombre)return null;
+      return {nombre,telefono};
+    }
+    if(typeof navigator!=="undefined"&&(navigator as any).contacts){
+      const c=await(navigator as any).contacts.select(["name","tel"],{multiple:false});
+      if(c&&c[0]){
+        return{
+          nombre:c[0].name?.[0]||"",
+          telefono:(c[0].tel?.[0]||"").replace(/\s/g,""),
+        };
+      }
+    }
+  }catch(e){
+    console.warn("No se pudo elegir el contacto:",e);
+  }
+  return null;
+}
+const hayContactosDisponible=()=>Capacitor.isNativePlatform()||(typeof navigator!=="undefined"&&!!(navigator as any).contacts);
 
 const PRIORIDADES = [
   { label:"URGENTE",  color:"#FF3B30", bg:"#FF3B3015", emoji:"🔴", Icon: AlertTriangle },
@@ -541,8 +570,8 @@ const ModalTelefono = ({ modalTelefono, setModalTelefono, telInput, setTelInput,
       <div style={s.modal} onClick={e=>e.stopPropagation()}>
         <p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p>
         <p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>
-        {typeof navigator!=="undefined"&&(navigator as any).contacts&&
-          <button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["tel"],{multiple:false});if(c&&c[0]?.tel?.[0]){setTelInput(c[0].tel[0].replace(/\s/g,""));}}catch(e){}}}
+        {hayContactosDisponible()&&
+          <button type="button" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setTelInput(c.telefono);}}
             style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
             <Smartphone size={16}/>Elegir de mis contactos
           </button>}
@@ -2592,7 +2621,7 @@ export default function App({ session }) {
       <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Nombre o empresa <span style={{fontWeight:400}}>(opcional)</span></p>
       <input style={{...s.input,marginBottom:12}} placeholder="Ej: Jorge, Cuadrilla 2..." value={invitarNombre} onChange={e=>setInvitarNombre(e.target.value)} maxLength={40}/>
       <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
-      {typeof navigator!=="undefined"&&(navigator as any).contacts&&<button type="button" onClick={async()=>{try{const c=await(navigator as any).contacts.select(["name","tel"],{multiple:false});if(c&&c[0]){if(c[0].tel?.[0])setInvitarTelefono(c[0].tel[0].replace(/\s/g,""));if(c[0].name?.[0]&&!invitarNombre.trim())setInvitarNombre(c[0].name[0]);}}catch(e){}}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Smartphone size={16}/>Elegir de mis contactos</button>}
+      {hayContactosDisponible()&&<button type="button" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setInvitarTelefono(c.telefono);if(c?.nombre&&!invitarNombre.trim())setInvitarNombre(c.nombre);}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Smartphone size={16}/>Elegir de mis contactos</button>}
       <input style={{...s.input,marginBottom:4}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
       <p style={{margin:"0 0 16px",fontSize:11,color:"#C7C7CC"}}>Para contactarlo rápido desde Estadísticas</p>
       <button style={{...s.btnPrincipal,background:"#1C1C1E",opacity:generandoLink?0.5:1}} disabled={generandoLink} onClick={generarInvitacion}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{generandoLink?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Generando...</>:"Generar link de invitación"}</span></button>
