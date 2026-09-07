@@ -2660,10 +2660,10 @@ export default function App({ session }) {
       </div></>}
       <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Nombre o empresa <span style={{fontWeight:400}}>(opcional)</span></p>
       <input style={{...s.input,marginBottom:12}} placeholder="Ej: Jorge, Cuadrilla 2..." value={invitarNombre} onChange={e=>setInvitarNombre(e.target.value)} maxLength={40}/>
-      <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
-      {hayContactosDisponible()&&<button type="button" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setInvitarTelefono(c.telefono);if(c?.nombre&&!invitarNombre.trim())setInvitarNombre(c.nombre);}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Smartphone size={16}/>Elegir de mis contactos</button>}
-      <input style={{...s.input,marginBottom:4}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
-      <p style={{margin:"0 0 16px",fontSize:11,color:"#C7C7CC"}}>Para contactarlo rápido desde Estadísticas</p>
+      <p style={{margin:"0 0 4px",fontSize:13,fontWeight:600,color:"#55555A"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
+      <p style={{margin:"0 0 8px",fontSize:11,color:"#C7C7CC"}}>Para contactarlo rápido más adelante.</p>
+      {hayContactosDisponible()&&<button type="button" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setInvitarTelefono(c.telefono);if(c?.nombre&&!invitarNombre.trim())setInvitarNombre(c.nombre);}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Smartphone size={16}/>Completar teléfono desde mis contactos</button>}
+      <input style={{...s.input,marginBottom:16}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
       <button style={{...s.btnPrincipal,background:"#1C1C1E",opacity:generandoLink?0.5:1}} disabled={generandoLink} onClick={generarInvitacion}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{generandoLink?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Generando...</>:"Generar link de invitación"}</span></button>
     </>:<>
       <div style={{background:"#34C75915",borderRadius:14,padding:"14px",marginBottom:16,textAlign:"center"}}>
