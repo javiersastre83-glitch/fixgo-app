@@ -1260,6 +1260,13 @@ export default function App({ session }) {
       setVioOnboarding(!!data?.vio_onboarding);
     });
   },[usuarioReal?.id]);
+  // Refs con el último valor de estos 3 estados, para poder leerlos desde el listener de
+  // notificaciones push de abajo sin que quede "vencido" (el listener se registra una sola
+  // vez por sesión, así que si leyera el estado directo se quedaría con los datos del momento
+  // en que se logueó el usuario).
+  const obrasParaPushRef=useRef(obras);obrasParaPushRef.current=obras;
+  const obrasEmpresaParaPushRef=useRef(obrasEmpresa);obrasEmpresaParaPushRef.current=obrasEmpresa;
+  const novedadesPorObraParaPushRef=useRef(novedadesPorObra);novedadesPorObraParaPushRef.current=novedadesPorObra;
   useEffect(()=>{
     // Firebase (google-services.json) ya está configurado en el proyecto Android,
     // así que el registro de notificaciones push está activo.
@@ -1278,6 +1285,39 @@ export default function App({ session }) {
       await supabase.from("usuarios").update({push_token:token.value}).eq("id",usuarioReal.id);
     });
     PushNotifications.addListener("registrationError",(err)=>{console.warn("Error de registro push:",err);});
+    // Al tocar una notificación (con la app cerrada, en 2do plano, o abierta), navegar directo
+    // a la obra/novedad correspondiente en vez de dejar la pantalla que estaba abierta antes.
+    PushNotifications.addListener("pushNotificationActionPerformed",(accion)=>{
+      try{
+        const data=accion?.notification?.data||{};
+        const obraId=data.obraId;
+        if(!obraId)return;
+        const obra=obrasParaPushRef.current.find(o=>o.id===obraId)||obrasEmpresaParaPushRef.current.find(o=>o.id===obraId);
+        if(!obra)return;
+        setObraActual(obra);
+        setVistaRaiz("obra");
+        setTabActiva("obras");
+        setVistaPerfil(false);
+        setVistaInfoApp(false);
+        if(data.tipo==="equipo"){
+          setVista("lista");
+          setVistaEquipo(true);
+        }else if(data.novedadId){
+          setVistaEquipo(false);
+          setOrigenBitacora(false);
+          setDetalleId(data.novedadId);
+          setVista("detalle");
+          const novReal=(novedadesPorObraParaPushRef.current[obraId]||[]).find(n=>String(n.id)===String(data.novedadId));
+          setComentariosAbiertos((novReal?.comentarios||[]).length>0);
+        }
+        // Si todavía no se cargaron los datos completos de esta obra (fotos, comentarios), traerlos.
+        if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObraParaPushRef.current[obra.id]||novedadesPorObraParaPushRef.current[obra.id].length===0)){
+          supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
+            if(novs)setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));
+          });
+        }
+      }catch(e){console.warn("No se pudo abrir la novedad de la notificación:",e);}
+    });
     registrarPush();
     return()=>{
       montado=false;
