@@ -5,6 +5,13 @@ import { supabase } from './supabase';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Contacts } from '@capacitor-community/contacts';
+import { Network } from '@capacitor/network';
+import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
+
+// Clave pública de Android de RevenueCat (segura para incluir en el cliente: no es secreta).
+const REVENUECAT_ANDROID_API_KEY = "goog_IPRWOZhrHFPwmgURhTRhxCRdteU";
+// Identificador del entitlement "Pro" configurado en RevenueCat (Product Catalog → Entitlements).
+const ENTITLEMENT_ID_PRO = "fixgo_pro";
 
 // Abre el selector de contactos del teléfono: en la app nativa usa el picker nativo de Android
 // (@capacitor-community/contacts); en la web usa la Contact Picker API de Chrome si está disponible.
@@ -810,7 +817,15 @@ export default function App({ session }) {
     const onOffline=()=>setEstaOnline(false);
     window.addEventListener("online",onOnline);
     window.addEventListener("offline",onOffline);
-    return()=>{window.removeEventListener("online",onOnline);window.removeEventListener("offline",onOffline);};
+    // Dentro de la app nativa (Android/Capacitor) los eventos "online"/"offline" del navegador
+    // no son confiables para detectar la reconexión real. Usamos el plugin @capacitor/network,
+    // que sí refleja el estado real de la conexión del teléfono.
+    let removerListenerNativo=()=>{};
+    if(Capacitor.isNativePlatform()){
+      Network.getStatus().then(estado=>setEstaOnline(estado.connected)).catch(()=>{});
+      Network.addListener("networkStatusChange",estado=>{setEstaOnline(estado.connected);}).then(handle=>{removerListenerNativo=()=>handle.remove();});
+    }
+    return()=>{window.removeEventListener("online",onOnline);window.removeEventListener("offline",onOffline);removerListenerNativo();};
   },[]);
   useEffect(()=>{
     if(!usuarioReal)return;
@@ -1260,6 +1275,68 @@ export default function App({ session }) {
       setVioOnboarding(!!data?.vio_onboarding);
     });
   },[usuarioReal?.id]);
+  const [comprandoPro, setComprandoPro] = useState(false);
+  useEffect(()=>{
+    if(!usuarioReal||!Capacitor.isNativePlatform())return;
+    let listenerId;
+    (async()=>{
+      try{
+        await Purchases.setLogLevel({level:LOG_LEVEL.ERROR});
+        await Purchases.configure({apiKey:REVENUECAT_ANDROID_API_KEY,appUserID:usuarioReal.id});
+        listenerId=await Purchases.addCustomerInfoUpdateListener(async(customerInfo)=>{
+          const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
+          setEsProReal(activo);
+          await supabase.from("usuarios").update({es_pro:activo}).eq("id",usuarioReal.id);
+        });
+      }catch(e){console.warn("Error configurando RevenueCat:",e);}
+    })();
+    return()=>{if(listenerId)Purchases.removeCustomerInfoUpdateListener({listenerToRemove:listenerId});};
+  },[usuarioReal?.id]);
+  const comprarPro=async()=>{
+    if(!usuarioReal)return;
+    if(!Capacitor.isNativePlatform()){
+      mostrarToast("La compra de Fixgo Pro está disponible desde la app instalada en tu celular.");
+      return;
+    }
+    setComprandoPro(true);
+    try{
+      const offerings=await Purchases.getOfferings();
+      const paquete=offerings?.current?.availablePackages?.[0];
+      if(!paquete){
+        mostrarToast("No se pudo cargar el plan Pro. Probá de nuevo en un momento.");
+        return;
+      }
+      const{customerInfo}=await Purchases.purchasePackage({aPackage:paquete});
+      const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
+      if(activo){
+        setEsProReal(true);
+        await supabase.from("usuarios").update({es_pro:true}).eq("id",usuarioReal.id);
+        mostrarToast("¡Listo! Ya sos Fixgo Pro 🎉");
+        setModalPro(false);
+        setModalProObra(false);
+      }
+    }catch(e){
+      if(!e?.userCancelled)mostrarToast("No se pudo completar la compra.");
+    }finally{
+      setComprandoPro(false);
+    }
+  };
+  const restaurarCompras=async()=>{
+    if(!usuarioReal)return;
+    if(!Capacitor.isNativePlatform()){
+      mostrarToast("Restaurar compras está disponible desde la app instalada en tu celular.");
+      return;
+    }
+    try{
+      const{customerInfo}=await Purchases.restorePurchases();
+      const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
+      setEsProReal(activo);
+      await supabase.from("usuarios").update({es_pro:activo}).eq("id",usuarioReal.id);
+      mostrarToast(activo?"Compra restaurada, ya sos Pro":"No encontramos ninguna compra activa para restaurar.");
+    }catch(e){
+      mostrarToast("No se pudo restaurar la compra.");
+    }
+  };
   // Refs con el último valor de estos 3 estados, para poder leerlos desde el listener de
   // notificaciones push de abajo sin que quede "vencido" (el listener se registra una sola
   // vez por sesión, así que si leyera el estado directo se quedaría con los datos del momento
@@ -3484,6 +3561,9 @@ export default function App({ session }) {
             </div>
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={restaurarCompras}>
+              <RotateCcw size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Restaurar compras</p><ChevronRight size={16} color="#C7C7CC"/>
+            </div>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
               <LogOut size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Cerrar sesión</p><ChevronRight size={16} color="#C7C7CC"/>
             </div>
@@ -3980,7 +4060,7 @@ export default function App({ session }) {
                   <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><CheckCircle size={16} color="#34C759"/>{t}</div>
                 ))}
               </div>
-              <button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><Rocket size={16}/>Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
+              <button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
         {menuObra&&(()=>{const obraM=obras.find(o=>o.id===menuObra);const esDuenoM=usuarioReal&&obraM?.propietario_id===usuarioReal.id;const miRolM=(obraM?.equipo||[]).find(m=>m.uid===miId)?.rolEnObra;const esGestorM=esDuenoM||miRolM==="co_profesional";return(
         <div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p>
           {esGestorM&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setEditarObraForm({nombre:obraM?.nombre||"",direccion:obraM?.direccion||""});setModalEditarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={15}/>Editar datos de la obra</span></button>}
@@ -4409,7 +4489,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><Rocket size={16}/>Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
+        {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div><button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
         <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
         {modalPeriodoJSX}
       </div>
