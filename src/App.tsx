@@ -3549,6 +3549,7 @@ export default function App({ session }) {
               {!em.comparte_todo&&<button onClick={()=>setModalElegirObras(em.empresa_id)} style={{marginTop:10,background:"none",border:"none",padding:0,color:"#0057FF",fontSize:12.5,fontWeight:700,cursor:"pointer"}}>Elegir cuáles compartir →</button>}
             </div>
           ))}
+          {false && (
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,padding:"16px",flexShrink:0,border:"1.5px dashed #FFB800"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
               <div style={{flex:1}}>
@@ -3560,6 +3561,7 @@ export default function App({ session }) {
               </button>
             </div>
           </div>
+          )}
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={restaurarCompras}>
               <RotateCcw size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Restaurar compras</p><ChevronRight size={16} color="#C7C7CC"/>
