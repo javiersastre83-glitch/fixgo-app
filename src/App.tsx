@@ -2762,6 +2762,14 @@ export default function App({ session }) {
     </>}
   </div></div>;
 
+  const modalProObraJSX = modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
+        <div style={{textAlign:"left",marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
+          {["Obras ilimitadas","Modo offline","Marcar y dibujar sobre fotos","Informe de novedades registradas","Gestión en equipo para una misma obra","Estudio para estar al tanto de las obras que dirige tu equipo"].map(t=>(
+            <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><CheckCircle size={16} color="#34C759"/>{t}</div>
+          ))}
+        </div>
+        <button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>;
+
   // ─────────────────────────────
   // INFO APP
 
@@ -4068,13 +4076,7 @@ export default function App({ session }) {
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}>Cerrar</button>
           </>)}
         </div></div>}
-        {modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
-              <div style={{textAlign:"left",marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
-                {["Obras ilimitadas","Modo offline","Marcar y dibujar sobre fotos","Informe de novedades registradas","Gestión en equipo para una misma obra","Estudio para estar al tanto de las obras que dirige tu equipo"].map(t=>(
-                  <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><CheckCircle size={16} color="#34C759"/>{t}</div>
-                ))}
-              </div>
-              <button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
+        {modalProObraJSX}
         {menuObra&&(()=>{const obraM=obras.find(o=>o.id===menuObra);const esDuenoM=usuarioReal&&obraM?.propietario_id===usuarioReal.id;const miRolM=(obraM?.equipo||[]).find(m=>m.uid===miId)?.rolEnObra;const esGestorM=esDuenoM||miRolM==="co_profesional";return(
         <div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p>
           {esGestorM&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setEditarObraForm({nombre:obraM?.nombre||"",direccion:obraM?.direccion||""});setModalEditarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={15}/>Editar datos de la obra</span></button>}
@@ -4939,6 +4941,7 @@ export default function App({ session }) {
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
+        {modalProObraJSX}
     </div>
   );
 }
