@@ -1285,7 +1285,12 @@ export default function App({ session }) {
         await Purchases.configure({apiKey:REVENUECAT_ANDROID_API_KEY,appUserID:usuarioReal.id});
         listenerId=await Purchases.addCustomerInfoUpdateListener(async(customerInfo)=>{
           const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
-          setEsProReal(activo);
+          setEsProReal(prev=>{
+            if(prev&&!activo){
+              mostrarToast("Tu suscripción Fixgo Pro venció. Tranquilo, no perdiste nada: tus obras siguen guardadas, solo se pausó la edición en algunas hasta que reactives Pro.");
+            }
+            return activo;
+          });
           await supabase.from("usuarios").update({es_pro:activo}).eq("id",usuarioReal.id);
         });
       }catch(e){console.warn("Error configurando RevenueCat:",e);}
@@ -3125,7 +3130,7 @@ export default function App({ session }) {
           <div style={{padding:"14px 16px",borderBottom:"1px solid #F2F2F7"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Plan Gratuito</p>
-              <span style={{background:"#F2F2F7",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#636366",fontWeight:600}}>Actual</span>
+              {!esVersionPro&&<span style={{background:"#F2F2F7",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#636366",fontWeight:600}}>Actual</span>}
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",fontSize:12.5,color:"#55555A"}}>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>1 obra</span>
@@ -3136,7 +3141,7 @@ export default function App({ session }) {
           <div style={{padding:"14px 16px",background:"#FFB80008"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Plan Pro</p>
-              <span style={{background:"#FFB800",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={11}/>PRO</span>
+              <span style={{background:"#FFB800",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={11}/>{esVersionPro?"Actual":"PRO"}</span>
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",fontSize:12.5,color:"#55555A",marginBottom:10}}>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Obras ilimitadas</span>
@@ -3144,7 +3149,11 @@ export default function App({ session }) {
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Estudio</span>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Dibujar sobre fotos</span>
             </div>
-            <button style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><Rocket size={16}/>Activar Plan Pro</button>
+            {esVersionPro?(
+              <div style={{width:"100%",padding:"12px",borderRadius:12,background:"#34C75915",color:"#1C7A3E",fontSize:14,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><CheckCircle size={16}/>Ya sos Fixgo Pro</div>
+            ):(
+              <button disabled={comprandoPro} onClick={comprarPro} style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar Plan Pro"}</button>
+            )}
           </div>
         </div>
         {[["Contacto y soporte",[{Icon:MessageCircle,label:"Contactarnos",sub:"Escribinos por cualquier consulta"},{Icon:Bug,label:"Reportar un problema",sub:"Ayudanos a mejorar Fixgo"},{Icon:HelpCircle,label:"Preguntas frecuentes",sub:"Guías y ayuda"}]],
@@ -3743,8 +3752,11 @@ export default function App({ session }) {
               </div>
               <p style={{margin:0,fontSize:14,color:"rgba(255,255,255,0.5)"}}>Gestión simple de novedades</p>
             </div>
-            <div style={{background:"rgba(255,255,255,0.15)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
-              <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p></div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5}}>
+              <div style={{background:"rgba(255,255,255,0.15)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
+                <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p></div>
+              </div>
+              {esVersionPro&&<span style={{background:"#FFB800",borderRadius:99,padding:"3px 9px",fontSize:10.5,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={10}/>PRO</span>}
             </div>
           </div>
         </div>
@@ -4842,9 +4854,9 @@ export default function App({ session }) {
           <Lock size={18} color="#636366" style={{flexShrink:0}}/>
           <div style={{flex:1}}>
             <p style={{margin:0,fontSize:13,fontWeight:700,color:"#1C1C1E"}}>Esta obra está pausada</p>
-            <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Podés ver todo, pero no cargar ni editar nada hasta activar Pro.</p>
+            <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Tu plan Pro no está activo, así que solo podés cargar novedades en tu obra más reciente. Esta no se borró ni se perdió nada: podés seguir viéndola entera, y vas a poder volver a editarla en cuanto reactives Pro.</p>
           </div>
-          <button onClick={()=>setModalProObra(true)} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>Activar</button>
+          <button onClick={()=>setModalProObra(true)} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>Reactivar</button>
         </div>}
         <div style={{position:"relative",marginBottom:10}}><Search size={16} color="#55555A" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/><input style={{...s.input,background:"#F2F2F7",border:"none",paddingLeft:38}} placeholder="Buscar oficios o novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></div>
         <div style={{display:"flex",gap:6,paddingBottom:12}}>
