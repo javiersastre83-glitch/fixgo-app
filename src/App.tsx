@@ -1395,7 +1395,7 @@ export default function App({ session }) {
         // Si todavía no se cargaron los datos completos de esta obra (fotos, comentarios), traerlos.
         if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObraParaPushRef.current[obra.id]||novedadesPorObraParaPushRef.current[obra.id].length===0)){
           supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-            if(novs)setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));
+            if(novs)setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}));
           });
         }
       }catch(e){console.warn("No se pudo abrir la novedad de la notificación:",e);}
@@ -1621,7 +1621,7 @@ export default function App({ session }) {
         (data||[]).forEach((obra, idx)=>{
           setTimeout(async()=>{
             const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
           }, idx * 300);
         });
       }
@@ -1669,8 +1669,29 @@ export default function App({ session }) {
               ?nov.comentarios.some(c=>c.audioUrl===nuevo.audio_url)
               :nov.comentarios.some(c=>c.autorId===nuevo.autor_id&&c.texto===nuevo.texto&&!c.audioUrl);
             if(yaTiene)continue;
-            const novActualizada={...nov,comentarios:[...nov.comentarios,{id:nuevo.id,texto:nuevo.texto,audioUrl:nuevo.audio_url||null,audioDuracion:nuevo.audio_duracion||null,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
+            const novActualizada={...nov,comentarios:[...nov.comentarios,{id:nuevo.id,texto:nuevo.texto,audioUrl:nuevo.audio_url||null,audioDuracion:nuevo.audio_duracion||null,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime(),eliminado:nuevo.eliminado||false}]};
             next[obraId]=lista.map((x,i)=>i===idx?novActualizada:x);
+            cambio=true;
+            break;
+          }
+          return cambio?next:p;
+        });
+      })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"comentarios"},(payload)=>{
+        // Hoy solo se usa para reflejar al instante, en todo el equipo, cuando alguien elimina su comentario (borrado "a la WhatsApp").
+        const actualizado=payload.new;
+        setNovedadesPorObra(p=>{
+          let cambio=false;
+          const next={...p};
+          for(const obraId of Object.keys(p)){
+            const lista=p[obraId];
+            const idx=lista.findIndex(x=>x.id===actualizado.novedad_id);
+            if(idx===-1)continue;
+            const nov=lista[idx];
+            const idxCom=nov.comentarios.findIndex(c=>c.id===actualizado.id);
+            if(idxCom===-1)break;
+            const comentariosNuevos=nov.comentarios.map((c,i)=>i===idxCom?{...c,texto:actualizado.texto,audioUrl:actualizado.audio_url||null,audioDuracion:actualizado.audio_duracion||null,eliminado:actualizado.eliminado||false}:c);
+            next[obraId]=lista.map((x,i)=>i===idx?{...nov,comentarios:comentariosNuevos}:x);
             cambio=true;
             break;
           }
@@ -2141,17 +2162,26 @@ export default function App({ session }) {
   const eliminarComentario=async(novedadId,comentario)=>{
     if(!window.confirm("¿Eliminar este comentario? No se puede deshacer."))return;
     if(comentario.pendienteSync){
-      // Todavía no se subió: lo sacamos de la cola local, sin tocar el servidor.
+      // Todavía no se subió a nadie más: lo sacamos de la cola local, sin dejar rastro (nunca fue visible para el equipo).
       setColaOffline(c=>c.filter(item=>{
         if(item.novedadId!==novedadId)return true;
         if(comentario.audioUrl)return !(item.tipo==="comentario_audio"&&item.audioBase64===comentario.audioUrl);
         return !(item.tipo==="comentario_texto"&&item.texto===comentario.texto&&item.autorId===comentario.autorId);
       }));
-    }else if(usuarioReal&&comentario.id){
-      const{error}=await supabase.from("comentarios").delete().eq("id",comentario.id);
-      if(error){alert("No se pudo eliminar el comentario: "+error.message);return;}
+      setNovedades(n=>n.map(x=>x.id===novedadId?{...x,comentarios:x.comentarios.filter(c=>c!==comentario)}:x));
+      mostrarToast("Comentario eliminado");
+      return;
     }
-    setNovedades(n=>n.map(x=>x.id===novedadId?{...x,comentarios:x.comentarios.filter(c=>c!==comentario)}:x));
+    if(usuarioReal&&comentario.id){
+      // Borrado "a la WhatsApp": el contenido se borra de verdad, pero queda el rastro de que hubo un mensaje ahí.
+      const{error}=await supabase.from("comentarios").update({texto:"",audio_url:null,audio_duracion:null,eliminado:true}).eq("id",comentario.id);
+      if(error){alert("No se pudo eliminar el comentario: "+error.message);return;}
+      if(comentario.audioUrl){
+        const path=comentario.audioUrl.split("/audios-comentarios/")[1];
+        if(path)supabase.storage.from("audios-comentarios").remove([path]);
+      }
+    }
+    setNovedades(n=>n.map(x=>x.id===novedadId?{...x,comentarios:x.comentarios.map(c=>c===comentario?{...c,texto:"",audioUrl:null,audioDuracion:null,eliminado:true}:c)}:x));
     mostrarToast("Comentario eliminado");
   };
 
@@ -2614,7 +2644,7 @@ export default function App({ session }) {
     // Cargar novedades de esta obra si no están cargadas aún (reutilizable desde irObra y desde Bitácora)
     if(usuarioReal&&obra&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
       });
     }
   };
@@ -2631,7 +2661,7 @@ export default function App({ session }) {
     }
     // Si todavía no tenemos los datos de esta obra, esperamos a que lleguen antes de cambiar de pantalla (evita el pestañeo)
     supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-      if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));}
+      if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}));}
       setVistaDirectorCategoria(null);setOrigenDirectorCategoria(null);setOrigenBitacora(true);
       setVistaRaiz("obra");setObraActual(obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
     });
@@ -3682,7 +3712,7 @@ export default function App({ session }) {
       // la versión liviana usada para armar las alertas no alcanza para mostrar el detalle ni la lista.
       if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
         supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
         });
       }
     };
@@ -4670,13 +4700,19 @@ export default function App({ session }) {
           </div>
           {comentariosAbiertos&&<>
           {detalle.comentarios.length===0&&<p style={{color:"#55555A",fontSize:14,margin:"0 0 12px"}}>Sin comentarios aún</p>}
-          {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===miId;const puedeBorrar=esMio&&(c.id||c.pendienteSync);return(
+          {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===miId;const puedeBorrar=esMio&&!c.eliminado&&(c.id||c.pendienteSync);return(
             <div key={i} style={{background:esMio?"#1C1C1E":"#F9F9F9",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                 <span style={{fontSize:12,fontWeight:700,color:esMio?"rgba(255,255,255,0.7)":"#636366"}}>{autor?.nombre||"Usuario"}</span>
                 <span style={{fontSize:10,color:esMio?"rgba(255,255,255,0.35)":"#C7C7CC",marginLeft:"auto"}}>{formatHora(c.ts)}</span>
               </div>
-              {c.audioUrl?<BurbujaAudio src={c.audioUrl} duracion={c.audioDuracion||0} esMio={esMio}/>:<p style={{margin:0,fontSize:14,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>}
+              {c.eliminado?(
+                <p style={{margin:0,fontSize:13.5,color:esMio?"rgba(255,255,255,0.45)":"#8E8E93",fontStyle:"italic",display:"flex",alignItems:"center",gap:5}}><Trash2 size={12}/>Mensaje eliminado</p>
+              ):c.audioUrl?(
+                <BurbujaAudio src={c.audioUrl} duracion={c.audioDuracion||0} esMio={esMio}/>
+              ):(
+                <p style={{margin:0,fontSize:14,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>
+              )}
               {puedeBorrar&&<p onClick={()=>eliminarComentario(detalle.id,c)} style={{margin:"6px 0 0",fontSize:11,fontWeight:600,color:esMio?"rgba(255,255,255,0.45)":"#D0342C",cursor:"pointer",textAlign:"right"}}>Eliminar</p>}
             </div>
           );})}
