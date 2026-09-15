@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer, Flame, AlarmClock, UserX, Gem, Award, HelpCircle, Bug, Lock, Star, Compass, WifiOff, PartyPopper, Sparkles, Rocket, Lightbulb, Mail, ExternalLink, Book, Check, Settings, Image as ImageIcon } from "lucide-react";
+import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer, Flame, AlarmClock, UserX, Gem, Award, HelpCircle, Bug, Lock, Star, Compass, WifiOff, PartyPopper, Sparkles, Rocket, Lightbulb, Mail, ExternalLink, Book, Check, Settings, Image as ImageIcon, Contact } from "lucide-react";
 import { supabase } from './supabase';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
@@ -577,12 +577,14 @@ const ModalTelefono = ({ modalTelefono, setModalTelefono, telInput, setTelInput,
       <div style={s.modal} onClick={e=>e.stopPropagation()}>
         <p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p>
         <p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>
-        {hayContactosDisponible()&&
-          <button type="button" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setTelInput(c.telefono);}}
-            style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            <Smartphone size={16}/>Elegir de mis contactos
-          </button>}
-        <input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/>
+        <div style={{position:"relative",marginBottom:16}}>
+          <input style={{...s.input,paddingRight:hayContactosDisponible()?46:14}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/>
+          {hayContactosDisponible()&&
+            <button type="button" title="Elegir de mis contactos" aria-label="Elegir de mis contactos" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setTelInput(c.telefono);}}
+              style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",width:34,height:34,borderRadius:"50%",border:"none",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+              <Contact size={17} color="#55555A"/>
+            </button>}
+        </div>
         <button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button>
         <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button>
       </div>
@@ -2795,8 +2797,13 @@ export default function App({ session }) {
       <input style={{...s.input,marginBottom:12}} placeholder="Ej: Jorge, Cuadrilla 2..." value={invitarNombre} onChange={e=>setInvitarNombre(e.target.value)} maxLength={40}/>
       <p style={{margin:"0 0 4px",fontSize:13,fontWeight:600,color:"#55555A"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
       <p style={{margin:"0 0 8px",fontSize:11,color:"#C7C7CC"}}>Para contactarlo rápido más adelante.</p>
-      {hayContactosDisponible()&&<button type="button" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setInvitarTelefono(c.telefono);if(c?.nombre&&!invitarNombre.trim())setInvitarNombre(c.nombre);}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Smartphone size={16}/>Completar teléfono desde mis contactos</button>}
-      <input style={{...s.input,marginBottom:16}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
+      <div style={{position:"relative",marginBottom:16}}>
+        <input style={{...s.input,paddingRight:hayContactosDisponible()?46:14}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
+        {hayContactosDisponible()&&<button type="button" title="Completar desde mis contactos" aria-label="Completar desde mis contactos" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setInvitarTelefono(c.telefono);if(c?.nombre&&!invitarNombre.trim())setInvitarNombre(c.nombre);}}
+          style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",width:34,height:34,borderRadius:"50%",border:"none",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+          <Contact size={17} color="#55555A"/>
+        </button>}
+      </div>
       <button style={{...s.btnPrincipal,background:"#1C1C1E",opacity:generandoLink?0.5:1}} disabled={generandoLink} onClick={generarInvitacion}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{generandoLink?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Generando...</>:"Generar link de invitación"}</span></button>
     </>:<>
       <div style={{background:"#34C75915",borderRadius:14,padding:"14px",marginBottom:16,textAlign:"center"}}>
