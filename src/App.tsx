@@ -2620,6 +2620,9 @@ export default function App({ session }) {
     return{todas:base.length,pendientes:base.filter(n=>!n.resuelta).length,resueltas:base.filter(n=>n.resuelta).length,vencidas:base.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length,sinResponsable:base.filter(n=>!n.resuelta&&!n.responsable_usuario_id).length};
   },[novedades,novedadesPorObra,obraActual?.id,obras]);
   const detalle=novedades.find(n=>n.id===detalleId)||(novedadesPorObra[obraActual?.id]||[]).find(n=>n.id===detalleId);
+  // Aprovecha el seguimiento de "novedad nueva" que ya existe (novedadesVistas / esNovedadNueva) para saber
+  // si ALGUNA novedad de una obra tiene actividad sin ver, y así destacar la obra entera en la lista de Inicio.
+  const obraTieneNovedadNueva=(obraId)=>(novedadesPorObra[obraId]||[]).some(esNovedadNueva);
 
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);setOrigenDirectorCategoria(null);setFiltroObraAlertas(null);};
@@ -4045,7 +4048,7 @@ export default function App({ session }) {
                     <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
                       <CirculoProg radius={38} pct={prog} size={90}/>
                       <div style={{flex:1,minWidth:0}}>
-                        <p style={{margin:"0 0 2px",fontSize:16,fontWeight:800,color:"#1C1C1E"}}>{obra.nombre}</p>
+                        <p style={{margin:"0 0 2px",fontSize:16,fontWeight:800,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>{obra.nombre}{obraTieneNovedadNueva(obra.id)&&<span title="Hay novedades sin ver" style={{width:8,height:8,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
                         <p style={{margin:"0 0 10px",fontSize:11,color:"#55555A",display:"flex",alignItems:"center",gap:3}}><MapPin size={11} color="#55555A"/>{obra.direccion||"Sin dirección"}</p>
                         <div style={{display:"flex",gap:6}}>
                           <div style={{flex:1,background:"#FFF3E8",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
@@ -4071,7 +4074,7 @@ export default function App({ session }) {
                       <div style={{marginBottom:6}}>
                         <span style={{display:"inline-flex",alignItems:"center",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3,background:miRolObra==="capataz"?"#FFF3E8":"#F0EEFF",color:miRolObra==="capataz"?"#FF6B00":"#6B4FA8"}}>{miEspecialidad||miRolObra}</span>
                       </div>
-                      <p style={{margin:"0 0 2px",fontSize:15,fontWeight:800,color:"#1C1C1E"}}>{obra.nombre}</p>
+                      <p style={{margin:"0 0 2px",fontSize:15,fontWeight:800,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>{obra.nombre}{obraTieneNovedadNueva(obra.id)&&<span title="Hay novedades sin ver" style={{width:8,height:8,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
                       <p style={{margin:"0 0 8px",fontSize:11,color:"#55555A",display:"flex",alignItems:"center",gap:3}}><MapPin size={10} color="#55555A"/>{obra.direccion||"Sin dirección"}</p>
                       <div style={{display:"flex",gap:6}}>
                         <div style={{background:"#FFF3E8",borderRadius:8,padding:"5px 8px",textAlign:"center"}}><p style={{margin:0,fontSize:14,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
@@ -4237,7 +4240,7 @@ export default function App({ session }) {
                         <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
                         {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                       </div>
-                      <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?700:500,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
+                      <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?700:500,color:"#1C1C1E",lineHeight:1.25,display:"flex",alignItems:"center",gap:6}}>{nov.descripcion}{esNovedadNueva(nov)&&<span title="Actividad nueva" style={{width:7,height:7,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
                       <p style={{margin:0,fontSize:12,color:"#636366"}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {nov.sector}</p>
                     </div>
                     <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
@@ -4978,7 +4981,7 @@ export default function App({ session }) {
                     {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                     {nov.pendienteSync&&<span style={{fontSize:9.5,fontWeight:800,color:"#FFB800",background:"#FFB80015",padding:"2px 7px",borderRadius:99,textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:3}}><WifiOff size={9}/>Pendiente</span>}
                   </div>
-                  <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?700:500,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
+                  <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?700:500,color:"#1C1C1E",lineHeight:1.25,display:"flex",alignItems:"center",gap:6}}>{nov.descripcion}{esNovedadNueva(nov)&&<span title="Actividad nueva" style={{width:7,height:7,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
                   <p style={{margin:0,fontSize:12,color:"#636366",display:"flex",alignItems:"center",gap:4,flexWrap:"nowrap",minWidth:0}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?<span style={{width:18,height:18,borderRadius:"50%",background:colorPastelDe(miembro.uid),flexShrink:0,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff"}}>{miembro.nombre?miembro.nombre[0].toUpperCase():""}</span>:<Wrench size={12} color="#55555A" style={{flexShrink:0}}/>;})()}<span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0,fontWeight:nov.responsable_usuario_id?700:400,color:nov.responsable_usuario_id?"#1C1C1E":"#636366"}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?miembro.nombre:nov.responsable;})()}</span><span style={{color:"#C7C7CC",margin:"0 2px",flexShrink:0}}>·</span><MapPin size={12} color="#55555A" style={{flexShrink:0}}/><span style={{whiteSpace:"nowrap",flexShrink:0}}>{nov.sector}</span></p>
                   {!nov.resuelta&&!nov.responsable_usuario_id&&<span style={{marginTop:5,display:"inline-flex",alignItems:"center",gap:5,background:"#FAEEDA",color:"#854F0B",padding:"3px 8px",borderRadius:8,fontSize:10.5,fontWeight:700,width:"fit-content"}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#854F0B" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" strokeDasharray="3 3"/></svg>{nov.responsable} · Sin responsable</span>}
                   {nov.comentarios.length>0&&<span style={{marginTop:5,fontSize:11.5,color:"#55555A",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><MessageCircle size={12}/> {nov.comentarios.length} comentario{nov.comentarios.length!==1?"s":""}</span>}
