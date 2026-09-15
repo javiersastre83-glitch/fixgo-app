@@ -1395,7 +1395,7 @@ export default function App({ session }) {
         // Si todavía no se cargaron los datos completos de esta obra (fotos, comentarios), traerlos.
         if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObraParaPushRef.current[obra.id]||novedadesPorObraParaPushRef.current[obra.id].length===0)){
           supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-            if(novs)setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));
+            if(novs)setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));
           });
         }
       }catch(e){console.warn("No se pudo abrir la novedad de la notificación:",e);}
@@ -1621,7 +1621,7 @@ export default function App({ session }) {
         (data||[]).forEach((obra, idx)=>{
           setTimeout(async()=>{
             const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
           }, idx * 300);
         });
       }
@@ -1669,7 +1669,7 @@ export default function App({ session }) {
               ?nov.comentarios.some(c=>c.audioUrl===nuevo.audio_url)
               :nov.comentarios.some(c=>c.autorId===nuevo.autor_id&&c.texto===nuevo.texto&&!c.audioUrl);
             if(yaTiene)continue;
-            const novActualizada={...nov,comentarios:[...nov.comentarios,{texto:nuevo.texto,audioUrl:nuevo.audio_url||null,audioDuracion:nuevo.audio_duracion||null,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
+            const novActualizada={...nov,comentarios:[...nov.comentarios,{id:nuevo.id,texto:nuevo.texto,audioUrl:nuevo.audio_url||null,audioDuracion:nuevo.audio_duracion||null,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
             next[obraId]=lista.map((x,i)=>i===idx?novActualizada:x);
             cambio=true;
             break;
@@ -1956,7 +1956,7 @@ export default function App({ session }) {
       if(data){
         const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
         setUltimaActividadPorObra(p=>({...p,[obraActual.id]:new Date(data.created_at).getTime()}));
-        if(form.comentario.trim()){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()});nn.comentarios=[{texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
+        if(form.comentario.trim()){const{data:comData}=await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()}).select().single();nn.comentarios=[{id:comData?.id,texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
         setNovedades(n=>n.some(x=>x.id===nn.id)?n:[nn,...n]);
       }
     } else {
@@ -2075,21 +2075,21 @@ export default function App({ session }) {
           if(errorSubida)throw errorSubida;
           const{data:urlData}=supabase.storage.from("audios-comentarios").getPublicUrl(nombreArchivo);
           const audioUrl=urlData.publicUrl;
-          const{error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:"",audio_url:audioUrl,audio_duracion:item.duracionSeg});
+          const{data:comData,error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:"",audio_url:audioUrl,audio_duracion:item.duracionSeg}).select().single();
           if(errorInsert)throw errorInsert;
           setNovedadesPorObra(p=>{
             const obraKey=Object.keys(p).find(k=>(p[k]||[]).some(x=>x.id===item.novedadId));
             if(!obraKey)return p;
-            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.audioUrl===item.audioBase64)?{...c,audioUrl,pendienteSync:false}:c)}:x)};
+            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.audioUrl===item.audioBase64)?{...c,id:comData?.id||null,audioUrl,pendienteSync:false}:c)}:x)};
           });
           quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
         } else if(item.tipo==="comentario_texto"){
-          const{error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:item.texto});
+          const{data:comData,error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:item.texto}).select().single();
           if(errorInsert)throw errorInsert;
           setNovedadesPorObra(p=>{
             const obraKey=Object.keys(p).find(k=>(p[k]||[]).some(x=>x.id===item.novedadId));
             if(!obraKey)return p;
-            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.texto===item.texto&&c.autorId===item.autorId&&c.pendienteSync)?{...c,pendienteSync:false}:c)}:x)};
+            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.texto===item.texto&&c.autorId===item.autorId&&c.pendienteSync)?{...c,id:comData?.id||null,pendienteSync:false}:c)}:x)};
           });
           quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
         }
@@ -2126,14 +2126,33 @@ export default function App({ session }) {
       mostrarToast("📡 Comentario guardado sin conexión — se sube solo cuando vuelva la señal");
       return;
     }
+    let comentarioId=null;
     if(usuarioReal&&typeof id==="string"){
-      const{error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});
+      const{data,error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto}).select().single();
       if(error){alert("No se pudo agregar el comentario: "+error.message);setGuardando(false);return;}
+      comentarioId=data?.id||null;
     }
-    setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId,ts:Date.now()}]}:x));
+    setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{id:comentarioId,texto,autorId,ts:Date.now()}]}:x));
     setNuevoComentario("");
     setGuardando(false);
     mostrarToast("Comentario agregado");
+  };
+
+  const eliminarComentario=async(novedadId,comentario)=>{
+    if(!window.confirm("¿Eliminar este comentario? No se puede deshacer."))return;
+    if(comentario.pendienteSync){
+      // Todavía no se subió: lo sacamos de la cola local, sin tocar el servidor.
+      setColaOffline(c=>c.filter(item=>{
+        if(item.novedadId!==novedadId)return true;
+        if(comentario.audioUrl)return !(item.tipo==="comentario_audio"&&item.audioBase64===comentario.audioUrl);
+        return !(item.tipo==="comentario_texto"&&item.texto===comentario.texto&&item.autorId===comentario.autorId);
+      }));
+    }else if(usuarioReal&&comentario.id){
+      const{error}=await supabase.from("comentarios").delete().eq("id",comentario.id);
+      if(error){alert("No se pudo eliminar el comentario: "+error.message);return;}
+    }
+    setNovedades(n=>n.map(x=>x.id===novedadId?{...x,comentarios:x.comentarios.filter(c=>c!==comentario)}:x));
+    mostrarToast("Comentario eliminado");
   };
 
   // ── NOTAS DE VOZ EN COMENTARIOS (punto 1) ──
@@ -2308,11 +2327,13 @@ export default function App({ session }) {
       if(errorSubida)throw errorSubida;
       const{data:urlData}=supabase.storage.from("audios-comentarios").getPublicUrl(nombreArchivo);
       const audioUrl=urlData.publicUrl;
+      let comentarioId=null;
       if(usuarioReal&&typeof id==="string"){
-        const{error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto:"",audio_url:audioUrl,audio_duracion:duracionSeg});
+        const{data,error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto:"",audio_url:audioUrl,audio_duracion:duracionSeg}).select().single();
         if(error)throw error;
+        comentarioId=data?.id||null;
       }
-      setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto:"",audioUrl,audioDuracion:duracionSeg,autorId,ts:Date.now()}]}:x));
+      setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{id:comentarioId,texto:"",audioUrl,audioDuracion:duracionSeg,autorId,ts:Date.now()}]}:x));
       mostrarToast("Nota de voz enviada");
     }catch(e){
       alert("No se pudo enviar la nota de voz: "+(e.message||"error desconocido"));
@@ -2593,7 +2614,7 @@ export default function App({ session }) {
     // Cargar novedades de esta obra si no están cargadas aún (reutilizable desde irObra y desde Bitácora)
     if(usuarioReal&&obra&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
       });
     }
   };
@@ -2610,7 +2631,7 @@ export default function App({ session }) {
     }
     // Si todavía no tenemos los datos de esta obra, esperamos a que lleguen antes de cambiar de pantalla (evita el pestañeo)
     supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-      if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));}
+      if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));}
       setVistaDirectorCategoria(null);setOrigenDirectorCategoria(null);setOrigenBitacora(true);
       setVistaRaiz("obra");setObraActual(obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
     });
@@ -3661,7 +3682,7 @@ export default function App({ session }) {
       // la versión liviana usada para armar las alertas no alcanza para mostrar el detalle ni la lista.
       if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
         supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
         });
       }
     };
@@ -4649,13 +4670,14 @@ export default function App({ session }) {
           </div>
           {comentariosAbiertos&&<>
           {detalle.comentarios.length===0&&<p style={{color:"#55555A",fontSize:14,margin:"0 0 12px"}}>Sin comentarios aún</p>}
-          {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===usuarioActivo.id;return(
+          {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===miId;const puedeBorrar=esMio&&(c.id||c.pendienteSync);return(
             <div key={i} style={{background:esMio?"#1C1C1E":"#F9F9F9",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                 <span style={{fontSize:12,fontWeight:700,color:esMio?"rgba(255,255,255,0.7)":"#636366"}}>{autor?.nombre||"Usuario"}</span>
                 <span style={{fontSize:10,color:esMio?"rgba(255,255,255,0.35)":"#C7C7CC",marginLeft:"auto"}}>{formatHora(c.ts)}</span>
               </div>
               {c.audioUrl?<BurbujaAudio src={c.audioUrl} duracion={c.audioDuracion||0} esMio={esMio}/>:<p style={{margin:0,fontSize:14,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>}
+              {puedeBorrar&&<p onClick={()=>eliminarComentario(detalle.id,c)} style={{margin:"6px 0 0",fontSize:11,fontWeight:600,color:esMio?"rgba(255,255,255,0.45)":"#D0342C",cursor:"pointer",textAlign:"right"}}>Eliminar</p>}
             </div>
           );})}
           </>}
