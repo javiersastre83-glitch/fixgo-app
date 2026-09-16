@@ -1,10 +1,17 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer, Flame, AlarmClock, UserX, Gem, Award, HelpCircle, Bug, Lock, Star, Compass, WifiOff, PartyPopper, Sparkles, Rocket, Lightbulb, Mail, ExternalLink, Book, Check, Settings, Image as ImageIcon } from "lucide-react";
+import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer, Flame, AlarmClock, UserX, Gem, Award, HelpCircle, Bug, Lock, Star, Compass, WifiOff, PartyPopper, Sparkles, Rocket, Lightbulb, Mail, ExternalLink, Book, Check, Settings, Image as ImageIcon, Contact } from "lucide-react";
 import { supabase } from './supabase';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Contacts } from '@capacitor-community/contacts';
+import { Network } from '@capacitor/network';
+import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
+
+// Clave pública de Android de RevenueCat (segura para incluir en el cliente: no es secreta).
+const REVENUECAT_ANDROID_API_KEY = "goog_IPRWOZhrHFPwmgURhTRhxCRdteU";
+// Identificador del entitlement "Pro" configurado en RevenueCat (Product Catalog → Entitlements).
+const ENTITLEMENT_ID_PRO = "fixgo_pro";
 
 // Abre el selector de contactos del teléfono: en la app nativa usa el picker nativo de Android
 // (@capacitor-community/contacts); en la web usa la Contact Picker API de Chrome si está disponible.
@@ -570,12 +577,14 @@ const ModalTelefono = ({ modalTelefono, setModalTelefono, telInput, setTelInput,
       <div style={s.modal} onClick={e=>e.stopPropagation()}>
         <p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p>
         <p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>
-        {hayContactosDisponible()&&
-          <button type="button" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setTelInput(c.telefono);}}
-            style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            <Smartphone size={16}/>Elegir de mis contactos
-          </button>}
-        <input style={{...s.input,marginBottom:16}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/>
+        <div style={{position:"relative",marginBottom:16}}>
+          <input style={{...s.input,paddingRight:hayContactosDisponible()?46:14}} type="text" placeholder="+54 9 351 555 0000" value={telInput} onChange={e=>setTelInput(e.target.value)} inputMode="tel"/>
+          {hayContactosDisponible()&&
+            <button type="button" title="Elegir de mis contactos" aria-label="Elegir de mis contactos" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setTelInput(c.telefono);}}
+              style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",width:34,height:34,borderRadius:"50%",border:"none",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+              <Contact size={17} color="#55555A"/>
+            </button>}
+        </div>
         <button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarTelefono}>Guardar</button>
         <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalTelefono(null)}>Cancelar</button>
       </div>
@@ -810,7 +819,15 @@ export default function App({ session }) {
     const onOffline=()=>setEstaOnline(false);
     window.addEventListener("online",onOnline);
     window.addEventListener("offline",onOffline);
-    return()=>{window.removeEventListener("online",onOnline);window.removeEventListener("offline",onOffline);};
+    // Dentro de la app nativa (Android/Capacitor) los eventos "online"/"offline" del navegador
+    // no son confiables para detectar la reconexión real. Usamos el plugin @capacitor/network,
+    // que sí refleja el estado real de la conexión del teléfono.
+    let removerListenerNativo=()=>{};
+    if(Capacitor.isNativePlatform()){
+      Network.getStatus().then(estado=>setEstaOnline(estado.connected)).catch(()=>{});
+      Network.addListener("networkStatusChange",estado=>{setEstaOnline(estado.connected);}).then(handle=>{removerListenerNativo=()=>handle.remove();});
+    }
+    return()=>{window.removeEventListener("online",onOnline);window.removeEventListener("offline",onOffline);removerListenerNativo();};
   },[]);
   useEffect(()=>{
     if(!usuarioReal)return;
@@ -1260,6 +1277,80 @@ export default function App({ session }) {
       setVioOnboarding(!!data?.vio_onboarding);
     });
   },[usuarioReal?.id]);
+  const [comprandoPro, setComprandoPro] = useState(false);
+  useEffect(()=>{
+    if(!usuarioReal||!Capacitor.isNativePlatform())return;
+    let listenerId;
+    (async()=>{
+      try{
+        await Purchases.setLogLevel({level:LOG_LEVEL.ERROR});
+        await Purchases.configure({apiKey:REVENUECAT_ANDROID_API_KEY,appUserID:usuarioReal.id});
+        listenerId=await Purchases.addCustomerInfoUpdateListener(async(customerInfo)=>{
+          const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
+          setEsProReal(prev=>{
+            if(prev&&!activo){
+              mostrarToast("Tu suscripción Fixgo Pro venció. Tranquilo, no perdiste nada: tus obras siguen guardadas, solo se pausó la edición en algunas hasta que reactives Pro.");
+            }
+            return activo;
+          });
+          await supabase.from("usuarios").update({es_pro:activo}).eq("id",usuarioReal.id);
+        });
+      }catch(e){console.warn("Error configurando RevenueCat:",e);}
+    })();
+    return()=>{if(listenerId)Purchases.removeCustomerInfoUpdateListener({listenerToRemove:listenerId});};
+  },[usuarioReal?.id]);
+  const comprarPro=async()=>{
+    if(!usuarioReal)return;
+    if(!Capacitor.isNativePlatform()){
+      mostrarToast("La compra de Fixgo Pro está disponible desde la app instalada en tu celular.");
+      return;
+    }
+    setComprandoPro(true);
+    try{
+      const offerings=await Purchases.getOfferings();
+      const paquete=offerings?.current?.availablePackages?.[0];
+      if(!paquete){
+        mostrarToast("No se pudo cargar el plan Pro. Probá de nuevo en un momento.");
+        return;
+      }
+      const{customerInfo}=await Purchases.purchasePackage({aPackage:paquete});
+      const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
+      if(activo){
+        setEsProReal(true);
+        await supabase.from("usuarios").update({es_pro:true}).eq("id",usuarioReal.id);
+        mostrarToast("¡Listo! Ya sos Fixgo Pro 🎉");
+        setModalPro(false);
+        setModalProObra(false);
+      }
+    }catch(e){
+      if(!e?.userCancelled)mostrarToast("No se pudo completar la compra.");
+    }finally{
+      setComprandoPro(false);
+    }
+  };
+  const restaurarCompras=async()=>{
+    if(!usuarioReal)return;
+    if(!Capacitor.isNativePlatform()){
+      mostrarToast("Restaurar compras está disponible desde la app instalada en tu celular.");
+      return;
+    }
+    try{
+      const{customerInfo}=await Purchases.restorePurchases();
+      const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
+      setEsProReal(activo);
+      await supabase.from("usuarios").update({es_pro:activo}).eq("id",usuarioReal.id);
+      mostrarToast(activo?"Compra restaurada, ya sos Pro":"No encontramos ninguna compra activa para restaurar.");
+    }catch(e){
+      mostrarToast("No se pudo restaurar la compra.");
+    }
+  };
+  // Refs con el último valor de estos 3 estados, para poder leerlos desde el listener de
+  // notificaciones push de abajo sin que quede "vencido" (el listener se registra una sola
+  // vez por sesión, así que si leyera el estado directo se quedaría con los datos del momento
+  // en que se logueó el usuario).
+  const obrasParaPushRef=useRef(obras);obrasParaPushRef.current=obras;
+  const obrasEmpresaParaPushRef=useRef(obrasEmpresa);obrasEmpresaParaPushRef.current=obrasEmpresa;
+  const novedadesPorObraParaPushRef=useRef(novedadesPorObra);novedadesPorObraParaPushRef.current=novedadesPorObra;
   useEffect(()=>{
     // Firebase (google-services.json) ya está configurado en el proyecto Android,
     // así que el registro de notificaciones push está activo.
@@ -1278,6 +1369,39 @@ export default function App({ session }) {
       await supabase.from("usuarios").update({push_token:token.value}).eq("id",usuarioReal.id);
     });
     PushNotifications.addListener("registrationError",(err)=>{console.warn("Error de registro push:",err);});
+    // Al tocar una notificación (con la app cerrada, en 2do plano, o abierta), navegar directo
+    // a la obra/novedad correspondiente en vez de dejar la pantalla que estaba abierta antes.
+    PushNotifications.addListener("pushNotificationActionPerformed",(accion)=>{
+      try{
+        const data=accion?.notification?.data||{};
+        const obraId=data.obraId;
+        if(!obraId)return;
+        const obra=obrasParaPushRef.current.find(o=>o.id===obraId)||obrasEmpresaParaPushRef.current.find(o=>o.id===obraId);
+        if(!obra)return;
+        setObraActual(obra);
+        setVistaRaiz("obra");
+        setTabActiva("obras");
+        setVistaPerfil(false);
+        setVistaInfoApp(false);
+        if(data.tipo==="equipo"){
+          setVista("lista");
+          setVistaEquipo(true);
+        }else if(data.novedadId){
+          setVistaEquipo(false);
+          setOrigenBitacora(false);
+          setDetalleId(data.novedadId);
+          setVista("detalle");
+          const novReal=(novedadesPorObraParaPushRef.current[obraId]||[]).find(n=>String(n.id)===String(data.novedadId));
+          setComentariosAbiertos((novReal?.comentarios||[]).length>0);
+        }
+        // Si todavía no se cargaron los datos completos de esta obra (fotos, comentarios), traerlos.
+        if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObraParaPushRef.current[obra.id]||novedadesPorObraParaPushRef.current[obra.id].length===0)){
+          supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
+            if(novs)setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}));
+          });
+        }
+      }catch(e){console.warn("No se pudo abrir la novedad de la notificación:",e);}
+    });
     registrarPush();
     return()=>{
       montado=false;
@@ -1499,7 +1623,7 @@ export default function App({ session }) {
         (data||[]).forEach((obra, idx)=>{
           setTimeout(async()=>{
             const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
           }, idx * 300);
         });
       }
@@ -1547,8 +1671,29 @@ export default function App({ session }) {
               ?nov.comentarios.some(c=>c.audioUrl===nuevo.audio_url)
               :nov.comentarios.some(c=>c.autorId===nuevo.autor_id&&c.texto===nuevo.texto&&!c.audioUrl);
             if(yaTiene)continue;
-            const novActualizada={...nov,comentarios:[...nov.comentarios,{texto:nuevo.texto,audioUrl:nuevo.audio_url||null,audioDuracion:nuevo.audio_duracion||null,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime()}]};
+            const novActualizada={...nov,comentarios:[...nov.comentarios,{id:nuevo.id,texto:nuevo.texto,audioUrl:nuevo.audio_url||null,audioDuracion:nuevo.audio_duracion||null,autorId:nuevo.autor_id,ts:new Date(nuevo.created_at).getTime(),eliminado:nuevo.eliminado||false}]};
             next[obraId]=lista.map((x,i)=>i===idx?novActualizada:x);
+            cambio=true;
+            break;
+          }
+          return cambio?next:p;
+        });
+      })
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"comentarios"},(payload)=>{
+        // Hoy solo se usa para reflejar al instante, en todo el equipo, cuando alguien elimina su comentario (borrado "a la WhatsApp").
+        const actualizado=payload.new;
+        setNovedadesPorObra(p=>{
+          let cambio=false;
+          const next={...p};
+          for(const obraId of Object.keys(p)){
+            const lista=p[obraId];
+            const idx=lista.findIndex(x=>x.id===actualizado.novedad_id);
+            if(idx===-1)continue;
+            const nov=lista[idx];
+            const idxCom=nov.comentarios.findIndex(c=>c.id===actualizado.id);
+            if(idxCom===-1)break;
+            const comentariosNuevos=nov.comentarios.map((c,i)=>i===idxCom?{...c,texto:actualizado.texto,audioUrl:actualizado.audio_url||null,audioDuracion:actualizado.audio_duracion||null,eliminado:actualizado.eliminado||false}:c);
+            next[obraId]=lista.map((x,i)=>i===idx?{...nov,comentarios:comentariosNuevos}:x);
             cambio=true;
             break;
           }
@@ -1834,7 +1979,7 @@ export default function App({ session }) {
       if(data){
         const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
         setUltimaActividadPorObra(p=>({...p,[obraActual.id]:new Date(data.created_at).getTime()}));
-        if(form.comentario.trim()){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()});nn.comentarios=[{texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
+        if(form.comentario.trim()){const{data:comData}=await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()}).select().single();nn.comentarios=[{id:comData?.id,texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
         setNovedades(n=>n.some(x=>x.id===nn.id)?n:[nn,...n]);
       }
     } else {
@@ -1953,21 +2098,21 @@ export default function App({ session }) {
           if(errorSubida)throw errorSubida;
           const{data:urlData}=supabase.storage.from("audios-comentarios").getPublicUrl(nombreArchivo);
           const audioUrl=urlData.publicUrl;
-          const{error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:"",audio_url:audioUrl,audio_duracion:item.duracionSeg});
+          const{data:comData,error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:"",audio_url:audioUrl,audio_duracion:item.duracionSeg}).select().single();
           if(errorInsert)throw errorInsert;
           setNovedadesPorObra(p=>{
             const obraKey=Object.keys(p).find(k=>(p[k]||[]).some(x=>x.id===item.novedadId));
             if(!obraKey)return p;
-            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.audioUrl===item.audioBase64)?{...c,audioUrl,pendienteSync:false}:c)}:x)};
+            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.audioUrl===item.audioBase64)?{...c,id:comData?.id||null,audioUrl,pendienteSync:false}:c)}:x)};
           });
           quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
         } else if(item.tipo==="comentario_texto"){
-          const{error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:item.texto});
+          const{data:comData,error:errorInsert}=await supabase.from("comentarios").insert({novedad_id:item.novedadId,autor_id:item.autorId,texto:item.texto}).select().single();
           if(errorInsert)throw errorInsert;
           setNovedadesPorObra(p=>{
             const obraKey=Object.keys(p).find(k=>(p[k]||[]).some(x=>x.id===item.novedadId));
             if(!obraKey)return p;
-            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.texto===item.texto&&c.autorId===item.autorId&&c.pendienteSync)?{...c,pendienteSync:false}:c)}:x)};
+            return{...p,[obraKey]:p[obraKey].map(x=>x.id===item.novedadId?{...x,comentarios:x.comentarios.map(c=>(c.texto===item.texto&&c.autorId===item.autorId&&c.pendienteSync)?{...c,id:comData?.id||null,pendienteSync:false}:c)}:x)};
           });
           quedaronPendientes=quedaronPendientes.filter(p=>p!==item);
         }
@@ -2004,14 +2149,42 @@ export default function App({ session }) {
       mostrarToast("📡 Comentario guardado sin conexión — se sube solo cuando vuelva la señal");
       return;
     }
+    let comentarioId=null;
     if(usuarioReal&&typeof id==="string"){
-      const{error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto});
+      const{data,error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto}).select().single();
       if(error){alert("No se pudo agregar el comentario: "+error.message);setGuardando(false);return;}
+      comentarioId=data?.id||null;
     }
-    setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto,autorId,ts:Date.now()}]}:x));
+    setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{id:comentarioId,texto,autorId,ts:Date.now()}]}:x));
     setNuevoComentario("");
     setGuardando(false);
     mostrarToast("Comentario agregado");
+  };
+
+  const eliminarComentario=async(novedadId,comentario)=>{
+    if(!window.confirm("¿Eliminar este comentario? No se puede deshacer."))return;
+    if(comentario.pendienteSync){
+      // Todavía no se subió a nadie más: lo sacamos de la cola local, sin dejar rastro (nunca fue visible para el equipo).
+      setColaOffline(c=>c.filter(item=>{
+        if(item.novedadId!==novedadId)return true;
+        if(comentario.audioUrl)return !(item.tipo==="comentario_audio"&&item.audioBase64===comentario.audioUrl);
+        return !(item.tipo==="comentario_texto"&&item.texto===comentario.texto&&item.autorId===comentario.autorId);
+      }));
+      setNovedades(n=>n.map(x=>x.id===novedadId?{...x,comentarios:x.comentarios.filter(c=>c!==comentario)}:x));
+      mostrarToast("Comentario eliminado");
+      return;
+    }
+    if(usuarioReal&&comentario.id){
+      // Borrado "a la WhatsApp": el contenido se borra de verdad, pero queda el rastro de que hubo un mensaje ahí.
+      const{error}=await supabase.from("comentarios").update({texto:"",audio_url:null,audio_duracion:null,eliminado:true}).eq("id",comentario.id);
+      if(error){alert("No se pudo eliminar el comentario: "+error.message);return;}
+      if(comentario.audioUrl){
+        const path=comentario.audioUrl.split("/audios-comentarios/")[1];
+        if(path)supabase.storage.from("audios-comentarios").remove([path]);
+      }
+    }
+    setNovedades(n=>n.map(x=>x.id===novedadId?{...x,comentarios:x.comentarios.map(c=>c===comentario?{...c,texto:"",audioUrl:null,audioDuracion:null,eliminado:true}:c)}:x));
+    mostrarToast("Comentario eliminado");
   };
 
   // ── NOTAS DE VOZ EN COMENTARIOS (punto 1) ──
@@ -2186,11 +2359,13 @@ export default function App({ session }) {
       if(errorSubida)throw errorSubida;
       const{data:urlData}=supabase.storage.from("audios-comentarios").getPublicUrl(nombreArchivo);
       const audioUrl=urlData.publicUrl;
+      let comentarioId=null;
       if(usuarioReal&&typeof id==="string"){
-        const{error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto:"",audio_url:audioUrl,audio_duracion:duracionSeg});
+        const{data,error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto:"",audio_url:audioUrl,audio_duracion:duracionSeg}).select().single();
         if(error)throw error;
+        comentarioId=data?.id||null;
       }
-      setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{texto:"",audioUrl,audioDuracion:duracionSeg,autorId,ts:Date.now()}]}:x));
+      setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{id:comentarioId,texto:"",audioUrl,audioDuracion:duracionSeg,autorId,ts:Date.now()}]}:x));
       mostrarToast("Nota de voz enviada");
     }catch(e){
       alert("No se pudo enviar la nota de voz: "+(e.message||"error desconocido"));
@@ -2445,6 +2620,9 @@ export default function App({ session }) {
     return{todas:base.length,pendientes:base.filter(n=>!n.resuelta).length,resueltas:base.filter(n=>n.resuelta).length,vencidas:base.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length,sinResponsable:base.filter(n=>!n.resuelta&&!n.responsable_usuario_id).length};
   },[novedades,novedadesPorObra,obraActual?.id,obras]);
   const detalle=novedades.find(n=>n.id===detalleId)||(novedadesPorObra[obraActual?.id]||[]).find(n=>n.id===detalleId);
+  // Aprovecha el seguimiento de "novedad nueva" que ya existe (novedadesVistas / esNovedadNueva) para saber
+  // si ALGUNA novedad de una obra tiene actividad sin ver, y así destacar la obra entera en la lista de Inicio.
+  const obraTieneNovedadNueva=(obraId)=>(novedadesPorObra[obraId]||[]).some(esNovedadNueva);
 
   // helpers de navegación
   const irInicio=()=>{setVistaRaiz("inicio");setObraActual(null);setVistaPerfil(false);setVistaInfoApp(false);setOrigenDirectorCategoria(null);setFiltroObraAlertas(null);};
@@ -2471,7 +2649,7 @@ export default function App({ session }) {
     // Cargar novedades de esta obra si no están cargadas aún (reutilizable desde irObra y desde Bitácora)
     if(usuarioReal&&obra&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
       });
     }
   };
@@ -2488,7 +2666,7 @@ export default function App({ session }) {
     }
     // Si todavía no tenemos los datos de esta obra, esperamos a que lleguen antes de cambiar de pantalla (evita el pestañeo)
     supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-      if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}));}
+      if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}));}
       setVistaDirectorCategoria(null);setOrigenDirectorCategoria(null);setOrigenBitacora(true);
       setVistaRaiz("obra");setObraActual(obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
     });
@@ -2620,10 +2798,15 @@ export default function App({ session }) {
       </div></>}
       <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Nombre o empresa <span style={{fontWeight:400}}>(opcional)</span></p>
       <input style={{...s.input,marginBottom:12}} placeholder="Ej: Jorge, Cuadrilla 2..." value={invitarNombre} onChange={e=>setInvitarNombre(e.target.value)} maxLength={40}/>
-      <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#55555A"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
-      {hayContactosDisponible()&&<button type="button" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setInvitarTelefono(c.telefono);if(c?.nombre&&!invitarNombre.trim())setInvitarNombre(c.nombre);}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10,padding:"11px",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Smartphone size={16}/>Elegir de mis contactos</button>}
-      <input style={{...s.input,marginBottom:4}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
-      <p style={{margin:"0 0 16px",fontSize:11,color:"#C7C7CC"}}>Para contactarlo rápido desde Estadísticas</p>
+      <p style={{margin:"0 0 4px",fontSize:13,fontWeight:600,color:"#55555A"}}>Teléfono <span style={{fontWeight:400}}>(opcional)</span></p>
+      <p style={{margin:"0 0 8px",fontSize:11,color:"#C7C7CC"}}>Para contactarlo rápido más adelante.</p>
+      <div style={{position:"relative",marginBottom:16}}>
+        <input style={{...s.input,paddingRight:hayContactosDisponible()?46:14}} type="tel" placeholder="+54 9 351 555 0000" value={invitarTelefono} onChange={e=>setInvitarTelefono(e.target.value)}/>
+        {hayContactosDisponible()&&<button type="button" title="Completar desde mis contactos" aria-label="Completar desde mis contactos" onClick={async()=>{const c=await elegirContacto();if(c?.telefono)setInvitarTelefono(c.telefono);if(c?.nombre&&!invitarNombre.trim())setInvitarNombre(c.nombre);}}
+          style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",width:34,height:34,borderRadius:"50%",border:"none",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+          <Contact size={17} color="#55555A"/>
+        </button>}
+      </div>
       <button style={{...s.btnPrincipal,background:"#1C1C1E",opacity:generandoLink?0.5:1}} disabled={generandoLink} onClick={generarInvitacion}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{generandoLink?<><span style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Generando...</>:"Generar link de invitación"}</span></button>
     </>:<>
       <div style={{background:"#34C75915",borderRadius:14,padding:"14px",marginBottom:16,textAlign:"center"}}>
@@ -2639,6 +2822,14 @@ export default function App({ session }) {
       <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarCallback(null);}}>Cerrar</button>
     </>}
   </div></div>;
+
+  const modalProObraJSX = modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
+        <div style={{textAlign:"left",marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
+          {["Obras ilimitadas","Modo offline","Marcar y dibujar sobre fotos","Informe de novedades registradas","Gestión en equipo para una misma obra","Estudio para estar al tanto de las obras que dirige tu equipo"].map(t=>(
+            <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><CheckCircle size={16} color="#34C759"/>{t}</div>
+          ))}
+        </div>
+        <button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>;
 
   // ─────────────────────────────
   // INFO APP
@@ -3008,7 +3199,7 @@ export default function App({ session }) {
           <div style={{padding:"14px 16px",borderBottom:"1px solid #F2F2F7"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Plan Gratuito</p>
-              <span style={{background:"#F2F2F7",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#636366",fontWeight:600}}>Actual</span>
+              {!esVersionPro&&<span style={{background:"#F2F2F7",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#636366",fontWeight:600}}>Actual</span>}
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",fontSize:12.5,color:"#55555A"}}>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>1 obra</span>
@@ -3019,7 +3210,7 @@ export default function App({ session }) {
           <div style={{padding:"14px 16px",background:"#FFB80008"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E"}}>Plan Pro</p>
-              <span style={{background:"#FFB800",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={11}/>PRO</span>
+              <span style={{background:"#FFB800",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={11}/>{esVersionPro?"Actual":"PRO"}</span>
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",fontSize:12.5,color:"#55555A",marginBottom:10}}>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Obras ilimitadas</span>
@@ -3027,7 +3218,11 @@ export default function App({ session }) {
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Estudio</span>
               <span style={{display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color="#34C759"/>Dibujar sobre fotos</span>
             </div>
-            <button style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><Rocket size={16}/>Activar Plan Pro</button>
+            {esVersionPro?(
+              <div style={{width:"100%",padding:"12px",borderRadius:12,background:"#34C75915",color:"#1C7A3E",fontSize:14,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><CheckCircle size={16}/>Ya sos Fixgo Pro</div>
+            ):(
+              <button disabled={comprandoPro} onClick={comprarPro} style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar Plan Pro"}</button>
+            )}
           </div>
         </div>
         {[["Contacto y soporte",[{Icon:MessageCircle,label:"Contactarnos",sub:"Escribinos por cualquier consulta"},{Icon:Bug,label:"Reportar un problema",sub:"Ayudanos a mejorar Fixgo"},{Icon:HelpCircle,label:"Preguntas frecuentes",sub:"Guías y ayuda"}]],
@@ -3432,6 +3627,7 @@ export default function App({ session }) {
               {!em.comparte_todo&&<button onClick={()=>setModalElegirObras(em.empresa_id)} style={{marginTop:10,background:"none",border:"none",padding:0,color:"#0057FF",fontSize:12.5,fontWeight:700,cursor:"pointer"}}>Elegir cuáles compartir →</button>}
             </div>
           ))}
+          {false && (
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,padding:"16px",flexShrink:0,border:"1.5px dashed #FFB800"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
               <div style={{flex:1}}>
@@ -3443,7 +3639,11 @@ export default function App({ session }) {
               </button>
             </div>
           </div>
+          )}
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={restaurarCompras}>
+              <RotateCcw size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Restaurar compras</p><ChevronRight size={16} color="#C7C7CC"/>
+            </div>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={async()=>{if(window.confirm("¿Cerrar sesión?"))await supabase.auth.signOut();}}>
               <LogOut size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Cerrar sesión</p><ChevronRight size={16} color="#C7C7CC"/>
             </div>
@@ -3522,7 +3722,7 @@ export default function App({ session }) {
       // la versión liviana usada para armar las alertas no alcanza para mostrar el detalle ni la lista.
       if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
         supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime()}))}))}))}
+          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
         });
       }
     };
@@ -3621,8 +3821,11 @@ export default function App({ session }) {
               </div>
               <p style={{margin:0,fontSize:14,color:"rgba(255,255,255,0.5)"}}>Gestión simple de novedades</p>
             </div>
-            <div style={{background:"rgba(255,255,255,0.15)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
-              <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p></div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5}}>
+              <div style={{background:"rgba(255,255,255,0.15)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
+                <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p></div>
+              </div>
+              {esVersionPro&&<span style={{background:"#FFB800",borderRadius:99,padding:"3px 9px",fontSize:10.5,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={10}/>PRO</span>}
             </div>
           </div>
         </div>
@@ -3845,7 +4048,7 @@ export default function App({ session }) {
                     <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
                       <CirculoProg radius={38} pct={prog} size={90}/>
                       <div style={{flex:1,minWidth:0}}>
-                        <p style={{margin:"0 0 2px",fontSize:16,fontWeight:800,color:"#1C1C1E"}}>{obra.nombre}</p>
+                        <p style={{margin:"0 0 2px",fontSize:16,fontWeight:800,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>{obra.nombre}{obraTieneNovedadNueva(obra.id)&&<span title="Hay novedades sin ver" style={{width:8,height:8,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
                         <p style={{margin:"0 0 10px",fontSize:11,color:"#55555A",display:"flex",alignItems:"center",gap:3}}><MapPin size={11} color="#55555A"/>{obra.direccion||"Sin dirección"}</p>
                         <div style={{display:"flex",gap:6}}>
                           <div style={{flex:1,background:"#FFF3E8",borderRadius:10,padding:"6px 4px",textAlign:"center"}}><p style={{margin:0,fontSize:16,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
@@ -3871,7 +4074,7 @@ export default function App({ session }) {
                       <div style={{marginBottom:6}}>
                         <span style={{display:"inline-flex",alignItems:"center",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3,background:miRolObra==="capataz"?"#FFF3E8":"#F0EEFF",color:miRolObra==="capataz"?"#FF6B00":"#6B4FA8"}}>{miEspecialidad||miRolObra}</span>
                       </div>
-                      <p style={{margin:"0 0 2px",fontSize:15,fontWeight:800,color:"#1C1C1E"}}>{obra.nombre}</p>
+                      <p style={{margin:"0 0 2px",fontSize:15,fontWeight:800,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>{obra.nombre}{obraTieneNovedadNueva(obra.id)&&<span title="Hay novedades sin ver" style={{width:8,height:8,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
                       <p style={{margin:"0 0 8px",fontSize:11,color:"#55555A",display:"flex",alignItems:"center",gap:3}}><MapPin size={10} color="#55555A"/>{obra.direccion||"Sin dirección"}</p>
                       <div style={{display:"flex",gap:6}}>
                         <div style={{background:"#FFF3E8",borderRadius:8,padding:"5px 8px",textAlign:"center"}}><p style={{margin:0,fontSize:14,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
@@ -3934,13 +4137,7 @@ export default function App({ session }) {
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}>Cerrar</button>
           </>)}
         </div></div>}
-        {modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
-              <div style={{textAlign:"left",marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
-                {["Obras ilimitadas","Modo offline","Marcar y dibujar sobre fotos","Informe de novedades registradas","Gestión en equipo para una misma obra","Estudio para estar al tanto de las obras que dirige tu equipo"].map(t=>(
-                  <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><CheckCircle size={16} color="#34C759"/>{t}</div>
-                ))}
-              </div>
-              <button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><Rocket size={16}/>Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>}
+        {modalProObraJSX}
         {menuObra&&(()=>{const obraM=obras.find(o=>o.id===menuObra);const esDuenoM=usuarioReal&&obraM?.propietario_id===usuarioReal.id;const miRolM=(obraM?.equipo||[]).find(m=>m.uid===miId)?.rolEnObra;const esGestorM=esDuenoM||miRolM==="co_profesional";return(
         <div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p>
           {esGestorM&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setEditarObraForm({nombre:obraM?.nombre||"",direccion:obraM?.direccion||""});setModalEditarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={15}/>Editar datos de la obra</span></button>}
@@ -4043,7 +4240,7 @@ export default function App({ session }) {
                         <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
                         {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                       </div>
-                      <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?700:500,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
+                      <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?700:500,color:"#1C1C1E",lineHeight:1.25,display:"flex",alignItems:"center",gap:6}}>{nov.descripcion}{esNovedadNueva(nov)&&<span title="Actividad nueva" style={{width:7,height:7,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
                       <p style={{margin:0,fontSize:12,color:"#636366"}}><MapPin size={12} style={{display:"inline",verticalAlign:"middle"}}/> {nov.sector}</p>
                     </div>
                     <div style={{display:"flex",alignItems:"center",paddingRight:10}}><ChevronRight size={18} color="#C7C7CC"/></div>
@@ -4369,7 +4566,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div><button style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><Rocket size={16}/>Activar versión Pro</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
+        {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div><button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
         <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
         {modalPeriodoJSX}
       </div>
@@ -4513,13 +4710,20 @@ export default function App({ session }) {
           </div>
           {comentariosAbiertos&&<>
           {detalle.comentarios.length===0&&<p style={{color:"#55555A",fontSize:14,margin:"0 0 12px"}}>Sin comentarios aún</p>}
-          {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===usuarioActivo.id;return(
+          {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===miId;const puedeBorrar=esMio&&!c.eliminado&&(c.id||c.pendienteSync);return(
             <div key={i} style={{background:esMio?"#1C1C1E":"#F9F9F9",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                 <span style={{fontSize:12,fontWeight:700,color:esMio?"rgba(255,255,255,0.7)":"#636366"}}>{autor?.nombre||"Usuario"}</span>
                 <span style={{fontSize:10,color:esMio?"rgba(255,255,255,0.35)":"#C7C7CC",marginLeft:"auto"}}>{formatHora(c.ts)}</span>
               </div>
-              {c.audioUrl?<BurbujaAudio src={c.audioUrl} duracion={c.audioDuracion||0} esMio={esMio}/>:<p style={{margin:0,fontSize:14,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>}
+              {c.eliminado?(
+                <p style={{margin:0,fontSize:13.5,color:esMio?"rgba(255,255,255,0.45)":"#8E8E93",fontStyle:"italic",display:"flex",alignItems:"center",gap:5}}><Trash2 size={12}/>Mensaje eliminado</p>
+              ):c.audioUrl?(
+                <BurbujaAudio src={c.audioUrl} duracion={c.audioDuracion||0} esMio={esMio}/>
+              ):(
+                <p style={{margin:0,fontSize:14,color:esMio?"#fff":"#1C1C1E",lineHeight:1.4}}>{c.texto}</p>
+              )}
+              {puedeBorrar&&<p onClick={()=>eliminarComentario(detalle.id,c)} style={{margin:"6px 0 0",fontSize:11,fontWeight:600,color:esMio?"rgba(255,255,255,0.45)":"#D0342C",cursor:"pointer",textAlign:"right"}}>Eliminar</p>}
             </div>
           );})}
           </>}
@@ -4720,9 +4924,9 @@ export default function App({ session }) {
           <Lock size={18} color="#636366" style={{flexShrink:0}}/>
           <div style={{flex:1}}>
             <p style={{margin:0,fontSize:13,fontWeight:700,color:"#1C1C1E"}}>Esta obra está pausada</p>
-            <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Podés ver todo, pero no cargar ni editar nada hasta activar Pro.</p>
+            <p style={{margin:"1px 0 0",fontSize:12,color:"#55555A"}}>Tu plan Pro no está activo, así que solo podés cargar novedades en tu obra más reciente. Esta no se borró ni se perdió nada: podés seguir viéndola entera, y vas a poder volver a editarla en cuanto reactives Pro.</p>
           </div>
-          <button onClick={()=>setModalProObra(true)} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>Activar</button>
+          <button onClick={()=>setModalProObra(true)} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>Reactivar</button>
         </div>}
         <div style={{position:"relative",marginBottom:10}}><Search size={16} color="#55555A" style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/><input style={{...s.input,background:"#F2F2F7",border:"none",paddingLeft:38}} placeholder="Buscar oficios o novedades..." value={busqueda} onChange={e=>setBusqueda(e.target.value)}/></div>
         <div style={{display:"flex",gap:6,paddingBottom:12}}>
@@ -4777,7 +4981,7 @@ export default function App({ session }) {
                     {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                     {nov.pendienteSync&&<span style={{fontSize:9.5,fontWeight:800,color:"#FFB800",background:"#FFB80015",padding:"2px 7px",borderRadius:99,textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:3}}><WifiOff size={9}/>Pendiente</span>}
                   </div>
-                  <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?700:500,color:"#1C1C1E",lineHeight:1.25}}>{nov.descripcion}</p>
+                  <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?700:500,color:"#1C1C1E",lineHeight:1.25,display:"flex",alignItems:"center",gap:6}}>{nov.descripcion}{esNovedadNueva(nov)&&<span title="Actividad nueva" style={{width:7,height:7,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
                   <p style={{margin:0,fontSize:12,color:"#636366",display:"flex",alignItems:"center",gap:4,flexWrap:"nowrap",minWidth:0}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?<span style={{width:18,height:18,borderRadius:"50%",background:colorPastelDe(miembro.uid),flexShrink:0,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff"}}>{miembro.nombre?miembro.nombre[0].toUpperCase():""}</span>:<Wrench size={12} color="#55555A" style={{flexShrink:0}}/>;})()}<span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0,fontWeight:nov.responsable_usuario_id?700:400,color:nov.responsable_usuario_id?"#1C1C1E":"#636366"}}>{(()=>{const miembro=nov.responsable_usuario_id?equipoObra.find(m=>m.uid===nov.responsable_usuario_id):null;return miembro?miembro.nombre:nov.responsable;})()}</span><span style={{color:"#C7C7CC",margin:"0 2px",flexShrink:0}}>·</span><MapPin size={12} color="#55555A" style={{flexShrink:0}}/><span style={{whiteSpace:"nowrap",flexShrink:0}}>{nov.sector}</span></p>
                   {!nov.resuelta&&!nov.responsable_usuario_id&&<span style={{marginTop:5,display:"inline-flex",alignItems:"center",gap:5,background:"#FAEEDA",color:"#854F0B",padding:"3px 8px",borderRadius:8,fontSize:10.5,fontWeight:700,width:"fit-content"}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#854F0B" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" strokeDasharray="3 3"/></svg>{nov.responsable} · Sin responsable</span>}
                   {nov.comentarios.length>0&&<span style={{marginTop:5,fontSize:11.5,color:"#55555A",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}><MessageCircle size={12}/> {nov.comentarios.length} comentario{nov.comentarios.length!==1?"s":""}</span>}
@@ -4805,6 +5009,7 @@ export default function App({ session }) {
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
         {modalPeriodoJSX}
+        {modalProObraJSX}
     </div>
   );
 }
