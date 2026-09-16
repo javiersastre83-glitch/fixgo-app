@@ -4,6 +4,8 @@ import './index.css'
 import App from './App.tsx'
 import Login from './Login.tsx'
 import { supabase } from './supabase'
+import { Capacitor } from '@capacitor/core'
+import { App as CapacitorApp } from '@capacitor/app'
 
 function Splash() {
   return (
@@ -54,6 +56,24 @@ function Root() {
       setSession(session)
     })
     return () => subscription.unsubscribe()
+  }, [])
+
+  // ── Google login dentro de la app nativa (Android App Links) ──
+  // Cuando la persona vuelve de Google, Android abre Fixgo directamente (en vez de
+  // quedarse en Chrome mostrando la versión web) gracias al App Link configurado.
+  // Ese regreso dispara este evento con la URL completa (incluye "?code=..."),
+  // que canjeamos por una sesión real. onAuthStateChange (arriba) hace el resto.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+    const listenerPromise = CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
+      try {
+        const codigo = new URL(url).searchParams.get('code')
+        if (codigo) await supabase.auth.exchangeCodeForSession(codigo)
+      } catch (e) {
+        console.error('Error al procesar el regreso de Google:', e)
+      }
+    })
+    return () => { listenerPromise.then(listener => listener.remove()) }
   }, [])
 
   if (loading) return <Splash />

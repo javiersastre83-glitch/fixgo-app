@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
+import { Capacitor } from '@capacitor/core'
 
 function traducirError(mensaje: string): string {
   const m = mensaje.toLowerCase()
@@ -35,10 +36,16 @@ export default function Login() {
       localStorage.setItem('fixgo_invitacion', codigo)
     }
 
+    // En la app nativa, volver a "window.location.origin" (algo como https://localhost)
+    // no sirve: Android no sabe enrutar esa dirección de vuelta a la app instalada.
+    // Por eso ahí usamos el dominio real (app.fixgo.ar), ya configurado como Android
+    // App Link, para que Android abra Fixgo directo en vez de dejarte en Chrome.
+    const redirectTo = Capacitor.isNativePlatform() ? 'https://app.fixgo.ar/' : window.location.origin
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo
       }
     })
 
