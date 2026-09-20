@@ -21,12 +21,28 @@
 
             <!-- Android App Link: permite que "Continuar con Google" vuelva directo a la
                  app en vez de quedarse en Chrome mostrando la versión web. Requiere que
-                 https://app.fixgo.ar/.well-known/assetlinks.json quede publicado y verificado. -->
+                 https://app.fixgo.ar/.well-known/assetlinks.json quede publicado y verificado.
+                 Se deja como respaldo, pero la verificación de Android para este tipo de link
+                 no es confiable en todas las marcas de celular (ver el scheme propio abajo,
+                 que es el que usa realmente el login de Google desde 20/09/2026). -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="app.fixgo.ar" />
+            </intent-filter>
+
+            <!-- Esquema de link propio (custom URI scheme): a diferencia del App Link de
+                 arriba, este NO depende de ninguna verificación de Android/Google contra
+                 el servidor. Como "ar.fixgo.app://" es único de esta app, Android abre
+                 Fixgo directo apenas detecta el link, sin preguntar y sin importar la
+                 marca/modelo del celular. Es el mecanismo real que usa el regreso del
+                 login de Google desde 20/09/2026 (ver Login.tsx, redirectTo). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="ar.fixgo.app" />
             </intent-filter>
         </activity>
 

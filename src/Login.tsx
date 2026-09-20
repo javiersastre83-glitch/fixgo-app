@@ -38,9 +38,14 @@ export default function Login() {
 
     // En la app nativa, volver a "window.location.origin" (algo como https://localhost)
     // no sirve: Android no sabe enrutar esa dirección de vuelta a la app instalada.
-    // Por eso ahí usamos el dominio real (app.fixgo.ar), ya configurado como Android
-    // App Link, para que Android abra Fixgo directo en vez de dejarte en Chrome.
-    const redirectTo = Capacitor.isNativePlatform() ? 'https://app.fixgo.ar/' : window.location.origin
+    // Usamos un esquema de link propio (ar.fixgo.app://) en vez de un Android App Link
+    // (https://app.fixgo.ar/): el App Link depende de que Android verifique el dominio
+    // contra Google al instalar la app, y esa verificación resultó no ser confiable en
+    // todas las marcas de celular (confirmado 20/09/2026 con testers reales en Samsung
+    // y Motorola, que quedaban varados viendo la versión web). Un esquema propio no
+    // necesita ninguna verificación: como nadie más puede registrar "ar.fixgo.app://",
+    // Android abre Fixgo directo siempre, sin importar el dispositivo.
+    const redirectTo = Capacitor.isNativePlatform() ? 'ar.fixgo.app://login-callback' : window.location.origin
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
