@@ -9,18 +9,48 @@ function traducirError(mensaje: string): string {
   if (m.includes('user already registered') || m.includes('already registered')) return 'Ese email ya tiene una cuenta. Probá iniciar sesión.'
   if (m.includes('password should be at least')) return 'La contraseña debe tener al menos 6 caracteres.'
   if (m.includes('unable to validate email address') || m.includes('invalid email')) return 'Ese email no es válido.'
-  if (m.includes('rate limit')) return 'Demasiados intentos. Esperá un momento y volvé a intentar.'
+  if (m.includes('rate limit') || m.includes('security purposes')) return 'Demasiados intentos. Esperá un minuto y volvé a probar.'
+  if (m.includes('should be different')) return 'Elegí una contraseña distinta a la anterior.'
+  if (m.includes('expired') || (m.includes('invalid') && m.includes('token'))) return 'El link venció. Pedí uno nuevo desde "¿Olvidaste tu contraseña?".'
   return 'Ocurrió un error. Probá de nuevo en unos segundos.'
 }
 
-export default function Login() {
+// Adónde vuelve la persona cuando toca un link de mail (confirmar cuenta o
+// recuperar contraseña). En la app nativa usamos el esquema propio ar.fixgo.app://
+// (mismo mecanismo que el login de Google), así el link abre Fixgo y no la web.
+const destinoLink = (ruta: string) =>
+  Capacitor.isNativePlatform() ? `ar.fixgo.app://${ruta}` : window.location.origin
+
+export default function Login({ avisoInicial = null }: { avisoInicial?: string | null }) {
   const [conectando, setConectando] = useState(false)
-  const [vista, setVista] = useState<'inicio' | 'email'>('inicio')
+  const [vista, setVista] = useState<'inicio' | 'email' | 'recuperar'>(avisoInicial ? 'email' : 'inicio')
   const [modoEmail, setModoEmail] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [aviso, setAviso] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(avisoInicial)
+
+  const handleRecuperar = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (conectando) return
+    setError(null)
+    setAviso(null)
+    if (!email.trim()) {
+      setError('Escribí el email de tu cuenta.')
+      return
+    }
+    setConectando(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: destinoLink('reset-password')
+    })
+    setConectando(false)
+    if (error) {
+      setError(traducirError(error.message))
+      return
+    }
+    // Mensaje igual exista o no la cuenta (así nadie puede averiguar qué emails están registrados).
+    setAviso('Si ese email tiene una cuenta en Fixgo, te llega un link para crear una contraseña nueva. Abrilo desde este mismo celular. Si en unos minutos no aparece, mirá en spam.')
+  }
 
   const handleGoogle = async () => {
     if (conectando) return
@@ -84,7 +114,8 @@ export default function Login() {
     } else {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
-        password
+        password,
+        options: { emailRedirectTo: destinoLink('login-callback') }
       })
       if (error) {
         setError(traducirError(error.message))
@@ -94,12 +125,73 @@ export default function Login() {
         // onAuthStateChange se encarga de mostrar la app.
       } else {
         // Confirmación de email activada: falta que confirme desde su casilla.
-        setAviso('¡Listo! Te enviamos un email para confirmar tu cuenta. Confirmalo y después iniciá sesión acá.')
+        setAviso('¡Listo! Te enviamos un email para confirmar tu cuenta. Tocá el link desde este celular y entrás directo. Si en unos minutos no aparece, mirá en spam.')
         setModoEmail('login')
         setPassword('')
         setConectando(false)
       }
     }
+  }
+
+  if (vista === 'recuperar') {
+    return (
+      <div style={{
+        minHeight:'100vh', background:'#fff',
+        display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+        fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'20px'
+      }}>
+        <style>{`@keyframes fixgoSpin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ width:'100%', maxWidth:320 }}>
+          <button
+            onClick={() => { setVista('email'); setModoEmail('login'); setError(null); setAviso(null) }}
+            style={{
+              border:'none', background:'none', padding:0, marginBottom:24,
+              display:'flex', alignItems:'center', gap:6, color:'#8E8E93', fontSize:15, cursor:'pointer'
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            Volver
+          </button>
+          <p style={{ margin:'0 0 4px', fontSize:26, fontWeight:900, color:'#1C1C1E', letterSpacing:-0.5 }}>
+            Recuperar contraseña
+          </p>
+          <p style={{ margin:'0 0 28px', fontSize:14, color:'#8E8E93', lineHeight:1.4 }}>
+            Escribí el email de tu cuenta y te mandamos un link para crear una contraseña nueva.
+          </p>
+          {aviso && (
+            <div style={{ background:'#E8F5E9', color:'#2E7D32', borderRadius:12, padding:'12px 14px', fontSize:13.5, marginBottom:16, lineHeight:1.4 }}>
+              {aviso}
+            </div>
+          )}
+          <form onSubmit={handleRecuperar} style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            <input
+              type="email"
+              autoComplete="email"
+              placeholder="Email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              style={{
+                width:'100%', padding:'14px', borderRadius:14, border:'1.5px solid #E5E5EA',
+                fontSize:15, color:'#1C1C1E', background:'#F2F2F7', boxSizing:'border-box'
+              }}
+            />
+            {error && <p style={{ margin:0, color:'#D92D20', fontSize:13.5, lineHeight:1.4 }}>{error}</p>}
+            <button type="submit" disabled={conectando} style={{
+              width:'100%', padding:'14px', borderRadius:14, border:'none',
+              background:'#1C1C1E', color:'#fff', fontSize:15, fontWeight:700,
+              cursor: conectando ? 'default' : 'pointer', opacity: conectando ? 0.85 : 1,
+              display:'flex', alignItems:'center', justifyContent:'center', gap:10, marginTop:4
+            }}>
+              {conectando ? (
+                <span style={{ width:18, height:18, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.35)', borderTopColor:'#fff', display:'inline-block', animation:'fixgoSpin 0.7s linear infinite' }}/>
+              ) : 'Enviar link'}
+            </button>
+          </form>
+        </div>
+      </div>
+    )
   }
 
   if (vista === 'email') {
@@ -190,6 +282,18 @@ export default function Login() {
             </button>
           </form>
 
+          {modoEmail === 'login' && (
+            <button
+              onClick={() => { setVista('recuperar'); setError(null); setAviso(null) }}
+              style={{
+                width:'100%', border:'none', background:'none', marginTop:16,
+                color:'#8E8E93', fontSize:14, cursor:'pointer', textAlign:'center'
+              }}
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          )}
+
           <button
             onClick={() => {
               setModoEmail(modoEmail === 'login' ? 'signup' : 'login')
@@ -276,6 +380,69 @@ export default function Login() {
       <p style={{ margin:'32px 0 0', fontSize:12, color:'#8E8E93', textAlign:'center' }}>
         Al continuar aceptás los Términos de uso{'\n'}y la Política de privacidad
       </p>
+    </div>
+  )
+}
+
+
+// Pantalla que aparece cuando la persona vuelve desde el link de "Recuperar contraseña".
+// En ese momento Supabase ya le abrió una sesión temporal: solo falta elegir la clave nueva.
+export function NuevaPassword({ onListo }: { onListo: () => void }) {
+  const [password, setPassword] = useState('')
+  const [repetir, setRepetir] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const guardar = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (guardando) return
+    setError(null)
+    if (password.length < 6) { setError('Usá al menos 6 caracteres.'); return }
+    if (password !== repetir) { setError('Las dos contraseñas tienen que coincidir.'); return }
+    setGuardando(true)
+    const { error } = await supabase.auth.updateUser({ password })
+    setGuardando(false)
+    if (error) { setError(traducirError(error.message)); return }
+    onListo()
+  }
+
+  const estiloInput = {
+    width:'100%', padding:'14px', borderRadius:14, border:'1.5px solid #E5E5EA',
+    fontSize:15, color:'#1C1C1E', background:'#F2F2F7', boxSizing:'border-box' as const
+  }
+
+  return (
+    <div style={{
+      minHeight:'100vh', background:'#fff',
+      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+      fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'20px'
+    }}>
+      <style>{`@keyframes fixgoSpin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ width:'100%', maxWidth:320 }}>
+        <p style={{ margin:'0 0 4px', fontSize:26, fontWeight:900, color:'#1C1C1E', letterSpacing:-0.5 }}>
+          Nueva contraseña
+        </p>
+        <p style={{ margin:'0 0 28px', fontSize:14, color:'#8E8E93' }}>
+          Elegí tu contraseña nueva y seguí trabajando.
+        </p>
+        <form onSubmit={guardar} style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <input type="password" autoComplete="new-password" placeholder="Contraseña nueva"
+            value={password} onChange={e => setPassword(e.target.value)} style={estiloInput}/>
+          <input type="password" autoComplete="new-password" placeholder="Repetí la contraseña"
+            value={repetir} onChange={e => setRepetir(e.target.value)} style={estiloInput}/>
+          {error && <p style={{ margin:0, color:'#D92D20', fontSize:13.5, lineHeight:1.4 }}>{error}</p>}
+          <button type="submit" disabled={guardando} style={{
+            width:'100%', padding:'14px', borderRadius:14, border:'none',
+            background:'#1C1C1E', color:'#fff', fontSize:15, fontWeight:700,
+            cursor: guardando ? 'default' : 'pointer', opacity: guardando ? 0.85 : 1,
+            display:'flex', alignItems:'center', justifyContent:'center', gap:10, marginTop:4
+          }}>
+            {guardando ? (
+              <span style={{ width:18, height:18, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.35)', borderTopColor:'#fff', display:'inline-block', animation:'fixgoSpin 0.7s linear infinite' }}/>
+            ) : 'Guardar y entrar'}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

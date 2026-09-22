@@ -2,7 +2,7 @@ import { StrictMode, useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import Login from './Login.tsx'
+import Login, { NuevaPassword } from './Login.tsx'
 import { supabase } from './supabase'
 import { Capacitor } from '@capacitor/core'
 import { App as CapacitorApp } from '@capacitor/app'
@@ -46,13 +46,19 @@ function Splash() {
 function Root() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  // true cuando la persona entró desde el link de "Recuperar contraseña":
+  // antes de mostrar la app le pedimos que elija la contraseña nueva.
+  const [recuperando, setRecuperando] = useState(false)
+  // Mensaje para la pantalla de login cuando un link de mail no se pudo usar.
+  const [avisoLink, setAvisoLink] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') setRecuperando(true)
       setSession(session)
     })
     return () => subscription.unsubscribe()
@@ -66,18 +72,38 @@ function Root() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return
     const listenerPromise = CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
+      // Sirve para 3 regresos: login con Google (login-callback), confirmación de
+      // cuenta por mail (login-callback) y recuperar contraseña (reset-password).
       try {
-        const codigo = new URL(url).searchParams.get('code')
-        if (codigo) await supabase.auth.exchangeCodeForSession(codigo)
+        const u = new URL(url)
+        const esRecuperacion = url.includes('reset-password')
+        const descError = u.searchParams.get('error_description') || new URLSearchParams(u.hash.slice(1)).get('error_description')
+        if (descError) {
+          setAvisoLink(esRecuperacion
+            ? 'Ese link ya venció o ya se usó. Pedí uno nuevo desde "¿Olvidaste tu contraseña?".'
+            : 'Tu email ya puede estar confirmado: probá iniciar sesión.')
+          return
+        }
+        const codigo = u.searchParams.get('code')
+        if (!codigo) return
+        if (esRecuperacion) setRecuperando(true)
+        const { error } = await supabase.auth.exchangeCodeForSession(codigo)
+        if (error) {
+          setRecuperando(false)
+          setAvisoLink(esRecuperacion
+            ? 'Abrí el link desde el mismo celular donde lo pediste, o pedí uno nuevo desde "¿Olvidaste tu contraseña?".'
+            : 'Tu email quedó confirmado. Iniciá sesión con tu email y contraseña.')
+        }
       } catch (e) {
-        console.error('Error al procesar el regreso de Google:', e)
+        console.error('Error al procesar el link de regreso:', e)
       }
     })
     return () => { listenerPromise.then(listener => listener.remove()) }
   }, [])
 
   if (loading) return <Splash />
-  if (!session) return <Login />
+  if (!session) return <Login key={avisoLink || 'login'} avisoInicial={avisoLink} />
+  if (recuperando) return <NuevaPassword onListo={() => setRecuperando(false)} />
   return <App session={session} />
 }
 
