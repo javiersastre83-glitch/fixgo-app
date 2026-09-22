@@ -27,8 +27,20 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
   const [modoEmail, setModoEmail] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [repetir, setRepetir] = useState('')
+  const [verPassword, setVerPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // true cuando el login falló por email/contraseña: mostramos el cartel con salidas.
+  const [errorCredenciales, setErrorCredenciales] = useState(false)
   const [aviso, setAviso] = useState<string | null>(avisoInicial)
+
+  const cambiarModo = (modo: 'login' | 'signup') => {
+    setModoEmail(modo)
+    setError(null)
+    setErrorCredenciales(false)
+    setAviso(null)
+    setRepetir('')
+  }
 
   const handleRecuperar = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,11 +104,16 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
     e.preventDefault()
     if (conectando) return
     setError(null)
+    setErrorCredenciales(false)
     setAviso(null)
 
     if (!email.trim() || !password) {
       setError('Completá el email y la contraseña.')
       return
+    }
+    if (modoEmail === 'signup') {
+      if (password.length < 6) { setError('La contraseña necesita al menos 6 caracteres.'); return }
+      if (password !== repetir) { setError('Las dos contraseñas tienen que coincidir.'); return }
     }
 
     setConectando(true)
@@ -107,7 +124,8 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
         password
       })
       if (error) {
-        setError(traducirError(error.message))
+        if (error.message.toLowerCase().includes('invalid login credentials')) setErrorCredenciales(true)
+        else setError(traducirError(error.message))
         setConectando(false)
       }
       // Si no hay error, onAuthStateChange (en App.tsx) se encarga de mostrar la app.
@@ -128,6 +146,7 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
         setAviso('¡Listo! Te enviamos un email para confirmar tu cuenta. Tocá el link desde este celular y entrás directo. Si en unos minutos no aparece, mirá en spam.')
         setModoEmail('login')
         setPassword('')
+        setRepetir('')
         setConectando(false)
       }
     }
@@ -195,80 +214,175 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
   }
 
   if (vista === 'email') {
+    const esLogin = modoEmail === 'login'
+    const bordeCampo = errorCredenciales ? '#D92D20' : '#E5E5EA'
+    const estiloInput = {
+      width:'100%', height:56, padding:'0 16px', borderRadius:14, border:`1.5px solid ${bordeCampo}`,
+      fontSize:16, color:'#1C1C1E', background:'#F2F2F7', boxSizing:'border-box' as const, fontFamily:'inherit'
+    }
+    const estiloLabel = { fontSize:13, fontWeight:600, color:'#3A3A3C' }
+    const estiloTab = (activa: boolean) => ({
+      flex:1, height:40, border:'none', borderRadius:10, cursor:'pointer', fontFamily:'inherit',
+      background: activa ? '#fff' : 'transparent',
+      boxShadow: activa ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+      color: activa ? '#1C1C1E' : '#6C6C70', fontSize:15, fontWeight: activa ? 700 : 600
+    })
+    const ojito = (
+      <button
+        type="button"
+        aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        onClick={() => setVerPassword(v => !v)}
+        style={{
+          position:'absolute', right:6, top:6, width:44, height:44, border:'none', background:'transparent',
+          display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', padding:0
+        }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6C6C70" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
+          <circle cx="12" cy="12" r="3"/>
+          {verPassword && <path d="M3 3l18 18"/>}
+        </svg>
+      </button>
+    )
+    const linkTexto = {
+      border:'none', background:'none', padding:'4px 0', cursor:'pointer', fontFamily:'inherit',
+      fontSize:14, fontWeight:600, color:'#1C1C1E', textDecoration:'underline', textAlign:'left' as const
+    }
+
     return (
       <div style={{
         minHeight:'100vh', background:'#fff',
-        display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-        fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'20px'
+        display:'flex', flexDirection:'column', alignItems:'center',
+        fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'56px 24px 32px', boxSizing:'border-box'
       }}>
         <style>{`
           @keyframes fixgoSpin { to { transform: rotate(360deg); } }
+          .fixgo-input::placeholder { color: #8E8E93; }
         `}</style>
-        <div style={{ width:'100%', maxWidth:320 }}>
+        <div style={{ width:'100%', maxWidth:360, display:'flex', flexDirection:'column', gap:24 }}>
           <button
-            onClick={() => { setVista('inicio'); setError(null); setAviso(null) }}
+            onClick={() => { setVista('inicio'); setError(null); setErrorCredenciales(false); setAviso(null) }}
             style={{
-              border:'none', background:'none', padding:0, marginBottom:24,
-              display:'flex', alignItems:'center', gap:6, color:'#8E8E93', fontSize:15, cursor:'pointer'
+              border:'none', background:'none', padding:0, height:44, alignSelf:'flex-start',
+              display:'flex', alignItems:'center', gap:6, color:'#6C6C70', fontSize:15, cursor:'pointer', fontFamily:'inherit'
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6C6C70" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6"/>
             </svg>
             Volver
           </button>
 
-          <p style={{ margin:'0 0 4px', fontSize:26, fontWeight:900, color:'#1C1C1E', letterSpacing:-0.5 }}>
-            {modoEmail === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
-          </p>
-          <p style={{ margin:'0 0 28px', fontSize:14, color:'#8E8E93' }}>
-            {modoEmail === 'login' ? 'Ingresá con tu email y contraseña.' : 'Registrate con tu email para empezar.'}
-          </p>
+          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+            <p style={{ margin:0, fontSize:28, fontWeight:900, color:'#1C1C1E', letterSpacing:-0.5 }}>
+              Continuá con tu email
+            </p>
+            <p style={{ margin:0, fontSize:15, color:'#6C6C70' }}>
+              Elegí si ya tenés cuenta o si es tu primera vez.
+            </p>
+          </div>
+
+          <div role="tablist" aria-label="Elegí una opción" style={{ display:'flex', gap:4, padding:4, background:'#F2F2F7', borderRadius:14 }}>
+            <button role="tab" aria-selected={esLogin} onClick={() => cambiarModo('login')} style={estiloTab(esLogin)}>
+              Iniciar sesión
+            </button>
+            <button role="tab" aria-selected={!esLogin} onClick={() => cambiarModo('signup')} style={estiloTab(!esLogin)}>
+              Crear cuenta
+            </button>
+          </div>
 
           {aviso && (
             <div style={{
               background:'#E8F5E9', color:'#2E7D32', borderRadius:12, padding:'12px 14px',
-              fontSize:13.5, marginBottom:16, lineHeight:1.4
+              fontSize:13.5, lineHeight:1.4
             }}>
               {aviso}
             </div>
           )}
 
-          <form onSubmit={handleEmailSubmit} style={{ display:'flex', flexDirection:'column', gap:12 }}>
-            <input
-              type="email"
-              autoComplete="email"
-              placeholder="Email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              style={{
-                width:'100%', padding:'14px', borderRadius:14, border:'1.5px solid #E5E5EA',
-                fontSize:15, color:'#1C1C1E', background:'#F2F2F7', boxSizing:'border-box'
-              }}
-            />
-            <input
-              type="password"
-              autoComplete={modoEmail === 'login' ? 'current-password' : 'new-password'}
-              placeholder="Contraseña"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              style={{
-                width:'100%', padding:'14px', borderRadius:14, border:'1.5px solid #E5E5EA',
-                fontSize:15, color:'#1C1C1E', background:'#F2F2F7', boxSizing:'border-box'
-              }}
-            />
+          <form onSubmit={handleEmailSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              <label htmlFor="fixgo-email" style={estiloLabel}>Email</label>
+              <input
+                id="fixgo-email"
+                className="fixgo-input"
+                type="email"
+                autoComplete="email"
+                placeholder="tu@email.com"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setErrorCredenciales(false) }}
+                style={estiloInput}
+              />
+            </div>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              <label htmlFor="fixgo-password" style={estiloLabel}>Contraseña</label>
+              <div style={{ position:'relative' }}>
+                <input
+                  id="fixgo-password"
+                  className="fixgo-input"
+                  type={verPassword ? 'text' : 'password'}
+                  autoComplete={esLogin ? 'current-password' : 'new-password'}
+                  placeholder={esLogin ? 'Tu contraseña' : 'Creá una contraseña'}
+                  value={password}
+                  onChange={e => { setPassword(e.target.value); setErrorCredenciales(false) }}
+                  style={{ ...estiloInput, paddingRight:56 }}
+                />
+                {ojito}
+              </div>
+              {!esLogin && <p style={{ margin:0, fontSize:13, color:'#6C6C70' }}>Mínimo 6 caracteres.</p>}
+            </div>
+
+            {!esLogin && (
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                <label htmlFor="fixgo-repetir" style={estiloLabel}>Repetí la contraseña</label>
+                <input
+                  id="fixgo-repetir"
+                  className="fixgo-input"
+                  type={verPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Escribila de nuevo"
+                  value={repetir}
+                  onChange={e => setRepetir(e.target.value)}
+                  style={estiloInput}
+                />
+              </div>
+            )}
+
+            {esLogin && !errorCredenciales && (
+              <button
+                type="button"
+                onClick={() => { setVista('recuperar'); setError(null); setAviso(null) }}
+                style={{ ...linkTexto, alignSelf:'flex-end', textDecoration:'none', textAlign:'right' }}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            )}
+
+            {errorCredenciales && (
+              <div role="alert" style={{ display:'flex', flexDirection:'column', gap:8, padding:'14px 16px', borderRadius:14, background:'#FEF3F2' }}>
+                <p style={{ margin:0, fontSize:14, fontWeight:700, color:'#B42318' }}>
+                  El email o la contraseña no coinciden.
+                </p>
+                <button type="button" onClick={() => cambiarModo('signup')} style={linkTexto}>
+                  ¿Primera vez en Fixgo? Creá tu cuenta
+                </button>
+                <button type="button" onClick={() => { setVista('recuperar'); setErrorCredenciales(false); setAviso(null) }} style={linkTexto}>
+                  ¿Olvidaste tu contraseña? Recuperala
+                </button>
+              </div>
+            )}
 
             {error && (
-              <p style={{ margin:0, color:'#D92D20', fontSize:13.5, lineHeight:1.4 }}>{error}</p>
+              <p role="alert" style={{ margin:0, color:'#B42318', fontSize:14, lineHeight:1.4 }}>{error}</p>
             )}
 
             <button type="submit" disabled={conectando} style={{
-              width:'100%', padding:'14px', borderRadius:14, border:'none',
-              background:'#1C1C1E', color:'#fff', fontSize:15, fontWeight:700,
+              width:'100%', height:54, borderRadius:14, border:'none',
+              background:'#1C1C1E', color:'#fff', fontSize:16, fontWeight:700, fontFamily:'inherit',
               cursor: conectando ? 'default' : 'pointer',
               opacity: conectando ? 0.85 : 1,
-              display:'flex', alignItems:'center', justifyContent:'center', gap:10,
-              marginTop:4
+              display:'flex', alignItems:'center', justifyContent:'center', gap:10
             }}>
               {conectando ? (
                 <span style={{
@@ -277,36 +391,16 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
                   display:'inline-block', animation:'fixgoSpin 0.7s linear infinite'
                 }}/>
               ) : (
-                modoEmail === 'login' ? 'Iniciar sesión' : 'Crear cuenta'
+                esLogin ? 'Iniciar sesión' : 'Crear cuenta'
               )}
             </button>
+
+            {!esLogin && (
+              <p style={{ margin:0, fontSize:13, lineHeight:1.45, color:'#6C6C70', textAlign:'center' }}>
+                Te vamos a mandar un email para confirmar tu cuenta.
+              </p>
+            )}
           </form>
-
-          {modoEmail === 'login' && (
-            <button
-              onClick={() => { setVista('recuperar'); setError(null); setAviso(null) }}
-              style={{
-                width:'100%', border:'none', background:'none', marginTop:16,
-                color:'#8E8E93', fontSize:14, cursor:'pointer', textAlign:'center'
-              }}
-            >
-              ¿Olvidaste tu contraseña?
-            </button>
-          )}
-
-          <button
-            onClick={() => {
-              setModoEmail(modoEmail === 'login' ? 'signup' : 'login')
-              setError(null)
-              setAviso(null)
-            }}
-            style={{
-              width:'100%', border:'none', background:'none', marginTop:20,
-              color:'#1C1C1E', fontSize:14, fontWeight:600, cursor:'pointer', textAlign:'center'
-            }}
-          >
-            {modoEmail === 'login' ? '¿No tenés cuenta? Creá una' : '¿Ya tenés cuenta? Iniciá sesión'}
-          </button>
         </div>
       </div>
     )
