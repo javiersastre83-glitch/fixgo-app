@@ -6,6 +6,7 @@ import Login, { NuevaPassword } from './Login.tsx'
 import { supabase } from './supabase'
 import { Capacitor } from '@capacitor/core'
 import { App as CapacitorApp } from '@capacitor/app'
+import { leerReferrerInstalacion, procesarLinkEntrante } from './crecimiento'
 
 function Splash() {
   return (
@@ -69,9 +70,20 @@ function Root() {
   // quedarse en Chrome mostrando la versión web) gracias al App Link configurado.
   // Ese regreso dispara este evento con la URL completa (incluye "?code=..."),
   // que canjeamos por una sesión real. onAuthStateChange (arriba) hace el resto.
+  // ── Invitaciones en la app instalada ──
+  // Primer arranque después de instalar: el código puede venir en el referrer de Google Play.
+  // Arranque en frío desde un link ar.fixgo.app://invitacion?codigo=…: lo leemos acá.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+    leerReferrerInstalacion()
+    CapacitorApp.getLaunchUrl().then(r => { if (r?.url) procesarLinkEntrante(r.url) }).catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return
     const listenerPromise = CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
+      // Link de invitación (ar.fixgo.app://invitacion?codigo=…): se guarda y App.tsx lo usa.
+      if (procesarLinkEntrante(url)) return
       // Sirve para 3 regresos: login con Google (login-callback), confirmación de
       // cuenta por mail (login-callback) y recuperar contraseña (reset-password).
       try {

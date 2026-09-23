@@ -7,6 +7,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Contacts } from '@capacitor-community/contacts';
 import { Network } from '@capacitor/network';
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
+import { linkInvitacion, guardarInvitacion, extraerCodigoInvitacion, pedirResenaSiCorresponde } from './crecimiento';
 
 // Clave pública de Android de RevenueCat (segura para incluir en el cliente: no es secreta).
 const REVENUECAT_ANDROID_API_KEY = "goog_IPRWOZhrHFPwmgURhTRhxCRdteU";
@@ -392,6 +393,36 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
 };
 
 // ─────────────────────────────
+// UNIRME CON UN LINK — respaldo manual por si la invitación no se aplicó sola
+// (ej.: instaló la app desde otro lado, o abrió el link en otro celular).
+// ─────────────────────────────
+const UnirmeConLink = ({ compacto=false }) => {
+  const [abierto,setAbierto]=useState(!compacto);
+  const [texto,setTexto]=useState("");
+  const [aviso,setAviso]=useState("");
+  const enviar=()=>{
+    const inv=extraerCodigoInvitacion(texto);
+    if(!inv){setAviso("Pegá el link completo que te mandaron por WhatsApp.");return;}
+    setAviso("");setTexto("");
+    guardarInvitacion(inv.tipo,inv.codigo);
+  };
+  if(!abierto)return(
+    <button type="button" onClick={()=>setAbierto(true)} style={{background:"none",border:"none",color:"#0057FF",fontSize:14,fontWeight:700,cursor:"pointer",padding:"14px 0 4px",width:"100%"}}>¿Te invitaron a una obra? Pegá el link acá</button>
+  );
+  return(
+    <div style={{background:"#fff",borderRadius:16,padding:"14px",marginTop:14,textAlign:"left",boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
+      <p style={{margin:"0 0 4px",fontSize:14,fontWeight:700,color:"#1C1C1E"}}>¿Te invitaron a una obra?</p>
+      <p style={{margin:"0 0 10px",fontSize:12.5,color:"#55555A"}}>Pegá el link que te mandaron y entrás directo.</p>
+      <div style={{display:"flex",gap:8}}>
+        <input value={texto} onChange={e=>{setTexto(e.target.value);setAviso("");}} placeholder="fixgo.ar/invitacion…" style={{flex:1,minWidth:0,padding:"11px 12px",borderRadius:12,border:"1.5px solid #E5E5EA",fontSize:14,outline:"none"}}/>
+        <button type="button" onClick={enviar} disabled={!texto.trim()} style={{flexShrink:0,background:"#0057FF",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:14,fontWeight:700,cursor:"pointer",opacity:texto.trim()?1:0.45}}>Unirme</button>
+      </div>
+      {aviso&&<p style={{margin:"8px 0 0",fontSize:12.5,color:"#C2410C"}}>{aviso}</p>}
+    </div>
+  );
+};
+
+// ─────────────────────────────
 // CACHEO LOCAL DE IMÁGENES (IndexedDB) — para que fotos de resolución, logo de estudio
 // y portada del informe se guarden en el teléfono la primera vez que se ven, y las
 // próximas veces (con o sin señal) se muestren al instante sin volver a pedirlas.
@@ -667,9 +698,9 @@ const OnboardingOverlay = ({ onFinish }) => {
   };
 
   const FOTOS = {
-    1:"https://www.fixgo.ar/onboarding-fondo.jpg",
-    2:"https://www.fixgo.ar/onboarding-fondo-2.jpg",
-    3:"https://www.fixgo.ar/onboarding-fondo-3.jpg",
+    1:"/onboarding-fondo.jpg",
+    2:"/onboarding-fondo-2.jpg",
+    3:"/onboarding-fondo-3.jpg",
   };
 
   if(paso<4){
@@ -864,6 +895,7 @@ export default function App({ session }) {
   const grabacionCanceladaRef = useRef(false);
   const [modalNuevaObra,   setModalNuevaObra]   = useState(false);
   const [modalInvitar,     setModalInvitar]     = useState(false);
+  const [promptInvitarNov, setPromptInvitarNov] = useState<any>(null); // invitar al responsable después de la 1ª novedad de una obra sin equipo
   const [invitarRol,       setInvitarRol]       = useState("operario");
   const [invitarEsp,       setInvitarEsp]       = useState(RESPONSABLES[0]);
   const [invitarEspOtro,   setInvitarEspOtro]   = useState("");
@@ -1184,9 +1216,9 @@ export default function App({ session }) {
     mostrarToast("Invitación cancelada");
   };
   const reenviarInvitacion=(inv)=>{
-    const link=`https://www.fixgo.ar/?invitacion=${inv.codigo}`;
+    const link=linkInvitacion(inv.codigo);
     const rolTxt=inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":(inv.especialidad||"Operario");
-    const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${link}`;
+    const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nTocá el link: instalás Fixgo y entrás directo a la obra 👇\n${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
   const guardarTelefono=async()=>{
@@ -1486,10 +1518,19 @@ export default function App({ session }) {
 
   // ── ETAPA 4: usar el link una vez que la persona inició sesión (ANTES de cargar obras) ──
   const [invitacionProcesada, setInvitacionProcesada] = useState(false);
+  // Llega una invitación con la app ya abierta (link ar.fixgo.app://, referrer de Play o código pegado a mano)
+  const [invitacionTick, setInvitacionTick] = useState(0);
+  useEffect(()=>{
+    const h=()=>setInvitacionTick(t=>t+1);
+    window.addEventListener("fixgo-invitacion",h);
+    return()=>window.removeEventListener("fixgo-invitacion",h);
+  },[]);
   useEffect(()=>{
     if(!usuarioReal){setInvitacionProcesada(false);return;}
     const codigo=localStorage.getItem("fixgo_invitacion");
     if(!codigo){setInvitacionProcesada(true);return;}
+    // Pasar a false y después a true vuelve a cargar obras/equipo con la obra nueva incluida
+    setInvitacionProcesada(false);
     (async()=>{
       const{data,error}=await supabase.rpc("usar_invitacion",{codigo:codigo});
       localStorage.removeItem("fixgo_invitacion");
@@ -1497,7 +1538,7 @@ export default function App({ session }) {
       if(data?.ok){
         setToast("¡Te uniste a la obra!");
         setTimeout(()=>setToast(""),2500);
-        window.history.replaceState({},"","https://www.fixgo.ar/");
+        try{window.history.replaceState({},"",window.location.pathname);}catch(e){}
       }else if(data?.motivo==="ya_usada"){
         setToast("Este link de invitación ya fue usado");
         setTimeout(()=>setToast(""),2500);
@@ -1510,7 +1551,7 @@ export default function App({ session }) {
       }
       setInvitacionProcesada(true);
     })();
-  },[usuarioReal]);
+  },[usuarioReal,invitacionTick]);
 
   useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarEmpresa();},[usuarioReal,invitacionProcesada]);
   useEffect(()=>{
@@ -1552,11 +1593,11 @@ export default function App({ session }) {
       const{data,error}=await supabase.rpc("usar_invitacion_empresa",{codigo:codigoEmp});
       localStorage.removeItem("fixgo_invitacion_empresa");
       if(error){console.error("Error al usar invitación de empresa:",error);return;}
-      if(data?.ok){setToast("¡Te uniste al equipo de profesionales!");setTimeout(()=>setToast(""),2500);window.history.replaceState({},"","https://www.fixgo.ar/");}
+      if(data?.ok){setToast("¡Te uniste al equipo de profesionales!");setTimeout(()=>setToast(""),2500);try{window.history.replaceState({},"",window.location.pathname);}catch(e){}setInvitacionProcesada(false);setTimeout(()=>setInvitacionProcesada(true),50);}
       else if(data?.motivo==="ya_usada"){setToast("Este link de invitación ya fue usado");setTimeout(()=>setToast(""),2500);}
       else if(data?.motivo==="no_existe"){setToast("El link de invitación no es válido");setTimeout(()=>setToast(""),2500);}
     })();
-  },[usuarioReal]);
+  },[usuarioReal,invitacionTick]);
 
   useEffect(()=>{
     if(!usuarioReal){setCargandoDatos(false);return;}
@@ -1853,6 +1894,7 @@ export default function App({ session }) {
       const cambiosLocal=esDirecta?{resuelta:true,estadoAprobacion:null,fotoResolucion:url,resueltaAt:ahora}:{estadoAprobacion:"pendiente",fotoResolucion:url};
       setNovedades(n=>n.map(x=>x.id===id?{...x,...cambiosLocal}:x));
       mostrarToast(esDirecta?"Novedad resuelta con foto":"Enviado a aprobación con foto");
+      if(esDirecta)pedirResenaSiCorresponde();
       setVista("lista");
     }catch(e){alert("No se pudo subir la foto: "+(e.message||"error desconocido")+". Se confirmó igual, sin foto.");confirmarSinFoto(id);}
     setSubiendoFotoResolucion(false);
@@ -1981,6 +2023,13 @@ export default function App({ session }) {
         setUltimaActividadPorObra(p=>({...p,[obraActual.id]:new Date(data.created_at).getTime()}));
         if(form.comentario.trim()){const{data:comData}=await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()}).select().single();nn.comentarios=[{id:comData?.id,texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
         setNovedades(n=>n.some(x=>x.id===nn.id)?n:[nn,...n]);
+        // Momento clave para sumar al equipo: la obra tiene su primera novedad y nadie más para resolverla.
+        // Se muestra una sola vez por obra.
+        if(!continuar&&puedeGestionar&&!responsableUsuarioIdFinal&&!tokenPendienteFinal&&equipoObra.filter(m=>m.uid!==usuarioReal.id).length===0&&invitacionesPendientes.length===0){
+          const clave=`fixgo_prompt_invitar_${obraActual.id}`;
+          let yaMostrado=false;try{yaMostrado=!!localStorage.getItem(clave);localStorage.setItem(clave,"1");}catch(e){}
+          if(!yaMostrado)setTimeout(()=>setPromptInvitarNov({id:data.id,responsable:resp||""}),700);
+        }
       }
     } else {
       setNovedades(n=>[{id:Date.now(),fotos:form.fotos,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fechaLimite:form.fechaLimite,resuelta:false,fecha:new Date().toISOString().slice(0,10),comentarios:form.comentario.trim()?[{texto:form.comentario.trim(),autorId:usuarioActivo.id,ts:Date.now()}]:[]},...n]);
@@ -2005,9 +2054,10 @@ export default function App({ session }) {
     }
     if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:nuevoEstado,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);if(error){alert("No se pudo actualizar: "+error.message);return;}}
     setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null,resueltaAt:ahora}:x));
+    if(nuevoEstado)pedirResenaSiCorresponde();
   };
   const enviarAprobacion=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({estado_aprobacion:"pendiente"}).eq("id",id);if(error){alert("No se pudo enviar a aprobación: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,estadoAprobacion:"pendiente"}:x));};
-  const aprobar=async(id)=>{const ahora=new Date().toISOString();if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);if(error){alert("No se pudo aprobar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,resueltaAt:ahora}:x));};
+  const aprobar=async(id)=>{const ahora=new Date().toISOString();if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);if(error){alert("No se pudo aprobar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,resueltaAt:ahora}:x));pedirResenaSiCorresponde();};
   const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null,resuelta_at:null}).eq("id",id);if(error){alert("No se pudo rechazar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null,resueltaAt:null}:x));};
   const enVueloRef = useRef(new Set()); // tempIds que se están subiendo AHORA MISMO (petición ya en camino, no se puede cancelar)
   const borrarAlSincronizarRef = useRef(new Set()); // tempIds que el usuario borró mientras estaban en vuelo: hay que borrarlos del servidor apenas terminen de subir
@@ -2472,7 +2522,7 @@ export default function App({ session }) {
     }
     const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:nombreLimpio||null,telefono:invitarTelefono.trim()||null,token_novedad:tokenNov});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
-    setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
+    setLinkGenerado(linkInvitacion(codigo));
     setGenerandoLink(false);
     setInvitacionesPendientes(p=>[{codigo,rol:invitarRol,especialidad:esp,nombre:nombreLimpio||null,telefono:invitarTelefono.trim()||null,created_at:new Date().toISOString()},...(nombreLimpio?p.filter(i=>(i.nombre||"").toLowerCase()!==nombreLimpio.toLowerCase()):p)]);
     if(invitarCallback){
@@ -2480,7 +2530,7 @@ export default function App({ session }) {
       invitarCallback({responsable:etiqueta,usuarioId:null,token:tokenNov});
     }
   };
-  const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp);const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
+  const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp);const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nTocá el link: instalás Fixgo y entrás directo a la obra 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
   const guardarNombreEstudio=async()=>{
     if(!usuarioReal)return;
     const nombreFinal=nombreEstudioInput.trim();
@@ -2562,7 +2612,7 @@ export default function App({ session }) {
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
     const{error}=await supabase.from("invitaciones_empresa").insert({codigo,empresa_id:empresaPropia.id});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLinkEmpresa(false);return;}
-    setLinkEmpresaGenerado(`https://www.fixgo.ar/?empresa=${codigo}`);
+    setLinkEmpresaGenerado(linkInvitacion(codigo,"empresa"));
     setGenerandoLinkEmpresa(false);
     setInvitacionesEmpresaPendientes(()=>[{codigo,created_at:new Date().toISOString()}]);
   };
@@ -2777,6 +2827,19 @@ export default function App({ session }) {
     <button style={s.btnPrincipal} onClick={()=>setModalElegirObras(null)}>Listo</button>
   </div></div>;
 
+  const promptInvitarJSX = promptInvitarNov&&!modalInvitar&&(()=>{
+    const r=(promptInvitarNov.responsable||"").trim();
+    const aQuien=r?`tu ${r.charAt(0).toLowerCase()+r.slice(1)}`:"quien la resuelve";
+    return(<div style={s.overlay} onClick={()=>setPromptInvitarNov(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+      <div style={{textAlign:"center",marginBottom:14}}>
+        <div style={{width:56,height:56,borderRadius:18,background:"#0057FF15",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:10}}><Users size={26} color="#0057FF"/></div>
+        <p style={{margin:"0 0 6px",fontSize:19,fontWeight:800,color:"#1C1C1E"}}>¿Quién resuelve esta novedad?</p>
+        <p style={{margin:0,fontSize:14,color:"#55555A",lineHeight:1.45}}>Sumá a {aQuien} a la obra: recibe la novedad al instante, con foto y plazo, y te avisa cuando la termina.</p>
+      </div>
+      <button style={{...s.btnPrincipal,marginBottom:10}} onClick={()=>{const novId=promptInvitarNov.id;setPromptInvitarNov(null);abrirModalInvitar(async({responsable,usuarioId,token})=>{await asignarRapido(novId,{responsable,usuarioId});if(token)await supabase.from("novedades").update({token_asignacion_pendiente:token}).eq("id",novId);});if(RESPONSABLES.includes(r))setInvitarEsp(r);}}>Invitar a {aQuien}</button>
+      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setPromptInvitarNov(null)}>Más tarde</button>
+    </div></div>);
+  })();
   const modalInvitarJSX = modalInvitar&&<div style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarCallback(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
     <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>Generá un link para sumar a alguien a "{obraActual?.nombre}"</p>
@@ -2818,7 +2881,7 @@ export default function App({ session }) {
       </div>
       <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#55555A"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
       <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={compartirLinkWhatsapp}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Compartir por WhatsApp</span></button>
-      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp);const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;if(navigator.share){navigator.share({title:"Invitación a Fixgo",text:msg}).catch(()=>{});}else{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Share2 size={16}/>Compartir por otro medio</span></button>
+      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp);const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nTocá el link: instalás Fixgo y entrás directo a la obra 👇\n${linkGenerado}`;if(navigator.share){navigator.share({title:"Invitación a Fixgo",text:msg}).catch(()=>{});}else{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Share2 size={16}/>Compartir por otro medio</span></button>
       <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarCallback(null);}}>Cerrar</button>
     </>}
   </div></div>;
@@ -2864,7 +2927,7 @@ export default function App({ session }) {
     );
     const FooterPagina=({pagina}:{pagina:number})=>(
       <div style={{position:"absolute",bottom:"8mm",left:"14mm",right:"14mm",display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9.5,color:GRAY}}>
-        <span>Informe generado por <b style={{color:INK}}>Fixgo</b></span>
+        <span>Informe generado por <b style={{color:INK}}>Fixgo</b> · fixgo.ar</span>
         {logoEstudioUrl?<ImgCacheada src={logoEstudioUrl} style={{width:14,height:14,objectFit:"contain",opacity:0.35}}/>:<span/>}
         <span>{pagina} / 4</span>
       </div>
@@ -2927,7 +2990,7 @@ export default function App({ session }) {
               ))}
             </div>
             <div style={{display:"flex",justifyContent:"space-between",marginTop:14,color:"rgba(255,255,255,0.5)",fontSize:10}}>
-              <span>Informe generado por <b style={{color:TEAL}}>Fixgo</b></span>
+              <span>Informe generado por <b style={{color:TEAL}}>Fixgo</b> · fixgo.ar</span>
               <span>01 / 04</span>
             </div>
           </div>
@@ -3979,6 +4042,7 @@ export default function App({ session }) {
                 </>):(<>
                   <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>Aún no tenés tareas asignadas</p>
                   <p style={{fontSize:14,margin:0}}>Cuando un profesional te sume a una obra, la vas a ver acá.</p>
+                  <UnirmeConLink/>
                 </>)}
               </div>
             );
@@ -4090,6 +4154,7 @@ export default function App({ session }) {
             onClick={()=>{if(!esVersionPro&&misObrasPropias>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
             <Plus size={22} color="#636366"/><span style={{fontSize:16,fontWeight:600,color:"#636366"}}>Nueva obra</span>
           </button>}
+          {vistaHome==="mias"&&obras.length===0&&<UnirmeConLink compacto/>}
           </>)}
         </div>
         )}
@@ -4133,7 +4198,7 @@ export default function App({ session }) {
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(linkEmpresaGenerado)}`} alt="QR de invitación" style={{width:180,height:180,borderRadius:12,border:"1px solid #E5E5EA"}}/>
             </div>
             <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#55555A"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
-            <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={()=>{const msg=`Te invito a sumarte a mi equipo de profesionales en Fixgo 👷\n\n${linkEmpresaGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");}}>Compartir por WhatsApp</button>
+            <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={()=>{const msg=`Te invito a sumarte a mi equipo de profesionales en Fixgo 👷\n\nTocá el link: instalás Fixgo y entrás directo al equipo 👇\n${linkEmpresaGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");}}>Compartir por WhatsApp</button>
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}>Cerrar</button>
           </>)}
         </div></div>}
@@ -4373,7 +4438,7 @@ export default function App({ session }) {
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
-        {modalInvitarJSX}
+        {modalInvitarJSX}{promptInvitarJSX}
         {asignacionRapidaJSX}
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
@@ -4888,7 +4953,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {modalInvitarJSX}
+        {modalInvitarJSX}{promptInvitarJSX}
         {asignacionRapidaJSX}
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
@@ -5004,7 +5069,7 @@ export default function App({ session }) {
       {null}
       {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
       <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
-      {modalInvitarJSX}
+      {modalInvitarJSX}{promptInvitarJSX}
         {asignacionRapidaJSX}
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
