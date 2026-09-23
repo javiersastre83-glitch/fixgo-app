@@ -4039,6 +4039,7 @@ export default function App({ session }) {
                 {esGestorDeAlgunaObra?(<>
                   <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>No tenés tareas asignadas a tu nombre</p>
                   <p style={{fontSize:14,margin:0}}>Las novedades de tus obras las administrás desde "Mis obras" o "Estudio".</p>
+                  <UnirmeConLink compacto/>
                 </>):(<>
                   <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>Aún no tenés tareas asignadas</p>
                   <p style={{fontSize:14,margin:0}}>Cuando un profesional te sume a una obra, la vas a ver acá.</p>
