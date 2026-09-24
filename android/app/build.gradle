@@ -52,6 +52,10 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // Install Referrer: lee el código de invitación / UTM con el que se instaló la app desde Google Play
+    implementation "com.android.installreferrer:installreferrer:2.2"
+    // In-App Review: pedido de reseña nativo de Google Play, sin salir de la app
+    implementation "com.google.android.play:review:2.0.2"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
