@@ -18,8 +18,11 @@ function traducirError(mensaje: string): string {
 // Adónde vuelve la persona cuando toca un link de mail (confirmar cuenta o
 // recuperar contraseña). En la app nativa usamos el esquema propio ar.fixgo.app://
 // (mismo mecanismo que el login de Google), así el link abre Fixgo y no la web.
+// Pasa por una página puente del sitio (www.fixgo.ar/abrir.html): en el celular abre Fixgo
+// (ar.fixgo.app://<ruta>?code=…), y si el link se abre en la compu muestra qué hacer en vez
+// de una pantalla vacía.
 const destinoLink = (ruta: string) =>
-  Capacitor.isNativePlatform() ? `ar.fixgo.app://${ruta}` : window.location.origin
+  Capacitor.isNativePlatform() ? `https://www.fixgo.ar/abrir.html?destino=${ruta}` : window.location.origin
 
 export default function Login({ avisoInicial = null }: { avisoInicial?: string | null }) {
   const [conectando, setConectando] = useState(false)

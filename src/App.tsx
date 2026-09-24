@@ -7,6 +7,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Contacts } from '@capacitor-community/contacts';
 import { Network } from '@capacitor/network';
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
+import { linkInvitacion, guardarInvitacion, extraerCodigoInvitacion, pedirResenaSiCorresponde, linkAbrirObra, leerPedidoAbrirObra } from './crecimiento';
 
 // Clave pública de Android de RevenueCat (segura para incluir en el cliente: no es secreta).
 const REVENUECAT_ANDROID_API_KEY = "goog_IPRWOZhrHFPwmgURhTRhxCRdteU";
@@ -326,6 +327,8 @@ const NOVEDADES_DEMO = [
 const FORM_INICIAL = { fotos:[], descripcion:"", responsable:RESPONSABLES[0], responsableCustom:"", responsableUsuarioId:null, sector:SECTORES[0], sectorCustom:"", prioridad:1, fechaLimite:"", comentario:"", ocultoCapataz:false, tokenAsignacionPendiente:null };
 
 const formatFecha = (iso) => { if(!iso) return ""; const d=new Date(iso+"T00:00:00"); return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"}); };
+// Fecha AAAA-MM-DD en hora del celular (no UTC): después de las 21 h, toISOString() ya da el día siguiente.
+const fechaLocal = (ts?) => { const d=ts?new Date(ts):new Date(); if(isNaN(d.getTime()))return ""; return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 const formatHora  = (ts)  => { const d=new Date(ts); return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}); };
 const diasRestantes = (f) => { if(!f) return null; const h=new Date(); h.setHours(0,0,0,0); return Math.ceil((new Date(f+"T00:00:00")-h)/(864e5)); };
 const estadoBadge = (nov) => {
@@ -387,6 +390,36 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
         <input style={{width:"100%",padding:"13px 14px",borderRadius:14,border:"1.5px solid #E5E5EA",fontSize:16,outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginTop:10}}
           placeholder="Escribí el oficio..." value={customValue} onChange={e=>onCustomChange(e.target.value)} autoFocus/>
       )}
+    </div>
+  );
+};
+
+// ─────────────────────────────
+// UNIRME CON UN LINK — respaldo manual por si la invitación no se aplicó sola
+// (ej.: instaló la app desde otro lado, o abrió el link en otro celular).
+// ─────────────────────────────
+const UnirmeConLink = ({ compacto=false }) => {
+  const [abierto,setAbierto]=useState(!compacto);
+  const [texto,setTexto]=useState("");
+  const [aviso,setAviso]=useState("");
+  const enviar=()=>{
+    const inv=extraerCodigoInvitacion(texto);
+    if(!inv){setAviso("Pegá el link completo que te mandaron por WhatsApp.");return;}
+    setAviso("");setTexto("");
+    guardarInvitacion(inv.tipo,inv.codigo);
+  };
+  if(!abierto)return(
+    <button type="button" onClick={()=>setAbierto(true)} style={{background:"none",border:"none",color:"#0057FF",fontSize:14,fontWeight:700,cursor:"pointer",padding:"14px 0 4px",width:"100%"}}>¿Te invitaron a una obra? Pegá el link acá</button>
+  );
+  return(
+    <div style={{background:"#fff",borderRadius:16,padding:"14px",marginTop:14,textAlign:"left",boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
+      <p style={{margin:"0 0 4px",fontSize:14,fontWeight:700,color:"#1C1C1E"}}>¿Te invitaron a una obra?</p>
+      <p style={{margin:"0 0 10px",fontSize:12.5,color:"#55555A"}}>Pegá el link que te mandaron y entrás directo.</p>
+      <div style={{display:"flex",gap:8}}>
+        <input value={texto} onChange={e=>{setTexto(e.target.value);setAviso("");}} placeholder="fixgo.ar/invitacion…" style={{flex:1,minWidth:0,padding:"11px 12px",borderRadius:12,border:"1.5px solid #E5E5EA",fontSize:14,outline:"none"}}/>
+        <button type="button" onClick={enviar} disabled={!texto.trim()} style={{flexShrink:0,background:"#0057FF",color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:14,fontWeight:700,cursor:"pointer",opacity:texto.trim()?1:0.45}}>Unirme</button>
+      </div>
+      {aviso&&<p style={{margin:"8px 0 0",fontSize:12.5,color:"#C2410C"}}>{aviso}</p>}
     </div>
   );
 };
@@ -667,9 +700,9 @@ const OnboardingOverlay = ({ onFinish }) => {
   };
 
   const FOTOS = {
-    1:"https://www.fixgo.ar/onboarding-fondo.jpg",
-    2:"https://www.fixgo.ar/onboarding-fondo-2.jpg",
-    3:"https://www.fixgo.ar/onboarding-fondo-3.jpg",
+    1:"/onboarding-fondo.jpg",
+    2:"/onboarding-fondo-2.jpg",
+    3:"/onboarding-fondo-3.jpg",
   };
 
   if(paso<4){
@@ -854,6 +887,7 @@ export default function App({ session }) {
   const [nuevoComentario,  setNuevoComentario]  = useState("");
   const [grabandoAudio,    setGrabandoAudio]    = useState(false);
   const [comentariosAbiertos, setComentariosAbiertos] = useState(false);
+  const [mensajesExpandidos, setMensajesExpandidos] = useState(null); // id de la novedad cuyos mensajes se ven completos
   const [editorDibujo,     setEditorDibujo]     = useState(null); // {src, origen:"nueva"|"editar"|"resolucion", idx}
   const [tiempoGrabacion,  setTiempoGrabacion]  = useState(0);
   const mediaRecorderRef = useRef(null);
@@ -864,6 +898,7 @@ export default function App({ session }) {
   const grabacionCanceladaRef = useRef(false);
   const [modalNuevaObra,   setModalNuevaObra]   = useState(false);
   const [modalInvitar,     setModalInvitar]     = useState(false);
+  const [promptInvitarNov, setPromptInvitarNov] = useState<any>(null); // invitar al responsable después de la 1ª novedad de una obra sin equipo
   const [invitarRol,       setInvitarRol]       = useState("operario");
   const [invitarEsp,       setInvitarEsp]       = useState(RESPONSABLES[0]);
   const [invitarEspOtro,   setInvitarEspOtro]   = useState("");
@@ -1184,9 +1219,9 @@ export default function App({ session }) {
     mostrarToast("Invitación cancelada");
   };
   const reenviarInvitacion=(inv)=>{
-    const link=`https://www.fixgo.ar/?invitacion=${inv.codigo}`;
+    const link=linkInvitacion(inv.codigo);
     const rolTxt=inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":(inv.especialidad||"Operario");
-    const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${link}`;
+    const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nTocá el link: instalás Fixgo y entrás directo a la obra 👇\n${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");
   };
   const guardarTelefono=async()=>{
@@ -1351,6 +1386,38 @@ export default function App({ session }) {
   const obrasParaPushRef=useRef(obras);obrasParaPushRef.current=obras;
   const obrasEmpresaParaPushRef=useRef(obrasEmpresa);obrasEmpresaParaPushRef.current=obrasEmpresa;
   const novedadesPorObraParaPushRef=useRef(novedadesPorObra);novedadesPorObraParaPushRef.current=novedadesPorObra;
+  // Abre una obra (y, si viene, una novedad puntual). La usan el tap de una notificación push
+  // y los links "Ver en Fixgo" del resumen por WhatsApp. Devuelve false si la obra no está entre las de la persona.
+  const irAObraONovedadRef=useRef(null);
+  irAObraONovedadRef.current=(data)=>{
+        const obraId=data?.obraId;
+        if(!obraId)return false;
+        const obra=obrasParaPushRef.current.find(o=>String(o.id)===String(obraId))||obrasEmpresaParaPushRef.current.find(o=>String(o.id)===String(obraId));
+        if(!obra)return false;
+        setObraActual(obra);
+        setVistaRaiz("obra");
+        setTabActiva("obras");
+        setVistaPerfil(false);
+        setVistaInfoApp(false);
+        if(data.tipo==="equipo"){
+          setVista("lista");
+          setVistaEquipo(true);
+        }else if(data.novedadId){
+          setVistaEquipo(false);
+          setOrigenBitacora(false);
+          setDetalleId(data.novedadId);
+          setVista("detalle");
+          const novReal=(novedadesPorObraParaPushRef.current[obraId]||[]).find(n=>String(n.id)===String(data.novedadId));
+          setComentariosAbiertos((novReal?.comentarios||[]).length>0);
+        }
+        // Si todavía no se cargaron los datos completos de esta obra (fotos, comentarios), traerlos.
+        if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObraParaPushRef.current[obra.id]||novedadesPorObraParaPushRef.current[obra.id].length===0)){
+          supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
+            if(novs)setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?fechaLocal(n.created_at):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}));
+          });
+        }
+        return true;
+  };
   useEffect(()=>{
     // Firebase (google-services.json) ya está configurado en el proyecto Android,
     // así que el registro de notificaciones push está activo.
@@ -1374,32 +1441,7 @@ export default function App({ session }) {
     PushNotifications.addListener("pushNotificationActionPerformed",(accion)=>{
       try{
         const data=accion?.notification?.data||{};
-        const obraId=data.obraId;
-        if(!obraId)return;
-        const obra=obrasParaPushRef.current.find(o=>o.id===obraId)||obrasEmpresaParaPushRef.current.find(o=>o.id===obraId);
-        if(!obra)return;
-        setObraActual(obra);
-        setVistaRaiz("obra");
-        setTabActiva("obras");
-        setVistaPerfil(false);
-        setVistaInfoApp(false);
-        if(data.tipo==="equipo"){
-          setVista("lista");
-          setVistaEquipo(true);
-        }else if(data.novedadId){
-          setVistaEquipo(false);
-          setOrigenBitacora(false);
-          setDetalleId(data.novedadId);
-          setVista("detalle");
-          const novReal=(novedadesPorObraParaPushRef.current[obraId]||[]).find(n=>String(n.id)===String(data.novedadId));
-          setComentariosAbiertos((novReal?.comentarios||[]).length>0);
-        }
-        // Si todavía no se cargaron los datos completos de esta obra (fotos, comentarios), traerlos.
-        if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObraParaPushRef.current[obra.id]||novedadesPorObraParaPushRef.current[obra.id].length===0)){
-          supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-            if(novs)setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}));
-          });
-        }
+        irAObraONovedadRef.current?.(data);
       }catch(e){console.warn("No se pudo abrir la novedad de la notificación:",e);}
     });
     registrarPush();
@@ -1408,6 +1450,18 @@ export default function App({ session }) {
       PushNotifications.removeAllListeners();
     };
   },[usuarioReal?.id]);
+  useEffect(()=>{
+    const h=()=>{
+      if(!usuarioReal||cargandoDatos||obras.length===0)return; // se reintenta cuando terminan de cargar las obras
+      const p=leerPedidoAbrirObra();
+      if(!p)return;
+      const ok=irAObraONovedadRef.current?.({obraId:p.obra,novedadId:p.novedad});
+      if(!ok)mostrarToast("Esta obra es de otro equipo: pedile a quien te la mandó que te invite desde Equipo");
+    };
+    h();
+    window.addEventListener("fixgo-abrir-obra",h);
+    return()=>window.removeEventListener("fixgo-abrir-obra",h);
+  },[usuarioReal?.id,cargandoDatos,obras.length]);
   const terminarOnboarding=async()=>{
     setVioOnboarding(true); // primero en pantalla, para que se sienta instantáneo
     if(usuarioReal)await supabase.from("usuarios").update({vio_onboarding:true}).eq("id",usuarioReal.id);
@@ -1486,10 +1540,19 @@ export default function App({ session }) {
 
   // ── ETAPA 4: usar el link una vez que la persona inició sesión (ANTES de cargar obras) ──
   const [invitacionProcesada, setInvitacionProcesada] = useState(false);
+  // Llega una invitación con la app ya abierta (link ar.fixgo.app://, referrer de Play o código pegado a mano)
+  const [invitacionTick, setInvitacionTick] = useState(0);
+  useEffect(()=>{
+    const h=()=>setInvitacionTick(t=>t+1);
+    window.addEventListener("fixgo-invitacion",h);
+    return()=>window.removeEventListener("fixgo-invitacion",h);
+  },[]);
   useEffect(()=>{
     if(!usuarioReal){setInvitacionProcesada(false);return;}
     const codigo=localStorage.getItem("fixgo_invitacion");
     if(!codigo){setInvitacionProcesada(true);return;}
+    // Pasar a false y después a true vuelve a cargar obras/equipo con la obra nueva incluida
+    setInvitacionProcesada(false);
     (async()=>{
       const{data,error}=await supabase.rpc("usar_invitacion",{codigo:codigo});
       localStorage.removeItem("fixgo_invitacion");
@@ -1497,7 +1560,7 @@ export default function App({ session }) {
       if(data?.ok){
         setToast("¡Te uniste a la obra!");
         setTimeout(()=>setToast(""),2500);
-        window.history.replaceState({},"","https://www.fixgo.ar/");
+        try{window.history.replaceState({},"",window.location.pathname);}catch(e){}
       }else if(data?.motivo==="ya_usada"){
         setToast("Este link de invitación ya fue usado");
         setTimeout(()=>setToast(""),2500);
@@ -1510,7 +1573,7 @@ export default function App({ session }) {
       }
       setInvitacionProcesada(true);
     })();
-  },[usuarioReal]);
+  },[usuarioReal,invitacionTick]);
 
   useEffect(()=>{if(usuarioReal&&invitacionProcesada)cargarEmpresa();},[usuarioReal,invitacionProcesada]);
   useEffect(()=>{
@@ -1552,11 +1615,11 @@ export default function App({ session }) {
       const{data,error}=await supabase.rpc("usar_invitacion_empresa",{codigo:codigoEmp});
       localStorage.removeItem("fixgo_invitacion_empresa");
       if(error){console.error("Error al usar invitación de empresa:",error);return;}
-      if(data?.ok){setToast("¡Te uniste al equipo de profesionales!");setTimeout(()=>setToast(""),2500);window.history.replaceState({},"","https://www.fixgo.ar/");}
+      if(data?.ok){setToast("¡Te uniste al equipo de profesionales!");setTimeout(()=>setToast(""),2500);try{window.history.replaceState({},"",window.location.pathname);}catch(e){}setInvitacionProcesada(false);setTimeout(()=>setInvitacionProcesada(true),50);}
       else if(data?.motivo==="ya_usada"){setToast("Este link de invitación ya fue usado");setTimeout(()=>setToast(""),2500);}
       else if(data?.motivo==="no_existe"){setToast("El link de invitación no es válido");setTimeout(()=>setToast(""),2500);}
     })();
-  },[usuarioReal]);
+  },[usuarioReal,invitacionTick]);
 
   useEffect(()=>{
     if(!usuarioReal){setCargandoDatos(false);return;}
@@ -1601,7 +1664,14 @@ export default function App({ session }) {
      const obrasConEquipo=await Promise.all((data||[]).map(async(obra)=>{
        const{data:miembros}=await supabase.from("equipo_obra").select("id,usuario_id,rol_en_obra,nombre,especialidad,invitado_por,telefono").eq("obra_id",obra.id);
        const equipo=(miembros||[]).map(m=>({equipoObraId:m.id,uid:m.usuario_id,rolEnObra:m.rol_en_obra,nombre:m.nombre,especialidad:m.especialidad,invitadoPor:m.invitado_por||null,telefono:m.telefono||null}));
-       return{...obra,equipo};
+       // Nombre del dueño, para mostrar "Obra de …" en Mis tareas (obras de otros).
+       let duenoNombre=null;
+       const propId=(obra as any).propietario_id;
+       if(propId&&propId!==usuarioReal.id){
+         duenoNombre=equipo.find(m=>m.uid===propId)?.nombre||null;
+         if(!duenoNombre){try{const{data:u}=await supabase.from("usuarios").select("nombre").eq("id",propId).maybeSingle();duenoNombre=u?.nombre||null;}catch(e){}}
+       }
+       return{...obra,equipo,duenoNombre};
      }));
      setObras(obrasConEquipo);
         // ── Detectar si alguna obra en la que participaba desapareció (eliminada u obra donde lo sacaron) ──
@@ -1623,7 +1693,7 @@ export default function App({ session }) {
         (data||[]).forEach((obra, idx)=>{
           setTimeout(async()=>{
             const{data:novs}=await supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id);
-            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
+            if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?fechaLocal(n.created_at):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
           }, idx * 300);
         });
       }
@@ -1635,7 +1705,7 @@ export default function App({ session }) {
 
   useEffect(()=>{
     if(!usuarioReal)return;
-    const mapNov=(n)=>({...n,fotos:n.fotos||[],fotoResolucion:n.foto_resolucion||null,ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",resueltaAt:n.resuelta_at||null,comentarios:[]});
+    const mapNov=(n)=>({...n,fotos:n.fotos||[],fotoResolucion:n.foto_resolucion||null,ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?fechaLocal(n.created_at):"",resueltaAt:n.resuelta_at||null,comentarios:[]});
     const canal=supabase.channel(`fixgo-realtime-${usuarioReal.id}`)
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"novedades"},(payload)=>{
         const obraId=payload.new.obra_id;
@@ -1853,6 +1923,7 @@ export default function App({ session }) {
       const cambiosLocal=esDirecta?{resuelta:true,estadoAprobacion:null,fotoResolucion:url,resueltaAt:ahora}:{estadoAprobacion:"pendiente",fotoResolucion:url};
       setNovedades(n=>n.map(x=>x.id===id?{...x,...cambiosLocal}:x));
       mostrarToast(esDirecta?"Novedad resuelta con foto":"Enviado a aprobación con foto");
+      if(esDirecta)pedirResenaSiCorresponde();
       setVista("lista");
     }catch(e){alert("No se pudo subir la foto: "+(e.message||"error desconocido")+". Se confirmó igual, sin foto.");confirmarSinFoto(id);}
     setSubiendoFotoResolucion(false);
@@ -1954,7 +2025,7 @@ export default function App({ session }) {
       const tempId=`local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
       const payload={obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:form.responsableUsuarioId||null};
       const comentarioInicial=form.comentario.trim();
-      const nn={...payload,id:tempId,created_at:new Date().toISOString(),fecha:new Date().toISOString().slice(0,10),fechaLimite:payload.fecha_limite||"",ocultoCapataz:payload.oculto_capataz,autorId:payload.autor_id,pendienteSync:true,comentarios:comentarioInicial?[{texto:comentarioInicial,autorId:usuarioReal.id,ts:Date.now()}]:[]};
+      const nn={...payload,id:tempId,created_at:new Date().toISOString(),fecha:fechaLocal(),fechaLimite:payload.fecha_limite||"",ocultoCapataz:payload.oculto_capataz,autorId:payload.autor_id,pendienteSync:true,comentarios:comentarioInicial?[{texto:comentarioInicial,autorId:usuarioReal.id,ts:Date.now()}]:[]};
       setNovedades(n=>[nn,...n]);
       setColaOffline(c=>[...c,{tipo:"crear_novedad",tempId,payload,comentario:comentarioInicial||null}]);
       setForm(formSiguiente);if(!continuar)setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast(continuar?"📡 Guardada sin conexión — lista para la próxima":"📡 Guardada sin conexión — se sube sola cuando vuelva la señal");
@@ -1977,13 +2048,20 @@ export default function App({ session }) {
       const{data,error}=await supabase.from("novedades").insert({obra_id:obraActual.id,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fecha_limite:form.fechaLimite||null,resuelta:false,fotos:form.fotos,autor_id:usuarioReal.id,oculto_capataz:form.ocultoCapataz,responsable_usuario_id:responsableUsuarioIdFinal,token_asignacion_pendiente:tokenPendienteFinal}).select().single();
       if(error){alert("No se pudo guardar la novedad: "+error.message);setGuardando(false);guardandoRef.current=false;return;}
       if(data){
-        const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
+        const nn={...data,fecha:data.created_at?fechaLocal(data.created_at):"",fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,comentarios:[]};
         setUltimaActividadPorObra(p=>({...p,[obraActual.id]:new Date(data.created_at).getTime()}));
         if(form.comentario.trim()){const{data:comData}=await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:form.comentario.trim()}).select().single();nn.comentarios=[{id:comData?.id,texto:form.comentario.trim(),autorId:usuarioReal.id,ts:Date.now()}];}
         setNovedades(n=>n.some(x=>x.id===nn.id)?n:[nn,...n]);
+        // Momento clave para sumar al equipo: la obra tiene su primera novedad y nadie más para resolverla.
+        // Se muestra una sola vez por obra.
+        if(!continuar&&puedeGestionar&&!responsableUsuarioIdFinal&&!tokenPendienteFinal&&equipoObra.filter(m=>m.uid!==usuarioReal.id).length===0&&invitacionesPendientes.length===0){
+          const clave=`fixgo_prompt_invitar_${obraActual.id}`;
+          let yaMostrado=false;try{yaMostrado=!!localStorage.getItem(clave);localStorage.setItem(clave,"1");}catch(e){}
+          if(!yaMostrado)setTimeout(()=>setPromptInvitarNov({id:data.id,responsable:resp||""}),700);
+        }
       }
     } else {
-      setNovedades(n=>[{id:Date.now(),fotos:form.fotos,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fechaLimite:form.fechaLimite,resuelta:false,fecha:new Date().toISOString().slice(0,10),comentarios:form.comentario.trim()?[{texto:form.comentario.trim(),autorId:usuarioActivo.id,ts:Date.now()}]:[]},...n]);
+      setNovedades(n=>[{id:Date.now(),fotos:form.fotos,descripcion:form.descripcion,responsable:resp,sector:sect,prioridad:form.prioridad,fechaLimite:form.fechaLimite,resuelta:false,fecha:fechaLocal(),comentarios:form.comentario.trim()?[{texto:form.comentario.trim(),autorId:usuarioActivo.id,ts:Date.now()}]:[]},...n]);
     }
     setForm(formSiguiente);if(!continuar)setVista("lista");setGuardando(false);guardandoRef.current=false;mostrarToast(continuar?"✅ Guardada — lista para cargar la próxima":"Tarea creada con éxito");
   };
@@ -2005,10 +2083,33 @@ export default function App({ session }) {
     }
     if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:nuevoEstado,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);if(error){alert("No se pudo actualizar: "+error.message);return;}}
     setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:nuevoEstado,estadoAprobacion:null,resueltaAt:ahora}:x));
+    if(nuevoEstado)pedirResenaSiCorresponde();
   };
   const enviarAprobacion=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({estado_aprobacion:"pendiente"}).eq("id",id);if(error){alert("No se pudo enviar a aprobación: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,estadoAprobacion:"pendiente"}:x));};
-  const aprobar=async(id)=>{const ahora=new Date().toISOString();if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);if(error){alert("No se pudo aprobar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,resueltaAt:ahora}:x));};
-  const rechazar=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:false,estado_aprobacion:null,resuelta_at:null}).eq("id",id);if(error){alert("No se pudo rechazar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:null,resueltaAt:null}:x));};
+  const aprobar=async(id)=>{const ahora=new Date().toISOString();if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({resuelta:true,estado_aprobacion:null,resuelta_at:ahora}).eq("id",id);if(error){alert("No se pudo aprobar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:true,estadoAprobacion:null,resueltaAt:ahora}:x));pedirResenaSiCorresponde();};
+  // Rechazo: la novedad sigue abierta pero queda marcada "rechazada" (hasta que se vuelva a enviar o se resuelva),
+  // y el motivo opcional queda como mensaje en el chat de la novedad.
+  const rechazar=async(id,motivo="")=>{
+    const texto=(motivo||"").trim();
+    if(usuarioReal&&typeof id==="string"){
+      const{error}=await supabase.from("novedades").update({resuelta:false,estado_aprobacion:"rechazada",resuelta_at:null}).eq("id",id);
+      if(error){alert("No se pudo rechazar: "+error.message);return;}
+    }
+    let comentarioNuevo=null;
+    if(texto){
+      const contenido="Rechazada: "+texto;
+      let comentarioId=null;
+      if(usuarioReal&&typeof id==="string"){
+        const{data}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto:contenido}).select().single();
+        comentarioId=data?.id||null;
+      }
+      comentarioNuevo={id:comentarioId,texto:contenido,autorId:usuarioReal?.id||usuarioActivo.id,ts:Date.now()};
+    }
+    setNovedades(n=>n.map(x=>x.id===id?{...x,resuelta:false,estadoAprobacion:"rechazada",resueltaAt:null,comentarios:comentarioNuevo?[...(x.comentarios||[]),comentarioNuevo]:x.comentarios}:x));
+    mostrarToast("Novedad rechazada: sigue abierta");
+  };
+  const [modalRechazo,setModalRechazo]=useState(null); // id de la novedad a rechazar
+  const [motivoRechazo,setMotivoRechazo]=useState("");
   const enVueloRef = useRef(new Set()); // tempIds que se están subiendo AHORA MISMO (petición ya en camino, no se puede cancelar)
   const borrarAlSincronizarRef = useRef(new Set()); // tempIds que el usuario borró mientras estaban en vuelo: hay que borrarlos del servidor apenas terminen de subir
   const eliminar=async(id)=>{
@@ -2071,7 +2172,7 @@ export default function App({ session }) {
             continue;
           }
           if(item.comentario){await supabase.from("comentarios").insert({novedad_id:data.id,autor_id:usuarioReal.id,texto:item.comentario});}
-          const nn={...data,fecha:data.created_at?.slice(0,10),fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,resueltaAt:data.resuelta_at||null,fotoResolucion:data.foto_resolucion||null,comentarios:item.comentario?[{texto:item.comentario,autorId:usuarioReal.id,ts:Date.now()}]:[]};
+          const nn={...data,fecha:data.created_at?fechaLocal(data.created_at):"",fechaLimite:data.fecha_limite||"",ocultoCapataz:data.oculto_capataz||false,resueltaAt:data.resuelta_at||null,fotoResolucion:data.foto_resolucion||null,comentarios:item.comentario?[{texto:item.comentario,autorId:usuarioReal.id,ts:Date.now()}]:[]};
           setUltimaActividadPorObra(p=>({...p,[item.payload.obra_id]:new Date(data.created_at).getTime()}));
           setNovedadesPorObra(p=>{
             const lista=p[item.payload.obra_id]||[];
@@ -2146,23 +2247,23 @@ export default function App({ session }) {
       setColaOffline(c=>[...c,{tipo:"comentario_texto",novedadId:id,texto,autorId}]);
       setNuevoComentario("");
       setGuardando(false);
-      mostrarToast("📡 Comentario guardado sin conexión — se sube solo cuando vuelva la señal");
+      mostrarToast("📡 Mensaje guardado sin conexión — se envía solo cuando vuelva la señal");
       return;
     }
     let comentarioId=null;
     if(usuarioReal&&typeof id==="string"){
       const{data,error}=await supabase.from("comentarios").insert({novedad_id:id,autor_id:usuarioReal.id,texto}).select().single();
-      if(error){alert("No se pudo agregar el comentario: "+error.message);setGuardando(false);return;}
+      if(error){alert("No se pudo enviar el mensaje: "+error.message);setGuardando(false);return;}
       comentarioId=data?.id||null;
     }
     setNovedades(n=>n.map(x=>x.id===id?{...x,comentarios:[...x.comentarios,{id:comentarioId,texto,autorId,ts:Date.now()}]}:x));
     setNuevoComentario("");
     setGuardando(false);
-    mostrarToast("Comentario agregado");
+    mostrarToast("Mensaje enviado");
   };
 
   const eliminarComentario=async(novedadId,comentario)=>{
-    if(!window.confirm("¿Eliminar este comentario? No se puede deshacer."))return;
+    if(!window.confirm("¿Eliminar este mensaje? No se puede deshacer."))return;
     if(comentario.pendienteSync){
       // Todavía no se subió a nadie más: lo sacamos de la cola local, sin dejar rastro (nunca fue visible para el equipo).
       setColaOffline(c=>c.filter(item=>{
@@ -2171,7 +2272,7 @@ export default function App({ session }) {
         return !(item.tipo==="comentario_texto"&&item.texto===comentario.texto&&item.autorId===comentario.autorId);
       }));
       setNovedades(n=>n.map(x=>x.id===novedadId?{...x,comentarios:x.comentarios.filter(c=>c!==comentario)}:x));
-      mostrarToast("Comentario eliminado");
+      mostrarToast("Mensaje eliminado");
       return;
     }
     if(usuarioReal&&comentario.id){
@@ -2184,7 +2285,7 @@ export default function App({ session }) {
       }
     }
     setNovedades(n=>n.map(x=>x.id===novedadId?{...x,comentarios:x.comentarios.map(c=>c===comentario?{...c,texto:"",audioUrl:null,audioDuracion:null,eliminado:true}:c)}:x));
-    mostrarToast("Comentario eliminado");
+    mostrarToast("Mensaje eliminado");
   };
 
   // ── NOTAS DE VOZ EN COMENTARIOS (punto 1) ──
@@ -2194,7 +2295,7 @@ export default function App({ session }) {
   // ESTADÍSTICAS DEL DASHBOARD DEL DIRECTOR
   // ══════════════════════════════════════════════════════
   const calcularStatsEmpresa=()=>{
-    const hoy=new Date().toISOString().slice(0,10);
+    const hoy=fechaLocal();
     const esUrgente=(n)=>!n.resuelta&&n.estado_aprobacion!=="pendiente"&&n.prioridad===0;
     const esPendienteAprob=(n)=>!n.resuelta&&n.estado_aprobacion==="pendiente";
     const esVencida=(n)=>!n.resuelta&&n.fecha_limite&&n.fecha_limite<hoy;
@@ -2472,7 +2573,7 @@ export default function App({ session }) {
     }
     const{error}=await supabase.from("invitaciones").insert({codigo,obra_id:obraActual.id,rol:invitarRol,especialidad:esp,invitado_por:usuarioReal.id,nombre:nombreLimpio||null,telefono:invitarTelefono.trim()||null,token_novedad:tokenNov});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLink(false);return;}
-    setLinkGenerado(`https://www.fixgo.ar/?invitacion=${codigo}`);
+    setLinkGenerado(linkInvitacion(codigo));
     setGenerandoLink(false);
     setInvitacionesPendientes(p=>[{codigo,rol:invitarRol,especialidad:esp,nombre:nombreLimpio||null,telefono:invitarTelefono.trim()||null,created_at:new Date().toISOString()},...(nombreLimpio?p.filter(i=>(i.nombre||"").toLowerCase()!==nombreLimpio.toLowerCase()):p)]);
     if(invitarCallback){
@@ -2480,7 +2581,7 @@ export default function App({ session }) {
       invitarCallback({responsable:etiqueta,usuarioId:null,token:tokenNov});
     }
   };
-  const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp);const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
+  const compartirLinkWhatsapp=()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp);const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nTocá el link: instalás Fixgo y entrás directo a la obra 👇\n${linkGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");};
   const guardarNombreEstudio=async()=>{
     if(!usuarioReal)return;
     const nombreFinal=nombreEstudioInput.trim();
@@ -2562,7 +2663,7 @@ export default function App({ session }) {
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
     const{error}=await supabase.from("invitaciones_empresa").insert({codigo,empresa_id:empresaPropia.id});
     if(error){alert("Error al generar la invitación: "+error.message);setGenerandoLinkEmpresa(false);return;}
-    setLinkEmpresaGenerado(`https://www.fixgo.ar/?empresa=${codigo}`);
+    setLinkEmpresaGenerado(linkInvitacion(codigo,"empresa"));
     setGenerandoLinkEmpresa(false);
     setInvitacionesEmpresaPendientes(()=>[{codigo,created_at:new Date().toISOString()}]);
   };
@@ -2572,7 +2673,7 @@ export default function App({ session }) {
     setInvitacionesEmpresaPendientes(p=>p.filter(i=>i.codigo!==codigo));
     mostrarToast("Invitación cancelada");
   };
-  const generarResumenGremio=(gremio:string)=>{const novs=novedades.filter(n=>!n.resuelta&&n.responsable===gremio);const urgentes=novs.filter(n=>n.prioridad===0);const otras=novs.filter(n=>n.prioridad!==0);let msg=`Hola! Te mando el estado de tus novedades en "${obraActual?.nombre}":\n\n`;if(urgentes.length>0){msg+=`🔴 URGENTES (${urgentes.length}):\n`;urgentes.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}${n.fechaLimite?` — límite ${formatFecha(n.fechaLimite)}`:""}\n`;});msg+="\n";}if(otras.length>0){msg+=`🟡 PENDIENTES (${otras.length}):\n`;otras.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}\n`;});}msg+=`\nTotal pendiente: ${novs.length} novedad${novs.length!==1?"es":""}`;return msg;};
+  const generarResumenGremio=(gremio:string)=>{const novs=novedades.filter(n=>!n.resuelta&&n.responsable===gremio);const urgentes=novs.filter(n=>n.prioridad===0);const otras=novs.filter(n=>n.prioridad!==0);let msg=`Hola! Te mando el estado de tus novedades en "${obraActual?.nombre}":\n\n`;if(urgentes.length>0){msg+=`🔴 URGENTES (${urgentes.length}):\n`;urgentes.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}${n.fechaLimite?` — límite ${formatFecha(n.fechaLimite)}`:""}\n`;});msg+="\n";}if(otras.length>0){msg+=`🟡 PENDIENTES (${otras.length}):\n`;otras.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}\n`;});}msg+=`\nTotal pendiente: ${novs.length} novedad${novs.length!==1?"es":""}`;if(obraActual&&typeof obraActual.id==="string")msg+=`\n\n👉 Ver en Fixgo: ${linkAbrirObra(obraActual.id)}`;return msg;};
   const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",responsableUsuarioId:nov.responsable_usuario_id||null,sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
   const asignarRapido=async(id,{responsable,usuarioId})=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({responsable,responsable_usuario_id:usuarioId||null}).eq("id",id);if(error){alert("No se pudo asignar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,responsable,responsable_usuario_id:usuarioId||null}:x));setAsignacionRapida(null);};
   const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;if(guardando)return;setGuardando(true);try{const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos,oculto_capataz:formEdit.ocultoCapataz,responsable_usuario_id:formEdit.responsableUsuarioId||null}).eq("id",id);if(error){alert("No se pudo guardar la edición: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,responsable_usuario_id:formEdit.responsableUsuarioId||null,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite,ocultoCapataz:formEdit.ocultoCapataz}:x));setEditando(false);setFormEdit(null);}finally{setGuardando(false);}};
@@ -2649,7 +2750,7 @@ export default function App({ session }) {
     // Cargar novedades de esta obra si no están cargadas aún (reutilizable desde irObra y desde Bitácora)
     if(usuarioReal&&obra&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
       supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
+        if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?fechaLocal(n.created_at):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
       });
     }
   };
@@ -2666,7 +2767,7 @@ export default function App({ session }) {
     }
     // Si todavía no tenemos los datos de esta obra, esperamos a que lleguen antes de cambiar de pantalla (evita el pestañeo)
     supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-      if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}));}
+      if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?fechaLocal(n.created_at):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}));}
       setVistaDirectorCategoria(null);setOrigenDirectorCategoria(null);setOrigenBitacora(true);
       setVistaRaiz("obra");setObraActual(obra);setDetalleId(entrada.novedad.id);setVista("detalle");setVistaBitacora(false);
     });
@@ -2777,6 +2878,19 @@ export default function App({ session }) {
     <button style={s.btnPrincipal} onClick={()=>setModalElegirObras(null)}>Listo</button>
   </div></div>;
 
+  const promptInvitarJSX = promptInvitarNov&&!modalInvitar&&(()=>{
+    const r=(promptInvitarNov.responsable||"").trim();
+    const aQuien=r?`tu ${r.charAt(0).toLowerCase()+r.slice(1)}`:"quien la resuelve";
+    return(<div style={s.overlay} onClick={()=>setPromptInvitarNov(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+      <div style={{textAlign:"center",marginBottom:14}}>
+        <div style={{width:56,height:56,borderRadius:18,background:"#0057FF15",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:10}}><Users size={26} color="#0057FF"/></div>
+        <p style={{margin:"0 0 6px",fontSize:19,fontWeight:800,color:"#1C1C1E"}}>¿Quién resuelve esta novedad?</p>
+        <p style={{margin:0,fontSize:14,color:"#55555A",lineHeight:1.45}}>Sumá a {aQuien} a la obra: recibe la novedad al instante, con foto y plazo, y te avisa cuando la termina.</p>
+      </div>
+      <button style={{...s.btnPrincipal,marginBottom:10}} onClick={()=>{const novId=promptInvitarNov.id;setPromptInvitarNov(null);abrirModalInvitar(async({responsable,usuarioId,token})=>{await asignarRapido(novId,{responsable,usuarioId});if(token)await supabase.from("novedades").update({token_asignacion_pendiente:token}).eq("id",novId);});if(RESPONSABLES.includes(r))setInvitarEsp(r);}}>Invitar a {aQuien}</button>
+      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setPromptInvitarNov(null)}>Más tarde</button>
+    </div></div>);
+  })();
   const modalInvitarJSX = modalInvitar&&<div style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarCallback(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
     <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>Generá un link para sumar a alguien a "{obraActual?.nombre}"</p>
@@ -2818,7 +2932,7 @@ export default function App({ session }) {
       </div>
       <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#55555A"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
       <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={compartirLinkWhatsapp}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Compartir por WhatsApp</span></button>
-      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp);const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nPara entrar, tocá acá 👇\n${linkGenerado}`;if(navigator.share){navigator.share({title:"Invitación a Fixgo",text:msg}).catch(()=>{});}else{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Share2 size={16}/>Compartir por otro medio</span></button>
+      <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{const rolTxt=invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp);const msg=`Hola! Te mando esto desde Fixgo 👷\n\nTe estoy sumando a la obra "${obraActual?.nombre}" como ${rolTxt}.\n\nFixgo es la app donde vamos a coordinar el trabajo. Vas a ver las novedades que te asigno y vas a poder avisarme cuando las terminás.\n\nTocá el link: instalás Fixgo y entrás directo a la obra 👇\n${linkGenerado}`;if(navigator.share){navigator.share({title:"Invitación a Fixgo",text:msg}).catch(()=>{});}else{navigator.clipboard?.writeText(linkGenerado);mostrarToast("Link copiado");};}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Share2 size={16}/>Compartir por otro medio</span></button>
       <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarCallback(null);}}>Cerrar</button>
     </>}
   </div></div>;
@@ -2864,7 +2978,7 @@ export default function App({ session }) {
     );
     const FooterPagina=({pagina}:{pagina:number})=>(
       <div style={{position:"absolute",bottom:"8mm",left:"14mm",right:"14mm",display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9.5,color:GRAY}}>
-        <span>Informe generado por <b style={{color:INK}}>Fixgo</b></span>
+        <span>Informe generado por <b style={{color:INK}}>Fixgo</b> · fixgo.ar</span>
         {logoEstudioUrl?<ImgCacheada src={logoEstudioUrl} style={{width:14,height:14,objectFit:"contain",opacity:0.35}}/>:<span/>}
         <span>{pagina} / 4</span>
       </div>
@@ -2927,7 +3041,7 @@ export default function App({ session }) {
               ))}
             </div>
             <div style={{display:"flex",justifyContent:"space-between",marginTop:14,color:"rgba(255,255,255,0.5)",fontSize:10}}>
-              <span>Informe generado por <b style={{color:TEAL}}>Fixgo</b></span>
+              <span>Informe generado por <b style={{color:TEAL}}>Fixgo</b> · fixgo.ar</span>
               <span>01 / 04</span>
             </div>
           </div>
@@ -3572,6 +3686,17 @@ export default function App({ session }) {
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:14}}>
+          <div style={{background:esVersionPro?"linear-gradient(135deg,#FFF6D6,#FFFBEA)":(modoOscuro?"#2C2C2E":"#fff"),border:"1.5px solid "+(esVersionPro?"#FFB800":"#FFE08A"),borderRadius:18,padding:"16px",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+              <div>
+                <p style={{margin:0,fontSize:12,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Tu plan</p>
+                <p style={{margin:"2px 0 0",fontSize:18,fontWeight:900,color:modoOscuro&&!esVersionPro?"#fff":"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>{esVersionPro?<><Sparkles size={16} color="#C28A00"/>Fixgo Pro</>:"Gratis"}</p>
+              </div>
+              {!esVersionPro&&<button type="button" onClick={()=>setVistaInfoApp(true)} style={{background:"#FFB800",border:"none",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:800,color:"#1C1C1E",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,flexShrink:0}}><Sparkles size={14}/>Pasar a Pro</button>}
+            </div>
+            <p style={{margin:"8px 0 0",fontSize:12.5,color:"#55555A",lineHeight:1.4}}>{esVersionPro?"Obras ilimitadas, modo sin conexión, Informe Ejecutivo, dibujo sobre fotos y Estudio.":"Incluye 1 obra propia y novedades ilimitadas. Con Pro: obras ilimitadas, modo sin conexión, Informe Ejecutivo y más."}</p>
+            {esVersionPro&&<button type="button" onClick={()=>{try{window.open("https://play.google.com/store/account/subscriptions?package=ar.fixgo.app","_blank");}catch(e){}}} style={{marginTop:10,background:"none",border:"none",padding:0,fontSize:13,fontWeight:700,color:"#9a6b00",cursor:"pointer",fontFamily:"inherit"}}>Gestionar suscripción en Google Play →</button>}
+          </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"18px 16px",flexShrink:0}}>
             {[["Nombre","nombre","Tu nombre"],["Especialidad","especialidad","Tu especialidad"]].map(([lbl,key,ph])=>(
               <div key={key}><p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#55555A"}}>{lbl}</p>
@@ -3722,7 +3847,7 @@ export default function App({ session }) {
       // la versión liviana usada para armar las alertas no alcanza para mostrar el detalle ni la lista.
       if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObra[obra.id]||novedadesPorObra[obra.id].length===0)){
         supabase.from("novedades").select("*,comentarios(*)").eq("obra_id",obra.id).then(({data:novs})=>{
-          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?n.created_at.slice(0,10):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
+          if(novs){setNovedadesPorObra(p=>({...p,[obra.id]:novs.map(n=>({...n,fotos:n.fotos||[],ocultoCapataz:n.oculto_capataz||false,selloDirector:n.sello_director||null,estadoAprobacion:n.estado_aprobacion||null,autorId:n.autor_id||null,fechaLimite:n.fecha_limite||"",fecha:n.created_at?fechaLocal(n.created_at):"",comentarios:(n.comentarios||[]).map(c=>({id:c.id,texto:c.texto,audioUrl:c.audio_url||null,audioDuracion:c.audio_duracion||null,autorId:c.autor_id,ts:new Date(c.created_at).getTime(),eliminado:c.eliminado||false}))}))}))}
         });
       }
     };
@@ -3825,7 +3950,9 @@ export default function App({ session }) {
               <div style={{background:"rgba(255,255,255,0.15)",borderRadius:12,padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
                 <div style={{textAlign:"left"}}><p style={{margin:0,fontSize:13,fontWeight:700,color:"#fff"}}>{usuarioActivoReal.nombre}</p></div>
               </div>
-              {esVersionPro&&<span style={{background:"#FFB800",borderRadius:99,padding:"3px 9px",fontSize:10.5,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={10}/>PRO</span>}
+              {esVersionPro
+                ?<span style={{background:"#FFB800",borderRadius:99,padding:"3px 9px",fontSize:10.5,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={10}/>PRO</span>
+                :<button type="button" onClick={()=>setVistaInfoApp(true)} style={{background:"rgba(255,184,0,0.16)",border:"1px solid rgba(255,184,0,0.55)",borderRadius:99,padding:"6px 11px",fontSize:11.5,color:"#FFD466",fontWeight:800,display:"flex",alignItems:"center",gap:4,cursor:"pointer",fontFamily:"inherit",minHeight:30}}><Sparkles size={11}/>Plan Gratis · Conocé Pro<ChevronRight size={12}/></button>}
             </div>
           </div>
         </div>
@@ -3976,9 +4103,11 @@ export default function App({ session }) {
                 {esGestorDeAlgunaObra?(<>
                   <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>No tenés tareas asignadas a tu nombre</p>
                   <p style={{fontSize:14,margin:0}}>Las novedades de tus obras las administrás desde "Mis obras" o "Estudio".</p>
+                  <UnirmeConLink compacto/>
                 </>):(<>
                   <p style={{fontSize:17,fontWeight:700,margin:"12px 0 6px",color:"#3A3A3C"}}>Aún no tenés tareas asignadas</p>
                   <p style={{fontSize:14,margin:0}}>Cuando un profesional te sume a una obra, la vas a ver acá.</p>
+                  <UnirmeConLink/>
                 </>)}
               </div>
             );
@@ -4075,6 +4204,7 @@ export default function App({ session }) {
                         <span style={{display:"inline-flex",alignItems:"center",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3,background:miRolObra==="capataz"?"#FFF3E8":"#F0EEFF",color:miRolObra==="capataz"?"#FF6B00":"#6B4FA8"}}>{miEspecialidad||miRolObra}</span>
                       </div>
                       <p style={{margin:"0 0 2px",fontSize:15,fontWeight:800,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>{obra.nombre}{obraTieneNovedadNueva(obra.id)&&<span title="Hay novedades sin ver" style={{width:8,height:8,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
+                      {(obra as any).duenoNombre&&<p style={{margin:"2px 0 4px",fontSize:12,color:"#3A3A3C",display:"flex",alignItems:"center",gap:6}}><span aria-hidden="true" style={{width:18,height:18,borderRadius:"50%",background:"#E8E0FA",color:"#4B2F9E",fontSize:9.5,fontWeight:800,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{(obra as any).duenoNombre.trim()[0]?.toUpperCase()}</span><span style={{minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Obra de <b style={{color:"#1C1C1E"}}>{(obra as any).duenoNombre}</b></span></p>}
                       <p style={{margin:"0 0 8px",fontSize:11,color:"#55555A",display:"flex",alignItems:"center",gap:3}}><MapPin size={10} color="#55555A"/>{obra.direccion||"Sin dirección"}</p>
                       <div style={{display:"flex",gap:6}}>
                         <div style={{background:"#FFF3E8",borderRadius:8,padding:"5px 8px",textAlign:"center"}}><p style={{margin:0,fontSize:14,fontWeight:900,color:"#FF6B00"}}>{pend}</p><p style={{margin:"1px 0 0",fontSize:9,fontWeight:600,color:"#FF9040",textTransform:"uppercase"}}>Pend.</p></div>
@@ -4090,6 +4220,8 @@ export default function App({ session }) {
             onClick={()=>{if(!esVersionPro&&misObrasPropias>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
             <Plus size={22} color="#636366"/><span style={{fontSize:16,fontWeight:600,color:"#636366"}}>Nueva obra</span>
           </button>}
+          {vistaHome==="mias"&&!esVersionPro&&<button type="button" onClick={()=>setVistaInfoApp(true)} style={{width:"100%",background:"none",border:"none",padding:"8px 4px 0",fontSize:12.5,color:"#55555A",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>Tu plan incluye 1 obra propia · <b style={{color:"#9a6b00",display:"inline-flex",alignItems:"center",gap:3}}><Sparkles size={11}/>Con Pro, ilimitadas</b></button>}
+          {vistaHome==="mias"&&obras.length===0&&<UnirmeConLink compacto/>}
           </>)}
         </div>
         )}
@@ -4133,7 +4265,7 @@ export default function App({ session }) {
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(linkEmpresaGenerado)}`} alt="QR de invitación" style={{width:180,height:180,borderRadius:12,border:"1px solid #E5E5EA"}}/>
             </div>
             <p style={{margin:"0 0 12px",textAlign:"center",fontSize:12,color:"#55555A"}}>El invitado puede escanear este QR con la cámara del teléfono</p>
-            <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={()=>{const msg=`Te invito a sumarte a mi equipo de profesionales en Fixgo 👷\n\n${linkEmpresaGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");}}>Compartir por WhatsApp</button>
+            <button style={{...s.btnPrincipal,background:"#25D366",marginBottom:10}} onClick={()=>{const msg=`Te invito a sumarte a mi equipo de profesionales en Fixgo 👷\n\nTocá el link: instalás Fixgo y entrás directo al equipo 👇\n${linkEmpresaGenerado}`;window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank");}}>Compartir por WhatsApp</button>
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}>Cerrar</button>
           </>)}
         </div></div>}
@@ -4236,8 +4368,8 @@ export default function App({ session }) {
                       :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:11,position:"relative"}}>{nov.selloDirector&&<span style={{position:"absolute",left:4,top:4,width:20,height:20,borderRadius:"50%",background:nov.selloDirector==="like"?"#34C759":"#FFB800",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}>{nov.selloDirector==="like"?<ThumbsUp size={11} color="#fff"/>:<AlertTriangle size={11} color="#fff"/>}</span>}<Camera size={26} color="#C7C7CC"/></div>}
                     <div style={{padding:"11px 12px",flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
-                        <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
-                        <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
+                        <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":nov.estadoAprobacion==="rechazada"?"#D0342C":pri.color,flexShrink:0,display:"inline-block"}}/>
+                        <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":nov.estadoAprobacion==="rechazada"?"#D0342C":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":nov.estadoAprobacion==="rechazada"?"RECHAZADA":pri.label}</span>
                         {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                       </div>
                       <p style={{margin:"0 0 3px",fontSize:15,fontWeight:esNovedadNueva(nov)?700:500,color:"#1C1C1E",lineHeight:1.25,display:"flex",alignItems:"center",gap:6}}>{nov.descripcion}{esNovedadNueva(nov)&&<span title="Actividad nueva" style={{width:7,height:7,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
@@ -4373,7 +4505,7 @@ export default function App({ session }) {
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Dejará de ver esta obra y sus novedades. Las novedades que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
-        {modalInvitarJSX}
+        {modalInvitarJSX}{promptInvitarJSX}
         {asignacionRapidaJSX}
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
@@ -4645,18 +4777,18 @@ export default function App({ session }) {
                  {detalle.fotos.map((f,i)=><img key={i} src={f} alt="" onClick={()=>setFotoAmpliada(f)} style={{width:"100%",height:"100%",objectFit:"cover",flexShrink:0,scrollSnapAlign:"start",cursor:"pointer"}}/>)}
                </div>
                <div style={{position:"absolute",bottom:0,left:0,right:0,height:80,background:"linear-gradient(transparent,rgba(0,0,0,0.5))"}}/>
-               <div style={{position:"absolute",top:12,left:12,display:"flex",alignItems:"center",gap:6,background:detalle.resuelta?"rgba(52,199,89,0.9)":detalle.estadoAprobacion==="pendiente"?"rgba(147,51,234,0.9)":pri.color+"E6",color:"#fff",fontSize:11,fontWeight:800,padding:"5px 10px",borderRadius:99}}>
+               <div style={{position:"absolute",top:12,left:12,display:"flex",alignItems:"center",gap:6,background:detalle.resuelta?"rgba(52,199,89,0.9)":detalle.estadoAprobacion==="pendiente"?"rgba(147,51,234,0.9)":detalle.estadoAprobacion==="rechazada"?"rgba(208,52,44,0.92)":pri.color+"E6",color:"#fff",fontSize:11,fontWeight:800,padding:"5px 10px",borderRadius:99}}>
                  <span style={{width:7,height:7,borderRadius:"50%",background:"rgba(255,255,255,0.8)"}}/>
-                 {detalle.resuelta?"RESUELTO":detalle.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}
+                 {detalle.resuelta?"RESUELTO":detalle.estadoAprobacion==="pendiente"?"EN APROBACIÓN":detalle.estadoAprobacion==="rechazada"?"RECHAZADA":pri.label}
                  {badge&&!detalle.resuelta&&!detalle.estadoAprobacion&&<span style={{opacity:0.8,fontWeight:600}}> · {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                </div>
                {detalle.fotos.length>1&&<span style={{position:"absolute",top:12,right:12,background:"rgba(0,0,0,0.5)",color:"#fff",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{detalle.fotos.length} fotos</span>}
              </div>
             :<div style={{width:"100%",height:140,background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center"}}><Camera size={40} color="#C7C7CC"/></div>}
           <div style={{padding:"0 16px 24px"}}>
-          {detalle.fotos.length===0&&<div style={{background:detalle.resuelta?"#34C75912":detalle.estadoAprobacion==="pendiente"?"#9333EA12":pri.color+"12",borderRadius:"0 0 16px 16px",padding:"12px 16px",display:"flex",alignItems:"center",gap:8,marginBottom:0}}>
-            <span style={{width:9,height:9,borderRadius:99,background:detalle.resuelta?"#34C759":detalle.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0}}/>
-            <span style={{color:detalle.resuelta?"#34C759":detalle.estadoAprobacion==="pendiente"?"#9333EA":pri.color,fontSize:15,fontWeight:800}}>{detalle.resuelta?"RESUELTO":detalle.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
+          {detalle.fotos.length===0&&<div style={{background:detalle.resuelta?"#34C75912":detalle.estadoAprobacion==="pendiente"?"#9333EA12":detalle.estadoAprobacion==="rechazada"?"#D0342C12":pri.color+"12",borderRadius:"0 0 16px 16px",padding:"12px 16px",display:"flex",alignItems:"center",gap:8,marginBottom:0}}>
+            <span style={{width:9,height:9,borderRadius:99,background:detalle.resuelta?"#34C759":detalle.estadoAprobacion==="pendiente"?"#9333EA":detalle.estadoAprobacion==="rechazada"?"#D0342C":pri.color,flexShrink:0}}/>
+            <span style={{color:detalle.resuelta?"#34C759":detalle.estadoAprobacion==="pendiente"?"#9333EA":detalle.estadoAprobacion==="rechazada"?"#D0342C":pri.color,fontSize:15,fontWeight:800}}>{detalle.resuelta?"RESUELTO":detalle.estadoAprobacion==="pendiente"?"EN APROBACIÓN":detalle.estadoAprobacion==="rechazada"?"RECHAZADA":pri.label}</span>
             {badge&&!detalle.resuelta&&!detalle.estadoAprobacion&&<span style={{marginLeft:"auto",color:"#55555A",fontSize:13}}>{badge.label.replace(/^[^\s]+\s/,"")}</span>}
           </div>}
           <div style={{background:"#fff",borderRadius:detalle.fotos.length>0?"20px":"0 0 20px 20px",padding:"18px 18px 16px",marginBottom:12}}>
@@ -4705,12 +4837,15 @@ export default function App({ session }) {
 
           <div style={{background:"#fff",borderRadius:20,padding:"16px 18px",marginBottom:12}}>
           <div onClick={()=>setComentariosAbiertos(a=>!a)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:comentariosAbiertos?12:0}}>
-            <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}><MessageCircle size={16}/>Comentarios <span style={{color:"#B0B0B5",fontWeight:600}}>({detalle.comentarios.length})</span></p>
+            <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}><MessageCircle size={16}/>Mensajes <span style={{color:"#B0B0B5",fontWeight:600}}>({detalle.comentarios.length})</span></p>
             <span style={{width:30,height:30,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"transform .2s",transform:comentariosAbiertos?"rotate(180deg)":"rotate(0deg)"}}><ChevronLeft size={16} color="#55555A" style={{transform:"rotate(-90deg)"}}/></span>
           </div>
           {comentariosAbiertos&&<>
-          {detalle.comentarios.length===0&&<p style={{color:"#55555A",fontSize:14,margin:"0 0 12px"}}>Sin comentarios aún</p>}
-          {detalle.comentarios.map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===miId;const puedeBorrar=esMio&&!c.eliminado&&(c.id||c.pendienteSync);return(
+          {detalle.comentarios.length===0&&<p style={{color:"#55555A",fontSize:14,margin:"0 0 12px"}}>Escribí el primer mensaje de esta novedad.</p>}
+          {(()=>{const ocultos=mensajesExpandidos===detalle.id?0:Math.max(0,detalle.comentarios.length-3);return ocultos>0&&(
+            <button type="button" onClick={()=>setMensajesExpandidos(detalle.id)} style={{width:"100%",background:"#F2F2F7",border:"none",borderRadius:12,padding:"10px",marginBottom:8,fontSize:13,fontWeight:700,color:"#3A3A3C",cursor:"pointer",fontFamily:"inherit"}}>Ver {ocultos===1?"el mensaje anterior":`los ${ocultos} mensajes anteriores`}</button>
+          );})()}
+          {detalle.comentarios.slice(mensajesExpandidos===detalle.id?0:Math.max(0,detalle.comentarios.length-3)).map((c,i)=>{const autor=getUserById(c.autorId);const esMio=c.autorId===miId;const puedeBorrar=esMio&&!c.eliminado&&(c.id||c.pendienteSync);return(
             <div key={i} style={{background:esMio?"#1C1C1E":"#F9F9F9",borderRadius:14,padding:"10px 14px",marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                 <span style={{fontSize:12,fontWeight:700,color:esMio?"rgba(255,255,255,0.7)":"#636366"}}>{autor?.nombre||"Usuario"}</span>
@@ -4726,6 +4861,23 @@ export default function App({ session }) {
               {puedeBorrar&&<p onClick={()=>eliminarComentario(detalle.id,c)} style={{margin:"6px 0 0",fontSize:11,fontWeight:600,color:esMio?"rgba(255,255,255,0.45)":"#D0342C",cursor:"pointer",textAlign:"right"}}>Eliminar</p>}
             </div>
           );})}
+          {(()=>{
+            // Atajo: el responsable avisó por mensaje que terminó ("listo", "resuelto"…) pero no tocó el botón.
+            const ult=detalle.comentarios[detalle.comentarios.length-1];
+            if(!ult||ult.eliminado||!ult.texto||detalle.resuelta||detalle.estadoAprobacion==="pendiente"||obraEstaPausada(obraActual))return null;
+            if(!/(^|[^a-záéíóúñ])(list[oa]s?|resuelt[oa]s?|terminad[oa]s?|hech[oa]s?|finalizad[oa]s?|termin[eé]|ya est[aá])(?![a-záéíóúñ])/i.test(ult.texto))return null;
+            const esResp=ult.autorId&&ult.autorId===detalle.responsable_usuario_id;
+            if(!esResp)return null;
+            const soyYo=ult.autorId===miId;
+            const puedoActuar=soyYo||detalle.autorId===miId||puedeGestionar;
+            if(!puedoActuar)return null;
+            const quien=getUserById(ult.autorId)?.nombre||"El responsable";
+            return(
+              <button type="button" onClick={()=>setModalFotoResolucion(detalle.id)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"#EAFBEF",border:"1.5px solid #34C759",borderRadius:12,padding:"11px",marginBottom:8,fontSize:13.5,fontWeight:700,color:"#1a7a38",cursor:"pointer",fontFamily:"inherit"}}>
+                <CheckCircle size={16}/>{soyYo?"¿Marcar como resuelta?":`${quien} avisó que está lista · Marcar como resuelta`}
+              </button>
+            );
+          })()}
           </>}
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center",position:"sticky",bottom:-24,background:"#fff",paddingTop:10,paddingBottom:24,marginBottom:-24,zIndex:5}}>
             {grabandoAudio?(
@@ -4738,7 +4890,7 @@ export default function App({ session }) {
                 <button type="button" onClick={cancelarGrabacion} style={{width:28,height:28,borderRadius:"50%",border:"none",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><X size={14} color="#55555A"/></button>
               </div>
             ):(
-              !obraEstaPausada(obraActual)&&<input style={{...s.input,flex:1,background:"#F2F2F7",border:"none"}} placeholder={`Comentar como ${usuarioActivoReal.nombre}...`} value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
+              !obraEstaPausada(obraActual)&&<input style={{...s.input,flex:1,background:"#F2F2F7",border:"none"}} placeholder="Escribí un mensaje…" value={nuevoComentario} onChange={e=>setNuevoComentario(e.target.value)} onKeyDown={e=>e.key==="Enter"&&agregarComentario(detalle.id)}/>
             )}
             {grabandoAudio?(
               <button type="button" onClick={detenerGrabacionYEnviar} style={{width:40,height:40,background:"#FF3B30",border:"none",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><Send size={16} color="#fff"/></button>
@@ -4804,19 +4956,20 @@ export default function App({ session }) {
                 <div style={{background:"#A855F712",borderRadius:12,padding:"11px 14px",display:"flex",alignItems:"center",gap:8,marginBottom:12}}><Clock size={16} color="#9333EA"/><span style={{fontSize:14,fontWeight:700,color:"#9333EA"}}>El responsable marcó esta novedad como finalizada</span></div>
                 <div style={{display:"flex",gap:8,marginBottom:10}}>
                   <button style={{...s.btnPrincipal,background:"#34C759",flex:1,fontSize:15,padding:"14px"}} onClick={()=>{aprobar(detalle.id);setVista("lista");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><CheckCircle size={16}/>Aprobar</span></button>
-                  <button style={{...s.btnPrincipal,background:"#fff",color:"#FF3B30",border:"1.5px solid #FF3B30",flex:1,fontSize:15,padding:"14px"}} onClick={()=>{rechazar(detalle.id);setVista("lista");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><RotateCcw size={16}/>Rechazar</span></button>
+                  <button style={{...s.btnPrincipal,background:"#fff",color:"#FF3B30",border:"1.5px solid #FF3B30",flex:1,fontSize:15,padding:"14px"}} onClick={()=>{setMotivoRechazo("");setModalRechazo(detalle.id);}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><RotateCcw size={16}/>Rechazar</span></button>
                 </div>
               </div>
             ):<div style={{background:"#A855F712",borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}}><Clock size={16} color="#9333EA"/><span style={{fontSize:14,fontWeight:700,color:"#9333EA"}}>Esperando aprobación</span></div>
           ):(detalle.autorId===miId||puedeGestionar)?(
-            !obraEstaPausada(obraActual)&&<button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>{if(detalle.resuelta){resolver(detalle.id);setVista("lista");}else{setModalFotoResolucion(detalle.id);}}}><CheckCircle size={18}/>Marcar como resuelto</button>
+            !obraEstaPausada(obraActual)&&<>{detalle.estadoAprobacion==="rechazada"&&<div style={{background:"#FF3B3012",borderRadius:12,padding:"11px 14px",display:"flex",alignItems:"center",gap:8,marginBottom:12}}><RotateCcw size={16} color="#D0342C"/><span style={{fontSize:14,fontWeight:700,color:"#B42318"}}>Rechazada · sigue abierta</span></div>}<button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>{if(detalle.resuelta){resolver(detalle.id);setVista("lista");}else{setModalFotoResolucion(detalle.id);}}}><CheckCircle size={18}/>Marcar como resuelto</button></>
           ):(
-            <button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>setModalFotoResolucion(detalle.id)}><CheckCircle size={18}/>Finalizado — Enviar a aprobación</button>
+            <>{detalle.estadoAprobacion==="rechazada"&&<div style={{background:"#FF3B3012",borderRadius:12,padding:"11px 14px",marginBottom:12}}><p style={{margin:0,fontSize:14,fontWeight:700,color:"#B42318",display:"flex",alignItems:"center",gap:8}}><RotateCcw size={16} color="#D0342C"/>Rechazada · sigue abierta</p><p style={{margin:"4px 0 0 24px",fontSize:12.5,color:"#55555A"}}>Mirá en los mensajes qué falta, corregilo y volvé a enviarla.</p></div>}
+            <button style={{...s.btnPrincipal,background:"#34C759",fontSize:16,padding:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:10}} onClick={()=>setModalFotoResolucion(detalle.id)}><CheckCircle size={18}/>{detalle.estadoAprobacion==="rechazada"?"Volver a enviar a aprobación":"Finalizado — Enviar a aprobación"}</button></>
           )}
           <div style={{display:"flex",gap:8}}>
             {(detalle.autorId===miId||puedeGestionar)&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1,fontSize:13,padding:"12px 4px"}} onClick={()=>abrirEdicion(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><Edit2 size={14}/>Editar</span></button>}
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1,fontSize:13,padding:"12px 4px"}} onClick={()=>compartir(detalle)}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>{compartidoId===detalle.id?<><Check size={14}/>Copiado</>:<><Share2 size={14}/>Compartir</>}</span></button>
-            <button style={{...s.btnPrincipal,background:"#25D36615",border:"1.5px solid #25D36630",flex:1,fontSize:13,padding:"12px 4px"}} onClick={()=>{const t=generarResumen(detalle,obraActual?.nombre||"Obra");window.open(`https://wa.me/?text=${encodeURIComponent(t)}`,"_blank");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span style={{color:"#25D366",fontWeight:700}}>WhatsApp</span></span></button>
+            <button style={{...s.btnPrincipal,background:"#25D36615",border:"1.5px solid #25D36630",flex:1,fontSize:13,padding:"12px 4px"}} onClick={()=>{let t=generarResumen(detalle,obraActual?.nombre||"Obra");if(obraActual&&typeof obraActual.id==="string")t+=`\n\n👉 Ver en Fixgo: ${linkAbrirObra(obraActual.id,detalle.id)}`;window.open(`https://wa.me/?text=${encodeURIComponent(t)}`,"_blank");}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span style={{color:"#25D366",fontWeight:700}}>WhatsApp</span></span></button>
           </div>
           </div>
           {(detalle.autorId===miId||puedeGestionar)&&<button style={{width:"100%",background:"#fff",border:"none",borderRadius:14,padding:"14px",display:"flex",alignItems:"center",justifyContent:"center",gap:6,color:"#FF3B30",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={()=>setConfirmarEliminar(detalle.id)}><Trash2 size={15}/>Borrar novedad</button>}
@@ -4827,6 +4980,16 @@ export default function App({ session }) {
         {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
         {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
         {modalFotoResolucionJSX}
+        {modalRechazo&&<div style={s.overlay} onClick={()=>setModalRechazo(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+          <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Rechazar el cierre</p>
+          <p style={{margin:"0 0 14px",fontSize:13,color:"#55555A"}}>La novedad sigue abierta y el responsable recibe un aviso. Contale qué falta para que lo corrija.</p>
+          <label htmlFor="fixgo-motivo-rechazo" style={{display:"block",fontSize:13,fontWeight:600,color:"#3A3A3C",marginBottom:6}}>¿Qué falta? <span style={{fontWeight:400,color:"#55555A"}}>(opcional)</span></label>
+          <textarea id="fixgo-motivo-rechazo" value={motivoRechazo} onChange={e=>setMotivoRechazo(e.target.value)} placeholder="Ej: falta sellar la junta del lado izquierdo" style={{width:"100%",boxSizing:"border-box",minHeight:84,border:"1.5px solid #E5E5EA",borderRadius:12,padding:"12px",fontSize:15,fontFamily:"inherit",resize:"none",background:"#F2F2F7"}}/>
+          <div style={{display:"flex",gap:8,marginTop:14}}>
+            <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",flex:1,fontSize:15,padding:"14px"}} onClick={()=>setModalRechazo(null)}>Volver</button>
+            <button style={{...s.btnPrincipal,background:"#FF3B30",flex:1,fontSize:15,padding:"14px"}} onClick={async()=>{const id=modalRechazo;setModalRechazo(null);await rechazar(id,motivoRechazo);setVista("lista");}}>Rechazar</button>
+          </div>
+        </div></div>}
         {asignacionRapidaJSX}
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
       </div>
@@ -4863,7 +5026,7 @@ export default function App({ session }) {
             <div style={{display:"flex",gap:8,marginBottom:10}}>
               {[["Hoy",0],["Mañana",1],["En 1 semana",7]].map(([lbl,dias])=>{
                 const d=new Date();d.setDate(d.getDate()+dias);
-                const iso=d.toISOString().slice(0,10);
+                const iso=fechaLocal(d);
                 return <button key={lbl} style={{flex:1,padding:"8px 4px",borderRadius:12,border:`1.5px solid ${form.fechaLimite===iso?"#1C1C1E":"#E5E5EA"}`,background:form.fechaLimite===iso?"#1C1C1E":"#fff",color:form.fechaLimite===iso?"#fff":"#636366",fontSize:13,fontWeight:form.fechaLimite===iso?700:400,cursor:"pointer"}} onClick={()=>setForm(f=>({...f,fechaLimite:iso}))}>{lbl}</button>;
               })}
             </div>
@@ -4888,7 +5051,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {modalInvitarJSX}
+        {modalInvitarJSX}{promptInvitarJSX}
         {asignacionRapidaJSX}
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
@@ -4976,8 +5139,8 @@ export default function App({ session }) {
                   :<div style={{width:72,height:72,background:"#F2F2F7",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:11,position:"relative"}}>{nov.selloDirector&&<span style={{position:"absolute",left:4,top:4,width:20,height:20,borderRadius:"50%",background:nov.selloDirector==="like"?"#34C759":"#FFB800",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}>{nov.selloDirector==="like"?<ThumbsUp size={11} color="#fff"/>:<AlertTriangle size={11} color="#fff"/>}</span>}<Camera size={26} color="#C7C7CC"/></div>}
                 <div style={{padding:"11px 12px",flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"center",minHeight:94}}>
                   <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
-                    <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color,flexShrink:0,display:"inline-block"}}/>
-                    <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":pri.label}</span>
+                    <span style={{width:8,height:8,borderRadius:"50%",background:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":nov.estadoAprobacion==="rechazada"?"#D0342C":pri.color,flexShrink:0,display:"inline-block"}}/>
+                    <span style={{fontSize:11.5,fontWeight:800,letterSpacing:0.2,color:nov.resuelta?"#34C759":nov.estadoAprobacion==="pendiente"?"#9333EA":nov.estadoAprobacion==="rechazada"?"#D0342C":pri.color}}>{nov.resuelta?"RESUELTO":nov.estadoAprobacion==="pendiente"?"EN APROBACIÓN":nov.estadoAprobacion==="rechazada"?"RECHAZADA":pri.label}</span>
                     {!nov.resuelta&&!nov.estadoAprobacion&&badge&&<span style={{fontSize:11.5,fontWeight:600,color:"#55555A"}}>· {badge.label.replace(/^[^\s]+\s/,"")}</span>}
                     {nov.pendienteSync&&<span style={{fontSize:9.5,fontWeight:800,color:"#FFB800",background:"#FFB80015",padding:"2px 7px",borderRadius:99,textTransform:"uppercase",display:"inline-flex",alignItems:"center",gap:3}}><WifiOff size={9}/>Pendiente</span>}
                   </div>
@@ -5004,7 +5167,7 @@ export default function App({ session }) {
       {null}
       {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta novedad?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
       <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
-      {modalInvitarJSX}
+      {modalInvitarJSX}{promptInvitarJSX}
         {asignacionRapidaJSX}
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
         {modalEditarObraJSX}
