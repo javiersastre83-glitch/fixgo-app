@@ -134,20 +134,30 @@ export function procesarLinkObra(url: string): boolean {
     const obra = (q.get('obra') || '').replace(/[^A-Za-z0-9_-]/g, '')
     const novedad = (q.get('novedad') || '').replace(/[^A-Za-z0-9_-]/g, '')
     if (!obra) return true
-    lsSet('fixgo_abrir_obra', JSON.stringify({ obra, novedad: novedad || null, ts: Date.now() }))
-    try { window.dispatchEvent(new Event('fixgo-abrir-obra')) } catch { /* noop */ }
+    guardarPedidoAbrirObra(obra, novedad || null, 'link')
   } catch { /* link mal formado: lo ignoramos */ }
   return true
 }
 
+/**
+ * Guarda "abrí esta obra / novedad" y avisa a App.tsx. Lo usan los links de WhatsApp y el
+ * tap de una notificación push: si la app recién arranca y todavía no cargó las obras,
+ * el pedido queda guardado y se cumple apenas terminan de cargar.
+ */
+export function guardarPedidoAbrirObra(obra: string, novedad: string | null, tipo: string | null = null) {
+  if (!obra) return
+  lsSet('fixgo_abrir_obra', JSON.stringify({ obra: String(obra), novedad: novedad ? String(novedad) : null, tipo: tipo || null, ts: Date.now() }))
+  try { window.dispatchEvent(new Event('fixgo-abrir-obra')) } catch { /* noop */ }
+}
+
 /** Lee (y borra) el pedido pendiente de abrir una obra. Vence a los 10 minutos. */
-export function leerPedidoAbrirObra(): { obra: string, novedad: string | null } | null {
+export function leerPedidoAbrirObra(): { obra: string, novedad: string | null, tipo: string | null } | null {
   const raw = lsGet('fixgo_abrir_obra')
   if (!raw) return null
   try { localStorage.removeItem('fixgo_abrir_obra') } catch { /* noop */ }
   try {
     const p = JSON.parse(raw)
     if (!p?.obra || (p.ts && Date.now() - p.ts > 10 * 60 * 1000)) return null
-    return { obra: p.obra, novedad: p.novedad || null }
+    return { obra: p.obra, novedad: p.novedad || null, tipo: p.tipo || null }
   } catch { return null }
 }

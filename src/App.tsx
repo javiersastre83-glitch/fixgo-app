@@ -7,7 +7,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Contacts } from '@capacitor-community/contacts';
 import { Network } from '@capacitor/network';
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
-import { linkInvitacion, guardarInvitacion, extraerCodigoInvitacion, pedirResenaSiCorresponde, linkAbrirObra, leerPedidoAbrirObra } from './crecimiento';
+import { linkInvitacion, guardarInvitacion, extraerCodigoInvitacion, pedirResenaSiCorresponde, linkAbrirObra, leerPedidoAbrirObra, guardarPedidoAbrirObra } from './crecimiento';
 
 // Clave pública de Android de RevenueCat (segura para incluir en el cliente: no es secreta).
 const REVENUECAT_ANDROID_API_KEY = "goog_IPRWOZhrHFPwmgURhTRhxCRdteU";
@@ -1389,11 +1389,15 @@ export default function App({ session }) {
   // Abre una obra (y, si viene, una novedad puntual). La usan el tap de una notificación push
   // y los links "Ver en Fixgo" del resumen por WhatsApp. Devuelve false si la obra no está entre las de la persona.
   const irAObraONovedadRef=useRef(null);
+  const yaEligioPestanaRef=useRef(false); // la pestaña inicial de Inicio se elige una sola vez por sesión
   irAObraONovedadRef.current=(data)=>{
         const obraId=data?.obraId;
         if(!obraId)return false;
         const obra=obrasParaPushRef.current.find(o=>String(o.id)===String(obraId))||obrasEmpresaParaPushRef.current.find(o=>String(o.id)===String(obraId));
         if(!obra)return false;
+        const esGestorDeEsta=(usuarioReal&&obra.propietario_id===usuarioReal.id)||((obra.equipo||[]).find(m=>m.uid===(usuarioReal?.id))?.rolEnObra==="co_profesional");
+        setVistaHome(esGestorDeEsta?"mias":"tareas");
+        yaEligioPestanaRef.current=true;
         setObraActual(obra);
         setVistaRaiz("obra");
         setTabActiva("obras");
@@ -1408,7 +1412,8 @@ export default function App({ session }) {
           setDetalleId(data.novedadId);
           setVista("detalle");
           const novReal=(novedadesPorObraParaPushRef.current[obraId]||[]).find(n=>String(n.id)===String(data.novedadId));
-          setComentariosAbiertos((novReal?.comentarios||[]).length>0);
+          // Si el aviso es por un mensaje, abrir directo la sección de mensajes
+          setComentariosAbiertos(data.tipo==="comentario"||(novReal?.comentarios||[]).length>0);
         }
         // Si todavía no se cargaron los datos completos de esta obra (fotos, comentarios), traerlos.
         if(usuarioReal&&typeof obra.id==="string"&&(!novedadesPorObraParaPushRef.current[obra.id]||novedadesPorObraParaPushRef.current[obra.id].length===0)){
@@ -1441,7 +1446,9 @@ export default function App({ session }) {
     PushNotifications.addListener("pushNotificationActionPerformed",(accion)=>{
       try{
         const data=accion?.notification?.data||{};
-        irAObraONovedadRef.current?.(data);
+        // Con la app cerrada, este aviso llega antes de que carguen las obras: se guarda el pedido
+        // y el efecto de abajo lo cumple apenas estén (con la app abierta se cumple al instante).
+        if(data.obraId)guardarPedidoAbrirObra(String(data.obraId),data.novedadId?String(data.novedadId):null,data.tipo||null);
       }catch(e){console.warn("No se pudo abrir la novedad de la notificación:",e);}
     });
     registrarPush();
@@ -1451,12 +1458,19 @@ export default function App({ session }) {
     };
   },[usuarioReal?.id]);
   useEffect(()=>{
+    if(!usuarioReal){yaEligioPestanaRef.current=false;return;}
+    if(cargandoDatos||yaEligioPestanaRef.current||obras.length===0)return;
+    yaEligioPestanaRef.current=true;
+    const gestionoAlguna=obras.some(o=>o.propietario_id===usuarioReal.id||(o.equipo||[]).find(m=>m.uid===usuarioReal.id)?.rolEnObra==="co_profesional");
+    setVistaHome(gestionoAlguna?"mias":"tareas");
+  },[usuarioReal?.id,cargandoDatos,obras.length]);
+  useEffect(()=>{
     const h=()=>{
       if(!usuarioReal||cargandoDatos||obras.length===0)return; // se reintenta cuando terminan de cargar las obras
       const p=leerPedidoAbrirObra();
       if(!p)return;
-      const ok=irAObraONovedadRef.current?.({obraId:p.obra,novedadId:p.novedad});
-      if(!ok)mostrarToast("Esta obra es de otro equipo: pedile a quien te la mandó que te invite desde Equipo");
+      const ok=irAObraONovedadRef.current?.({obraId:p.obra,novedadId:p.novedad,tipo:p.tipo});
+      if(!ok)mostrarToast(p.tipo==="link"?"Esta obra es de otro equipo: pedile a quien te la mandó que te invite desde Equipo":"Esa obra ya no está disponible");
     };
     h();
     window.addEventListener("fixgo-abrir-obra",h);
@@ -1669,10 +1683,19 @@ export default function App({ session }) {
        const propId=(obra as any).propietario_id;
        if(propId&&propId!==usuarioReal.id){
          duenoNombre=equipo.find(m=>m.uid===propId)?.nombre||null;
-         if(!duenoNombre){try{const{data:u}=await supabase.from("usuarios").select("nombre").eq("id",propId).maybeSingle();duenoNombre=u?.nombre||null;}catch(e){}}
        }
        return{...obra,equipo,duenoNombre};
      }));
+     // Nombres de los dueños (obras de otros): la base no deja leer perfiles ajenos,
+     // así que se piden con la función segura nombres_duenios (solo obras donde soy integrante).
+     const idsAjenas=obrasConEquipo.filter(o=>!o.duenoNombre&&o.propietario_id&&o.propietario_id!==usuarioReal.id).map(o=>String(o.id));
+     if(idsAjenas.length>0){
+       try{
+         const{data:duenios}=await supabase.rpc("nombres_duenios",{ids:idsAjenas});
+         const mapa={};(duenios||[]).forEach(d=>{if(d?.obra_id&&d?.nombre)mapa[d.obra_id]=d.nombre;});
+         obrasConEquipo.forEach(o=>{if(!o.duenoNombre&&mapa[String(o.id)])o.duenoNombre=mapa[String(o.id)];});
+       }catch(e){console.warn("No se pudieron traer los nombres de los dueños:",e);}
+     }
      setObras(obrasConEquipo);
         // ── Detectar si alguna obra en la que participaba desapareció (eliminada u obra donde lo sacaron) ──
         try{
@@ -2720,7 +2743,7 @@ export default function App({ session }) {
     const base=esObraPropia?novedades:(novedadesPorObra[obraActual?.id]||[]);
     return{todas:base.length,pendientes:base.filter(n=>!n.resuelta).length,resueltas:base.filter(n=>n.resuelta).length,vencidas:base.filter(n=>!n.resuelta&&diasRestantes(n.fechaLimite)<0).length,sinResponsable:base.filter(n=>!n.resuelta&&!n.responsable_usuario_id).length};
   },[novedades,novedadesPorObra,obraActual?.id,obras]);
-  const detalle=novedades.find(n=>n.id===detalleId)||(novedadesPorObra[obraActual?.id]||[]).find(n=>n.id===detalleId);
+  const detalle=detalleId==null?null:(novedades.find(n=>String(n.id)===String(detalleId))||(novedadesPorObra[obraActual?.id]||[]).find(n=>String(n.id)===String(detalleId)));
   // Aprovecha el seguimiento de "novedad nueva" que ya existe (novedadesVistas / esNovedadNueva) para saber
   // si ALGUNA novedad de una obra tiene actividad sin ver, y así destacar la obra entera en la lista de Inicio.
   const obraTieneNovedadNueva=(obraId)=>(novedadesPorObra[obraId]||[]).some(esNovedadNueva);
@@ -3692,7 +3715,7 @@ export default function App({ session }) {
                 <p style={{margin:0,fontSize:12,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.5}}>Tu plan</p>
                 <p style={{margin:"2px 0 0",fontSize:18,fontWeight:900,color:modoOscuro&&!esVersionPro?"#fff":"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>{esVersionPro?<><Sparkles size={16} color="#C28A00"/>Fixgo Pro</>:"Gratis"}</p>
               </div>
-              {!esVersionPro&&<button type="button" onClick={()=>setVistaInfoApp(true)} style={{background:"#FFB800",border:"none",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:800,color:"#1C1C1E",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,flexShrink:0}}><Sparkles size={14}/>Pasar a Pro</button>}
+              {!esVersionPro&&<button type="button" onClick={()=>setModalProObra(true)} style={{background:"#FFB800",border:"none",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:800,color:"#1C1C1E",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,flexShrink:0}}><Sparkles size={14}/>Pasar a Pro</button>}
             </div>
             <p style={{margin:"8px 0 0",fontSize:12.5,color:"#55555A",lineHeight:1.4}}>{esVersionPro?"Obras ilimitadas, modo sin conexión, Informe Ejecutivo, dibujo sobre fotos y Estudio.":"Incluye 1 obra propia y novedades ilimitadas. Con Pro: obras ilimitadas, modo sin conexión, Informe Ejecutivo y más."}</p>
             {esVersionPro&&<button type="button" onClick={()=>{try{window.open("https://play.google.com/store/account/subscriptions?package=ar.fixgo.app","_blank");}catch(e){}}} style={{marginTop:10,background:"none",border:"none",padding:0,fontSize:13,fontWeight:700,color:"#9a6b00",cursor:"pointer",fontFamily:"inherit"}}>Gestionar suscripción en Google Play →</button>}
@@ -3792,6 +3815,7 @@ export default function App({ session }) {
           <p style={{textAlign:"center",fontSize:12,color:"#C7C7CC",marginBottom:8}}>Fixgo · Versión 1.0.0</p>
         </div>
         {offlineBannerJSX}
+        {modalProObraJSX}
         <NavBar tabActiva="perfil" onTab={(k)=>{setVistaPerfil(false);setTabActiva(k);}} onPerfil={()=>{}} />
       </div>
     );
@@ -3952,7 +3976,7 @@ export default function App({ session }) {
               </div>
               {esVersionPro
                 ?<span style={{background:"#FFB800",borderRadius:99,padding:"3px 9px",fontSize:10.5,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={10}/>PRO</span>
-                :<button type="button" onClick={()=>setVistaInfoApp(true)} style={{background:"rgba(255,184,0,0.16)",border:"1px solid rgba(255,184,0,0.55)",borderRadius:99,padding:"6px 11px",fontSize:11.5,color:"#FFD466",fontWeight:800,display:"flex",alignItems:"center",gap:4,cursor:"pointer",fontFamily:"inherit",minHeight:30}}><Sparkles size={11}/>Plan Gratis · Conocé Pro<ChevronRight size={12}/></button>}
+                :<button type="button" onClick={()=>setModalProObra(true)} aria-label="Plan Gratis: conocé Fixgo Pro" style={{background:"rgba(255,184,0,0.14)",border:"1px solid rgba(255,184,0,0.45)",borderRadius:99,padding:"5px 10px",fontSize:11.5,color:"#FFD466",fontWeight:800,display:"flex",alignItems:"center",gap:4,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}><Sparkles size={11}/>Conocé Pro<ChevronRight size={12}/></button>}
             </div>
           </div>
         </div>
@@ -4220,7 +4244,7 @@ export default function App({ session }) {
             onClick={()=>{if(!esVersionPro&&misObrasPropias>=1)setModalProObra(true);else setModalNuevaObra(true);}}>
             <Plus size={22} color="#636366"/><span style={{fontSize:16,fontWeight:600,color:"#636366"}}>Nueva obra</span>
           </button>}
-          {vistaHome==="mias"&&!esVersionPro&&<button type="button" onClick={()=>setVistaInfoApp(true)} style={{width:"100%",background:"none",border:"none",padding:"8px 4px 0",fontSize:12.5,color:"#55555A",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>Tu plan incluye 1 obra propia · <b style={{color:"#9a6b00",display:"inline-flex",alignItems:"center",gap:3}}><Sparkles size={11}/>Con Pro, ilimitadas</b></button>}
+          {vistaHome==="mias"&&!esVersionPro&&<button type="button" onClick={()=>setModalProObra(true)} style={{width:"100%",background:"none",border:"none",padding:"8px 4px 0",fontSize:12.5,color:"#55555A",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>Tu plan incluye 1 obra propia · <b style={{color:"#9a6b00",display:"inline-flex",alignItems:"center",gap:3}}><Sparkles size={11}/>Con Pro, ilimitadas</b></button>}
           {vistaHome==="mias"&&obras.length===0&&<UnirmeConLink compacto/>}
           </>)}
         </div>
