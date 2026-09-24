@@ -1669,10 +1669,19 @@ export default function App({ session }) {
        const propId=(obra as any).propietario_id;
        if(propId&&propId!==usuarioReal.id){
          duenoNombre=equipo.find(m=>m.uid===propId)?.nombre||null;
-         if(!duenoNombre){try{const{data:u}=await supabase.from("usuarios").select("nombre").eq("id",propId).maybeSingle();duenoNombre=u?.nombre||null;}catch(e){}}
        }
        return{...obra,equipo,duenoNombre};
      }));
+     // Nombres de los dueños (obras de otros): la base no deja leer perfiles ajenos,
+     // así que se piden con la función segura nombres_duenios (solo obras donde soy integrante).
+     const idsAjenas=obrasConEquipo.filter(o=>!o.duenoNombre&&o.propietario_id&&o.propietario_id!==usuarioReal.id).map(o=>String(o.id));
+     if(idsAjenas.length>0){
+       try{
+         const{data:duenios}=await supabase.rpc("nombres_duenios",{ids:idsAjenas});
+         const mapa={};(duenios||[]).forEach(d=>{if(d?.obra_id&&d?.nombre)mapa[d.obra_id]=d.nombre;});
+         obrasConEquipo.forEach(o=>{if(!o.duenoNombre&&mapa[String(o.id)])o.duenoNombre=mapa[String(o.id)];});
+       }catch(e){console.warn("No se pudieron traer los nombres de los dueños:",e);}
+     }
      setObras(obrasConEquipo);
         // ── Detectar si alguna obra en la que participaba desapareció (eliminada u obra donde lo sacaron) ──
         try{
@@ -3952,7 +3961,7 @@ export default function App({ session }) {
               </div>
               {esVersionPro
                 ?<span style={{background:"#FFB800",borderRadius:99,padding:"3px 9px",fontSize:10.5,color:"#1C1C1E",fontWeight:800,display:"flex",alignItems:"center",gap:3}}><Sparkles size={10}/>PRO</span>
-                :<button type="button" onClick={()=>setVistaInfoApp(true)} style={{background:"rgba(255,184,0,0.16)",border:"1px solid rgba(255,184,0,0.55)",borderRadius:99,padding:"6px 11px",fontSize:11.5,color:"#FFD466",fontWeight:800,display:"flex",alignItems:"center",gap:4,cursor:"pointer",fontFamily:"inherit",minHeight:30}}><Sparkles size={11}/>Plan Gratis · Conocé Pro<ChevronRight size={12}/></button>}
+                :<button type="button" onClick={()=>setVistaInfoApp(true)} aria-label="Plan Gratis: conocé Fixgo Pro" style={{background:"rgba(255,184,0,0.14)",border:"1px solid rgba(255,184,0,0.45)",borderRadius:99,padding:"5px 10px",fontSize:11.5,color:"#FFD466",fontWeight:800,display:"flex",alignItems:"center",gap:4,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}><Sparkles size={11}/>Conocé Pro<ChevronRight size={12}/></button>}
             </div>
           </div>
         </div>
