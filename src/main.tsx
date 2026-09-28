@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import Login, { NuevaPassword } from './Login.tsx'
 import { AvisoActualizacion } from './actualizacion'
+import { AvisoPushEnApp } from './avisoPush'
 import { supabase } from './supabase'
 import { Capacitor } from '@capacitor/core'
 import { App as CapacitorApp } from '@capacitor/app'
@@ -119,7 +120,7 @@ function Root() {
   if (loading) return <Splash />
   if (!session) return <Login key={avisoLink || 'login'} avisoInicial={avisoLink} />
   if (recuperando) return <NuevaPassword onListo={() => setRecuperando(false)} />
-  return <><App session={session} /><AvisoActualizacion /></>
+  return <><App session={session} /><AvisoActualizacion /><AvisoPushEnApp /></>
 }
 
 createRoot(document.getElementById('root')!).render(

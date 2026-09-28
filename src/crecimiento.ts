@@ -150,6 +150,24 @@ export function guardarPedidoAbrirObra(obra: string, novedad: string | null, tip
   try { window.dispatchEvent(new Event('fixgo-abrir-obra')) } catch { /* noop */ }
 }
 
+/** #14: ¿el aviso push es el de tareas vencidas? */
+export function esAvisoVencidas(data: any): boolean {
+  return ['vencidas', 'vencida', 'vencimiento', 'vencimientos'].includes(String(data?.tipo || '').toLowerCase())
+}
+
+/**
+ * Qué abrir al tocar un aviso (notificación push o cartel dentro de la app):
+ * - vencidas (sin una tarea puntual) → pestaña Urgencias
+ * - con obra → esa obra / esa tarea
+ * - sin obra → Urgencias (los avisos sin obra son los recordatorios de vencimientos)
+ */
+export function pedirAbrirDesdeAviso(data: any) {
+  const d = data || {}
+  if (esAvisoVencidas(d) && !d.novedadId) guardarPedidoAbrirObra('urgencias', null, 'vencidas')
+  else if (d.obraId) guardarPedidoAbrirObra(String(d.obraId), d.novedadId ? String(d.novedadId) : null, d.tipo || null)
+  else guardarPedidoAbrirObra('urgencias', null, 'vencidas')
+}
+
 /** Lee (y borra) el pedido pendiente de abrir una obra. Vence a los 10 minutos. */
 export function leerPedidoAbrirObra(): { obra: string, novedad: string | null, tipo: string | null } | null {
   const raw = lsGet('fixgo_abrir_obra')
