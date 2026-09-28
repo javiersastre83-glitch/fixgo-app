@@ -1561,11 +1561,13 @@ export default function App({ session }) {
     if(!el){
       el=document.createElement("div");
       el.id="fixgo-toast";
-      el.style.cssText="position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(12px);background:#1C1C1E;color:#fff;padding:12px 20px;border-radius:99px;font-size:13px;fontWeight:500;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,0.25);white-space:nowrap;z-index:9999;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+      el.style.cssText="position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(12px);background:#1C1C1E;color:#fff;padding:12px 20px;border-radius:18px;font-size:13px;font-weight:500;line-height:1.35;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,0.25);white-space:normal;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;z-index:9999;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
       document.body.appendChild(el);
     }
     if(toast){
-      el.innerHTML='<span style="width:18px;height:18px;border-radius:50%;background:#34C759;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">&#10003;</span>'+toast;
+      // Texto como texto (no HTML): el mensaje puede incluir lo que escribió el usuario
+      el.innerHTML='<span style="width:18px;height:18px;flex-shrink:0;border-radius:50%;background:#34C759;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">&#10003;</span>';
+      const txt=document.createElement("span");txt.textContent=String(toast);el.appendChild(txt);
       el.style.opacity="1";
       el.style.transform="translateX(-50%) translateY(0)";
     }else{
@@ -2576,7 +2578,7 @@ export default function App({ session }) {
   };
 
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error:e1}=await supabase.from("novedades").delete().eq("obra_id",id);if(e1){alert("No se pudo eliminar: "+e1.message);return;}const{error:e2}=await supabase.from("obras").delete().eq("id",id);if(e2){alert("No se pudo eliminar la obra: "+e2.message);return;}}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
-  const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
+  const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),Math.min(4500,Math.max(2200,String(msg||"").length*55)));};
   const [modalEditarObra, setModalEditarObra] = useState<any>(null);
   const [editarObraForm,  setEditarObraForm]  = useState({nombre:"",direccion:""});
   const guardarEdicionObra=async()=>{
@@ -2741,7 +2743,7 @@ export default function App({ session }) {
   };
   const generarResumenGremio=(gremio:string)=>{const novs=novedades.filter(n=>!n.resuelta&&n.responsable===gremio);const urgentes=novs.filter(n=>n.prioridad===0);const otras=novs.filter(n=>n.prioridad!==0);let msg=`Hola! Te mando el estado de tus tareas en "${obraActual?.nombre}":\n\n`;if(urgentes.length>0){msg+=`🔴 URGENTES (${urgentes.length}):\n`;urgentes.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}${n.fechaLimite?` — límite ${formatFecha(n.fechaLimite)}`:""}\n`;});msg+="\n";}if(otras.length>0){msg+=`🟡 PENDIENTES (${otras.length}):\n`;otras.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}\n`;});}msg+=`\nTotal pendiente: ${novs.length} tarea${novs.length!==1?"s":""}`;if(obraActual&&typeof obraActual.id==="string")msg+=`\n\n👉 Ver en Fixgo: ${linkAbrirObra(obraActual.id)}`;return msg;};
   const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",responsableUsuarioId:nov.responsable_usuario_id||null,sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
-  const asignarRapido=async(id,{responsable,usuarioId})=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({responsable,responsable_usuario_id:usuarioId||null}).eq("id",id);if(error){alert("No se pudo asignar: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,responsable,responsable_usuario_id:usuarioId||null}:x));setAsignacionRapida(null);};
+  const asignarRapido=async(id,{responsable,usuarioId})=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({responsable,responsable_usuario_id:usuarioId||null}).eq("id",id);if(error){alert("No se pudo asignar: "+error.message);return false;}}setNovedades(n=>n.map(x=>x.id===id?{...x,responsable,responsable_usuario_id:usuarioId||null}:x));setAsignacionRapida(null);return true;};
   const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;if(guardando)return;setGuardando(true);try{const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos,oculto_capataz:formEdit.ocultoCapataz,responsable_usuario_id:formEdit.responsableUsuarioId||null}).eq("id",id);if(error){alert("No se pudo guardar la edición: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,responsable_usuario_id:formEdit.responsableUsuarioId||null,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite,ocultoCapataz:formEdit.ocultoCapataz}:x));setEditando(false);setFormEdit(null);}finally{setGuardando(false);}};
   const compartir=(nov)=>{const t=generarResumen(nov,obraActual?.nombre||"Obra");if(navigator.share)navigator.share({title:"Tarea",text:t}).catch(()=>{});else{navigator.clipboard?.writeText(t);setCompartidoId(nov.id);setTimeout(()=>setCompartidoId(null),2000);}};
 
@@ -4432,8 +4434,8 @@ export default function App({ session }) {
           </div>
           {puedeGestionar&&!esProfesional&&(
             <div style={{display:"flex",gap:10}}>
-              <button style={{flex:1,background:"#1C1C1E",color:"#fff",border:"none",borderRadius:14,padding:"14px 10px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}} onClick={()=>{setForm({...FORM_INICIAL,responsable:u.especialidad||RESPONSABLES[0],responsableUsuarioId:u.uid});setMiembroSel(null);setVistaEquipo(false);setVista("nueva");}}><Plus size={16}/>Nueva tarea</button>
-              <button style={{flex:1,background:"#fff",color:"#1C1C1E",border:"1.5px solid #E0E0E5",borderRadius:14,padding:"14px 10px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}} onClick={()=>setAsignarTareaMiembro(u)}><User size={16}/>Asignar tarea</button>
+              
+              <button style={{flex:1,background:"#1C1C1E",color:"#fff",border:"none",borderRadius:14,padding:"14px 10px",fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}} onClick={()=>setAsignarTareaMiembro(u)}><User size={16}/>Asignar tarea</button>
             </div>
           )}
           {[[Clock,"Pendientes",pend],[CheckCircle,"Resueltas",res]].map(([Ic,titulo,lista]:any)=>lista.length>0&&(
@@ -4484,7 +4486,7 @@ export default function App({ session }) {
                     ?<p style={{textAlign:"center",color:"#55555A",fontSize:14,padding:"20px 0"}}>Todas las tareas ya tienen un responsable asignado.</p>
                     :sinAsignar.map(nov=>{const pri=PRIORIDADES[nov.prioridad];return(
                       <button key={nov.id} style={{width:"100%",background:"#fff",border:"1px solid #ECECEF",borderRadius:14,padding:"12px 14px",marginBottom:8,textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}
-                        onClick={()=>asignarRapido(nov.id,{responsable:asignarTareaMiembro.especialidad||"",usuarioId:asignarTareaMiembro.uid})}>
+                        onClick={async()=>{const m=asignarTareaMiembro;const ok=await asignarRapido(nov.id,{responsable:m.especialidad||"",usuarioId:m.uid});if(ok){setAsignarTareaMiembro(null);mostrarToast(`"${nov.descripcion.length>40?nov.descripcion.slice(0,39)+"…":nov.descripcion}" quedó asignada a ${m.nombre}. Le llega un aviso.`);}}}>
                         <span style={{width:8,height:8,borderRadius:"50%",background:pri.color,flexShrink:0,display:"inline-block"}}/>
                         <div style={{flex:1,minWidth:0}}>
                           <p style={{margin:0,fontSize:15,fontWeight:700,color:"#1C1C1E"}}>{nov.descripcion}</p>
