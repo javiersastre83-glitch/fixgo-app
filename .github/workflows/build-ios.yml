@@ -66,6 +66,8 @@ jobs:
         env:
           APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
 
+      # Se firma directo con el certificado de distribución (App Store): no necesita
+      # tener iPhones registrados en la cuenta, como pide la firma de desarrollo.
       - name: Compilar y firmar (archive)
         if: ${{ inputs.subir_a_testflight }}
         run: |
@@ -81,6 +83,7 @@ jobs:
             -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }} \
             DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
             CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
 
       - name: Exportar el .ipa para App Store Connect
