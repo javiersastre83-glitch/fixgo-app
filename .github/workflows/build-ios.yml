@@ -1,0 +1,129 @@
+name: Build iOS (TestFlight)
+
+# Se lanza SOLO a mano: pestaña "Actions" → "Build iOS (TestFlight)" → "Run workflow".
+# Así los cambios de Android no disparan builds de iPhone (y al revés).
+# Compila en una Mac de GitHub, firma con la cuenta de Apple Developer y sube el build a TestFlight.
+#
+# Secretos que tiene que cargar Javier (Settings → Secrets and variables → Actions):
+#   APPLE_TEAM_ID              → Team ID de la cuenta (developer.apple.com → Membership details)
+#   APPSTORE_KEY_ID            → Key ID de la clave de API de App Store Connect
+#   APPSTORE_ISSUER_ID         → Issuer ID (misma pantalla de claves de API)
+#   APPSTORE_API_KEY           → el contenido completo del archivo AuthKey_XXXX.p8 (abrirlo con el Bloc de notas y copiar todo)
+on:
+  workflow_dispatch:
+    inputs:
+      subir_a_testflight:
+        description: "Subir a TestFlight (requiere la cuenta de Apple activa y los 4 secretos). Si está destildado, solo prueba que compila."
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Elegir la versión de Xcode más nueva instalada
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Instalar dependencias del proyecto
+        run: npm ci
+
+      - name: Compilar la app web (Vite)
+        run: npm run build
+
+      - name: Sincronizar el proyecto iOS con Capacitor
+        run: npx cap sync ios
+
+      - name: Prueba de compilación (sin firmar, para simulador)
+        if: ${{ !inputs.subir_a_testflight }}
+        run: |
+          xcodebuild build \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+          echo "✅ La versión iPhone compila bien."
+
+      - name: Preparar la clave de API de App Store Connect
+        if: ${{ inputs.subir_a_testflight }}
+        run: |
+          mkdir -p ~/private_keys
+          printf '%s\n' "$APPSTORE_API_KEY" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          grep -q "BEGIN PRIVATE KEY" ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 || (echo "❌ El secreto APPSTORE_API_KEY no parece un archivo .p8 completo" && exit 1)
+        env:
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+
+      - name: Compilar y firmar (archive)
+        if: ${{ inputs.subir_a_testflight }}
+        run: |
+          xcodebuild archive \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Fixgo.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }} \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+            CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }}
+
+      - name: Exportar el .ipa para App Store Connect
+        if: ${{ inputs.subir_a_testflight }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Fixgo.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }}
+          ls -la "$RUNNER_TEMP/export"
+
+      - name: Subir a TestFlight
+        if: ${{ inputs.subir_a_testflight }}
+        run: |
+          xcrun altool --upload-app -t ios \
+            -f "$RUNNER_TEMP/export/App.ipa" \
+            --apiKey ${{ secrets.APPSTORE_KEY_ID }} \
+            --apiIssuer ${{ secrets.APPSTORE_ISSUER_ID }}
+
+      - name: Guardar el .ipa como descarga del workflow (por las dudas)
+        if: ${{ inputs.subir_a_testflight }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixgo-ios-ipa
+          path: ${{ runner.temp }}/export/*.ipa
+          retention-days: 7
+
+      - name: Borrar la clave de API del entorno
+        if: always()
+        run: rm -rf ~/private_keys
