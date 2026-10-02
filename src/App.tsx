@@ -182,9 +182,9 @@ const ModalEditorDibujo = ({ src, onGuardar, onCerrar }) => {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 200, display: "flex", flexDirection: "column" }}>
+    <div data-capa="" style={{ position: "fixed", inset: 0, background: "#000", zIndex: 200, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
-        <button onClick={onCerrar} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={22} color="#fff" /></button>
+        <button data-cerrar="" onClick={onCerrar} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={22} color="#fff" /></button>
         <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>Marcar en la foto</span>
         <button onClick={deshacer} style={{ background: "none", border: "none", cursor: "pointer" }}><RotateCcw size={20} color="#fff" /></button>
       </div>
@@ -385,7 +385,7 @@ const SelectorOficio = ({ value, onChange, customValue, onCustomChange, color="#
       </button>
       {abierto && (
         <>
-        <div style={{position:"fixed",inset:0,zIndex:49}} onClick={()=>{setAbierto(false);setBusqueda("");}}/>
+        <div data-capa="" style={{position:"fixed",inset:0,zIndex:49}} onClick={()=>{setAbierto(false);setBusqueda("");}}/>
         <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",borderRadius:14,border:"1.5px solid #E5E5EA",boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50,maxHeight:280,display:"flex",flexDirection:"column",overflow:"hidden"}}>
           <div style={{padding:"10px",borderBottom:"1px solid #F2F2F7",position:"relative"}}>
             <Search size={15} color="#B0B0B5" style={{position:"absolute",left:24,top:"50%",transform:"translateY(-50%)"}}/>
@@ -513,7 +513,7 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
         <span style={{color:"#55555A",fontSize:13}}>▼</span>
       </button>
       {abierto && (
-        <div style={s.overlay} onClick={()=>{setAbierto(false);setBusqueda("");}}>
+        <div data-capa="" style={s.overlay} onClick={()=>{setAbierto(false);setBusqueda("");}}>
           <div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
             <p style={{margin:"0 0 10px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
             <div style={{position:"relative",marginBottom:12}}>
@@ -596,7 +596,7 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
 
       {/* MODAL OFICIO */}
       {modalOficio && (
-        <div style={s.overlay} onClick={()=>{setModalOficio(false);setBusqueda("");}}>
+        <div data-capa="" style={s.overlay} onClick={()=>{setModalOficio(false);setBusqueda("");}}>
           <div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
             <p style={{margin:"0 0 10px",fontSize:17,fontWeight:700}}>Elegí un oficio</p>
             <input
@@ -624,7 +624,7 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
 const ModalTelefono = ({ modalTelefono, setModalTelefono, telInput, setTelInput, guardarTelefono }) => {
   if(!modalTelefono) return null;
   return createPortal(
-    <div style={s.overlay} onClick={()=>setModalTelefono(null)}>
+    <div data-capa="" style={s.overlay} onClick={()=>setModalTelefono(null)}>
       <div style={s.modal} onClick={e=>e.stopPropagation()}>
         <p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Teléfono de {modalTelefono.nombre}</p>
         <p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>Para llamarlo o mandarle WhatsApp desde la app.</p>
@@ -651,7 +651,7 @@ const NavBar = ({ tabActiva, onTab, onPerfil }) => (
       {key:"alertas", Icon:Zap,       label:"Urgencias"},
       {key:"perfil",  Icon:User,      label:"Perfil"},
     ].map(({key,Icon,label})=>(
-      <button id={"tour-nav-"+(key==="obras"?"inicio":key==="alertas"?"urgencias":"perfil")} key={key} onClick={()=>key==="perfil"?onPerfil():onTab(key)}
+      <button id={"tour-nav-"+(key==="obras"?"inicio":key==="alertas"?"urgencias":"perfil")} {...(key==="obras"?{"data-tab-inicio":"","data-activa":tabActiva===key?"1":"0"}:{})} key={key} onClick={()=>key==="perfil"?onPerfil():onTab(key)}
         style={{flex:1,background:"none",border:"none",padding:"10px 4px 8px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
         <Icon size={22} color={tabActiva===key?"#1C1C1E":"#55555A"} strokeWidth={tabActiva===key?2.5:1.8}/>
         <span style={{fontSize:10,fontWeight:tabActiva===key?700:400,color:tabActiva===key?"#1C1C1E":"#55555A"}}>{label}</span>
@@ -787,9 +787,9 @@ const OnboardingOverlay = ({ onFinish }) => {
       );
     };
     return(
-      <div style={{position:"fixed",inset:0,zIndex:9999,background:"#FFFCF8",overflow:"hidden"}}
+      <div data-capa="" style={{position:"fixed",inset:0,zIndex:9999,background:"#FFFCF8",overflow:"hidden"}}
         onTouchStart={onTouchStartCarrusel} onTouchMove={onTouchMoveCarrusel} onTouchEnd={onTouchEndCarrusel}>
-        <button onClick={()=>setPaso(4)} style={{position:"absolute",top:"max(24px,env(safe-area-inset-top))",right:20,zIndex:2,background:"rgba(255,255,255,0.22)",backdropFilter:"blur(6px)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",fontSize:13,fontWeight:700,padding:"8px 14px",borderRadius:99,cursor:"pointer"}}>Omitir</button>
+        <button data-cerrar="" onClick={()=>setPaso(4)} style={{position:"absolute",top:"max(24px,env(safe-area-inset-top))",right:20,zIndex:2,background:"rgba(255,255,255,0.22)",backdropFilter:"blur(6px)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",fontSize:13,fontWeight:700,padding:"8px 14px",borderRadius:99,cursor:"pointer"}}>Omitir</button>
         <div style={{display:"flex",height:"100%",transform:`translateX(${-(paso-1)*anchoRef.current+arrastreX}px)`,transition:arrastrando?"none":"transform .3s ease"}}>
           {[1,2,3].map(n=>renderSlide(n))}
         </div>
@@ -805,9 +805,9 @@ const OnboardingOverlay = ({ onFinish }) => {
   if(tipTop+tipAlto>window.innerHeight)tipTop=spot.top-tipAlto-10;
   let tipLeft=Math.max(16,Math.min(spot.left+spot.width/2-135,window.innerWidth-286));
   return(
-    <div style={{position:"fixed",inset:0,zIndex:9999}}>
+    <div data-capa="" style={{position:"fixed",inset:0,zIndex:9999}}>
       <div style={{position:"fixed",top:spot.top-8,left:spot.left-10,width:spot.width+20,height:spot.height+16,borderRadius:18,boxShadow:"0 0 0 9999px rgba(10,14,20,0.72)",pointerEvents:"none"}}/>
-      <button onClick={onFinish} style={{position:"fixed",top:"max(24px,env(safe-area-inset-top))",right:20,background:"rgba(255,255,255,0.92)",border:"none",color:"#1C1C1E",fontSize:12,fontWeight:700,padding:"7px 13px",borderRadius:99,cursor:"pointer"}}>Saltear recorrido</button>
+      <button data-cerrar="" onClick={onFinish} style={{position:"fixed",top:"max(24px,env(safe-area-inset-top))",right:20,background:"rgba(255,255,255,0.92)",border:"none",color:"#1C1C1E",fontSize:12,fontWeight:700,padding:"7px 13px",borderRadius:99,cursor:"pointer"}}>Saltear recorrido</button>
       <div style={{position:"fixed",top:tipTop,left:tipLeft,width:270,background:"#fff",borderRadius:16,padding:"16px 18px",boxShadow:"0 12px 30px rgba(0,0,0,0.35)"}}>
         <p style={{fontSize:13,fontWeight:800,color:"#E8752B",textTransform:"uppercase",letterSpacing:0.4,margin:"0 0 6px"}}>{p.name}</p>
         <p style={{fontSize:14,color:"#1C1C1E",lineHeight:1.45,margin:"0 0 14px"}}>{p.txt}</p>
@@ -836,7 +836,7 @@ const Header = ({ migas=[], accionDerecha=null, dark=false }) => {
     <div style={{background:bg,borderBottom:dark?"none":"1px solid #E5E5EA",padding:"10px 16px 12px",flexShrink:0}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",minHeight:26}}>
         {volver?(
-          <button onClick={volver} aria-label={`Volver a ${volverLabel||""}`}
+          <button data-volver="" onClick={volver} aria-label={`Volver a ${volverLabel||""}`}
             style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:dark?"#fff":"#007AFF",cursor:"pointer",flexShrink:1,minWidth:0,padding:0}}>
             <ChevronLeft size={19}/>
             <span style={{fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{volverLabel}</span>
@@ -2741,6 +2741,27 @@ export default function App({ session }) {
     setInvitacionesEmpresaPendientes(p=>p.filter(i=>i.codigo!==codigo));
     mostrarToast("Invitación cancelada");
   };
+  // #18 — Mensaje de WhatsApp con las tareas pendientes de un integrante (ficha del integrante).
+  const mensajePendientesMiembro=(u:any,pendientes:any[])=>{
+    const lista=pendientes.filter(n=>n.estadoAprobacion!=="pendiente").slice().sort((a,b)=>(a.prioridad-b.prioridad)||((diasRestantes(a.fechaLimite)??9999)-(diasRestantes(b.fechaLimite)??9999)));
+    const nombre=(u?.nombre||"").trim().split(/\s+/)[0];
+    let msg=`Hola${nombre?" "+nombre:""}! Te paso tus tareas pendientes en "${obraActual?.nombre||"la obra"}":\n\n`;
+    lista.forEach(n=>{
+      const pri=PRIORIDADES[n.prioridad]||PRIORIDADES[2];
+      const d=diasRestantes(n.fechaLimite);
+      const plazo=d===null?"":d<0?` — vencida hace ${Math.abs(d)} ${Math.abs(d)===1?"día":"días"}`:d===0?" — vence hoy":d===1?" — vence mañana":` — vence el ${formatFecha(n.fechaLimite)}`;
+      msg+=`${pri.emoji} ${n.descripcion}${n.sector?` (${n.sector})`:""}${plazo}${n.estadoAprobacion==="rechazada"?" — rechazada, falta corregir":""}\n`;
+    });
+    msg+=`\nTotal: ${lista.length} tarea${lista.length!==1?"s":""} pendiente${lista.length!==1?"s":""}`;
+    if(obraActual&&typeof obraActual.id==="string")msg+=`\n\n👉 Ver en Fixgo: ${linkAbrirObra(obraActual.id)}`;
+    return {msg,cantidad:lista.length};
+  };
+  const enviarPendientesWhatsapp=(u:any,pendientes:any[])=>{
+    const {msg}=mensajePendientesMiembro(u,pendientes);
+    const num=normalizarWhatsapp(u?.telefono||"");
+    // Sin número guardado: WhatsApp abre para elegir el contacto.
+    window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,"_blank");
+  };
   const generarResumenGremio=(gremio:string)=>{const novs=novedades.filter(n=>!n.resuelta&&n.responsable===gremio);const urgentes=novs.filter(n=>n.prioridad===0);const otras=novs.filter(n=>n.prioridad!==0);let msg=`Hola! Te mando el estado de tus tareas en "${obraActual?.nombre}":\n\n`;if(urgentes.length>0){msg+=`🔴 URGENTES (${urgentes.length}):\n`;urgentes.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}${n.fechaLimite?` — límite ${formatFecha(n.fechaLimite)}`:""}\n`;});msg+="\n";}if(otras.length>0){msg+=`🟡 PENDIENTES (${otras.length}):\n`;otras.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}\n`;});}msg+=`\nTotal pendiente: ${novs.length} tarea${novs.length!==1?"s":""}`;if(obraActual&&typeof obraActual.id==="string")msg+=`\n\n👉 Ver en Fixgo: ${linkAbrirObra(obraActual.id)}`;return msg;};
   const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",responsableUsuarioId:nov.responsable_usuario_id||null,sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
   const asignarRapido=async(id,{responsable,usuarioId})=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({responsable,responsable_usuario_id:usuarioId||null}).eq("id",id);if(error){alert("No se pudo asignar: "+error.message);return false;}}setNovedades(n=>n.map(x=>x.id===id?{...x,responsable,responsable_usuario_id:usuarioId||null}:x));setAsignacionRapida(null);return true;};
@@ -2841,7 +2862,7 @@ export default function App({ session }) {
     });
   };
 
-  const modalFotoResolucionJSX = modalFotoResolucion&&<div style={s.overlay} onClick={()=>{if(!subiendoFotoResolucion)setModalFotoResolucion(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+  const modalFotoResolucionJSX = modalFotoResolucion&&<div data-capa="" style={s.overlay} onClick={()=>{if(!subiendoFotoResolucion)setModalFotoResolucion(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>¿Cómo quedó resuelto?</p>
     <p style={{margin:"0 0 18px",fontSize:13,color:"#55555A"}}>Sacale una foto del resultado (opcional). Ayuda a mostrar el avance real.</p>
     <input ref={fileRefResolucion} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f){if(esVersionPro){const url=URL.createObjectURL(f);setEditorDibujo({src:url,origen:"resolucion",idx:null});}else{confirmarResolucionConFoto(modalFotoResolucion,f);}}}}/>
@@ -2865,7 +2886,7 @@ export default function App({ session }) {
     </div>
   );
 
-  const modalPeriodoJSX = modalPeriodoReporte&&<div style={s.overlay} onClick={()=>{if(!generandoReporte)setModalPeriodoReporte(false);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+  const modalPeriodoJSX = modalPeriodoReporte&&<div data-capa="" style={s.overlay} onClick={()=>{if(!generandoReporte)setModalPeriodoReporte(false);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     {generandoReporte?(
       <div style={{textAlign:"center",padding:"30px 10px"}}>
         <span style={{width:34,height:34,border:"3px solid #E5E5EA",borderTopColor:"#0057FF",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite",marginBottom:16}}/>
@@ -2888,7 +2909,7 @@ export default function App({ session }) {
     </>)}
   </div></div>;
 
-  const modalEditarObraJSX = modalEditarObra&&<div style={s.overlay} onClick={()=>setModalEditarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+  const modalEditarObraJSX = modalEditarObra&&<div data-capa="" style={s.overlay} onClick={()=>setModalEditarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Editar datos de la obra</p>
     <input style={{...s.input,marginBottom:10}} placeholder="Nombre de la obra *" value={editarObraForm.nombre} onChange={e=>setEditarObraForm(f=>({...f,nombre:e.target.value}))}/>
     <input style={{...s.input,marginBottom:20}} placeholder="Dirección (opcional)" value={editarObraForm.direccion} onChange={e=>setEditarObraForm(f=>({...f,direccion:e.target.value}))}/>
@@ -2899,7 +2920,7 @@ export default function App({ session }) {
   </div></div>;
 
   const asignacionRapidaJSX = asignacionRapida&&(()=>{const nov=novedades.find(n=>n.id===asignacionRapida);if(!nov)return null;return(
-    <div style={s.overlay} onClick={()=>setAsignacionRapida(null)}><div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+    <div data-capa="" style={s.overlay} onClick={()=>setAsignacionRapida(null)}><div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
       <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
       <p style={{margin:"0 0 14px",fontSize:13,color:"#55555A"}}>{nov.descripcion}</p>
       <div style={{overflowY:"auto"}}>
@@ -2909,7 +2930,7 @@ export default function App({ session }) {
     </div></div>
   );})();
 
-  const avisoObraEliminadaJSX = avisoObraEliminada&&<div style={s.overlay} onClick={()=>setAvisoObraEliminada(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+  const avisoObraEliminadaJSX = avisoObraEliminada&&<div data-capa="" style={s.overlay} onClick={()=>setAvisoObraEliminada(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <div style={{textAlign:"center",marginBottom:20}}>
       <span style={{width:64,height:64,borderRadius:"50%",background:"#F2F2F7",display:"inline-flex",alignItems:"center",justifyContent:"center"}}><LogOut size={28} color="#8E8E93"/></span>
       <p style={{margin:"12px 0 8px",fontSize:18,fontWeight:800}}>Ya no formás parte de "{avisoObraEliminada}"</p>
@@ -2918,7 +2939,7 @@ export default function App({ session }) {
     <button style={s.btnPrincipal} onClick={()=>setAvisoObraEliminada(null)}>Entendido</button>
   </div></div>;
 
-  const modalDecidirCompartirJSX = modalDecidirCompartir&&<div style={s.overlay}><div style={s.modal}>
+  const modalDecidirCompartirJSX = modalDecidirCompartir&&<div data-capa="" style={s.overlay}><div style={s.modal}>
     <div style={{textAlign:"center",marginBottom:18}}>
       <Handshake size={36} color="#0057FF" style={{marginBottom:8}}/>
       <p style={{margin:"0 0 8px",fontSize:19,fontWeight:800}}>¿Querés compartir todas tus obras con "{modalDecidirCompartir.empresas?.nombre||"tu equipo"}"?</p>
@@ -2928,7 +2949,7 @@ export default function App({ session }) {
     <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={async()=>{await decidirCompartirTodo(modalDecidirCompartir.id,modalDecidirCompartir.empresa_id,false);setModalElegirObras(modalDecidirCompartir.empresa_id);setModalDecidirCompartir(null);}}>No, elijo yo qué compartir</button>
   </div></div>;
 
-  const modalElegirObrasJSX = modalElegirObras&&<div style={s.overlay} onClick={()=>setModalElegirObras(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+  const modalElegirObrasJSX = modalElegirObras&&<div data-capa="" style={s.overlay} onClick={()=>setModalElegirObras(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>¿Cuáles querés compartir?</p>
     <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>Tildá las obras que querés que vea tu Director. Las demás quedan privadas.</p>
     <div style={{maxHeight:"50vh",overflowY:"auto",marginBottom:16}}>
@@ -2949,7 +2970,7 @@ export default function App({ session }) {
   const promptInvitarJSX = promptInvitarNov&&!modalInvitar&&(()=>{
     const r=(promptInvitarNov.responsable||"").trim();
     const aQuien=r?`tu ${r.charAt(0).toLowerCase()+r.slice(1)}`:"quien la resuelve";
-    return(<div style={s.overlay} onClick={()=>setPromptInvitarNov(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+    return(<div data-capa="" style={s.overlay} onClick={()=>setPromptInvitarNov(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
       <div style={{textAlign:"center",marginBottom:14}}>
         <div style={{width:56,height:56,borderRadius:18,background:"#0057FF15",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:10}}><Users size={26} color="#0057FF"/></div>
         <p style={{margin:"0 0 6px",fontSize:19,fontWeight:800,color:"#1C1C1E"}}>¿Quién resuelve esta tarea?</p>
@@ -2959,7 +2980,7 @@ export default function App({ session }) {
       <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setPromptInvitarNov(null)}>Más tarde</button>
     </div></div>);
   })();
-  const modalInvitarJSX = modalInvitar&&<div style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarCallback(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+  const modalInvitarJSX = modalInvitar&&<div data-capa="" style={s.overlay} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarCallback(null);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar integrante</p>
     <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>Sumá a alguien a "{obraActual?.nombre}"</p>
     {!linkGenerado?<>
@@ -3008,7 +3029,7 @@ export default function App({ session }) {
       <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>{setModalInvitar(false);setLinkGenerado("");setInvitarNombre("");setInvitarRol("operario");setInvitarEsp(RESPONSABLES[0]);setInvitarEspOtro("");setInvitarCallback(null);}}>Cerrar</button>
     </>}
   </div>
-  {proDesdeInvitar&&<div style={{...s.overlay,zIndex:110}} onClick={e=>{e.stopPropagation();setProDesdeInvitar(false);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+  {proDesdeInvitar&&<div data-capa="" style={{...s.overlay,zIndex:110}} onClick={e=>{e.stopPropagation();setProDesdeInvitar(false);}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
     <div style={{textAlign:"center",marginBottom:14}}><Handshake size={34} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Sumá Colegas con Fixgo Pro</p><p style={{margin:0,fontSize:14,color:"#636366"}}>Un Colega gestiona la obra con vos: carga y asigna tareas y ve todo el avance.</p></div>
     <div style={{textAlign:"left",marginBottom:14,display:"flex",flexDirection:"column",gap:8}}>
       {["Colegas en tus obras","Obras ilimitadas","Modo offline","Informe de tareas registradas"].map(t=>(
@@ -3021,7 +3042,7 @@ export default function App({ session }) {
   </div></div>}
   </div>;
 
-  const modalProObraJSX = modalProObra&&<div style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
+  const modalProObraJSX = modalProObra&&<div data-capa="" style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
         <div style={{textAlign:"left",marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
           {["Obras ilimitadas","Modo offline","Marcar y dibujar sobre fotos","Informe de tareas registradas","Gestión en equipo para una misma obra","Estudio para estar al tanto de las obras que dirige tu equipo"].map(t=>(
             <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><CheckCircle size={16} color="#34C759"/>{t}</div>
@@ -3471,7 +3492,7 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>{setVistaDirectorCategoria(null);setFiltroProfesionalObras(null);if(filtroProfesionalObras){setVistaTuEquipo(true);}else{setTabActiva("obras");irInicio();}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>{filtroProfesionalObras?"Tu equipo":"Estudio"}</button>
+          <button data-volver="" onClick={()=>{setVistaDirectorCategoria(null);setFiltroProfesionalObras(null);if(filtroProfesionalObras){setVistaTuEquipo(true);}else{setTabActiva("obras");irInicio();}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>{filtroProfesionalObras?"Tu equipo":"Estudio"}</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"0 16px 24px"}}>
           <p style={{margin:"4px 0 4px",fontSize:22,fontWeight:800,color:"#1C1C1E"}}>{filtroProfesionalObras?`Obras de ${filtroProfesionalObras.nombre}`:(vistaDirectorCategoria==="obrasActivas"?cfg.titulo:`${cfg.titulo} por obra`)}</p>
@@ -3541,7 +3562,7 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>setVistaProfesionales(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
+          <button data-volver="" onClick={()=>setVistaProfesionales(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             {logoEstudioUrl&&<ImgCacheada src={logoEstudioUrl} style={{width:36,height:36,borderRadius:9,objectFit:"contain",border:"1.5px solid #E5E5EA",flexShrink:0}}/>}
             <div>
@@ -3600,14 +3621,14 @@ export default function App({ session }) {
           {miembrosEmpresa.length===0&&<p style={{textAlign:"center",color:"#55555A",fontSize:13,marginTop:30}}>Todavía no invitaste a nadie.</p>}
         </div>
         <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
-        {modalEmailContacto&&<div style={s.overlay} onClick={()=>setModalEmailContacto(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+        {modalEmailContacto&&<div data-capa="" style={s.overlay} onClick={()=>setModalEmailContacto(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 6px",fontSize:18,fontWeight:800}}>Mail de contacto de {modalEmailContacto.nombre}</p>
           <p style={{margin:"0 0 14px",fontSize:14,color:"#55555A"}}>No cambia su cuenta, es solo para que vos lo tengas a mano.</p>
           <input style={{...s.input,marginBottom:16}} type="email" placeholder="mail@ejemplo.com" value={emailContactoInput} onChange={e=>setEmailContactoInput(e.target.value)}/>
           <button style={{...s.btnPrincipal,background:"#1C1C1E",marginBottom:10}} onClick={guardarEmailContacto}>Guardar</button>
           <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalEmailContacto(null)}>Cancelar</button>
         </div></div>}
-        {confirmarEliminarMiembroEmpresa&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembroEmpresa(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+        {confirmarEliminarMiembroEmpresa&&<div data-capa="" style={s.overlay} onClick={()=>setConfirmarEliminarMiembroEmpresa(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/>
           <p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Sacar a {confirmarEliminarMiembroEmpresa.nombre} de tu equipo?</p>
           <p style={{margin:"0 0 20px",fontSize:14,color:"#55555A"}}>Deja de formar parte de tu estudio. Sus obras dejan de estar compartidas con vos — no se borran, simplemente vos ya no las ves acá.</p>
@@ -3629,7 +3650,7 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"16px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>setVistaTuEquipo(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
+          <button data-volver="" onClick={()=>setVistaTuEquipo(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
           <p style={{fontSize:24,margin:0,fontWeight:800,letterSpacing:-0.4}}>Tu equipo</p>
           <p style={{fontSize:12.5,color:"#55555A",margin:"4px 0 0"}}>{miembrosEmpresa.length} profesional{miembrosEmpresa.length!==1?"es":""} en {nombreEstudio||empresaPropia?.nombre}</p>
         </div>
@@ -3721,7 +3742,7 @@ export default function App({ session }) {
     return(
       <div style={{...s.root}}>
         <div style={{padding:"14px 16px 4px",flexShrink:0}}>
-          <button onClick={()=>setVistaBitacora(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
+          <button data-volver="" onClick={()=>setVistaBitacora(false)} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>
           <h1 style={{fontSize:20,margin:0,fontWeight:800,display:"flex",alignItems:"center",gap:8}}><Book size={19}/>Mi Bitácora</h1>
         </div>
         <div style={{padding:"12px 16px",display:"flex",gap:8,flexShrink:0}}>
@@ -3940,7 +3961,7 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <div style={{padding:"14px 12px 4px",flexShrink:0}}>
-          {filtroObraAlertas&&<button onClick={()=>{setFiltroObraAlertas(null);if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{setTabActiva("obras");}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>}
+          {filtroObraAlertas&&<button data-volver="" onClick={()=>{setFiltroObraAlertas(null);if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{setTabActiva("obras");}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>Estudio</button>}
           <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"20px 18px"}}>
             <p style={{margin:0,fontSize:24,fontWeight:900,color:"#fff",display:"flex",alignItems:"center",gap:9}}><Bell size={22}/>Urgencias</p>
             <p style={{margin:"5px 0 0",fontSize:13,color:"rgba(255,255,255,0.6)"}}>
@@ -4314,7 +4335,7 @@ export default function App({ session }) {
         {vistaHome==="tareas"&&avisoObraEliminadaJSX}
         {modalDecidirCompartirJSX}
         {modalElegirObrasJSX}
-        {confirmarEliminarEstudio&&<div style={s.overlay} onClick={()=>setConfirmarEliminarEstudio(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+        {confirmarEliminarEstudio&&<div data-capa="" style={s.overlay} onClick={()=>setConfirmarEliminarEstudio(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/>
           <p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar tu Estudio?</p>
           <p style={{margin:"0 0 20px",fontSize:14,color:"#55555A"}}>Se corta la relación con los {miembrosEmpresa.length} profesional{miembrosEmpresa.length!==1?"es":""} que sumaste. Sus obras dejan de estar compartidas con vos — no se borran, simplemente vos ya no las ves. Podés armar un Estudio nuevo cuando quieras.</p>
@@ -4324,8 +4345,8 @@ export default function App({ session }) {
         {usuarioReal&&vioOnboarding===false&&<OnboardingOverlay onFinish={terminarOnboarding}/>}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
-        {modalNuevaObra&&<div style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
-        {modalCrearEmpresa&&<div style={s.overlay} onClick={()=>setModalCrearEmpresa(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+        {modalNuevaObra&&<div data-capa="" style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
+        {modalCrearEmpresa&&<div data-capa="" style={s.overlay} onClick={()=>setModalCrearEmpresa(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>{empresaPropia?"Renombrar tu equipo":"Crear tu equipo de profesionales"}</p>
           <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>{empresaPropia?"Este nombre lo ven los profesionales que invites.":"Así vas a poder invitar profesionales y ver todas sus obras."}</p>
           <input style={s.input} placeholder="Nombre de tu equipo/estudio" value={nombreEmpresaInput} onChange={e=>setNombreEmpresaInput(e.target.value)} maxLength={40} autoFocus/>
@@ -4334,7 +4355,7 @@ export default function App({ session }) {
             <button style={{...s.btnPrincipal,flex:1,opacity:nombreEmpresaInput.trim()?1:0.4,background:"#2E3A4B"}} disabled={!nombreEmpresaInput.trim()} onClick={crearEmpresa}>{empresaPropia?"Guardar":"Crear"}</button>
           </div>
         </div></div>}
-        {modalInvitarArq&&<div style={s.overlay} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+        {modalInvitarArq&&<div data-capa="" style={s.overlay} onClick={()=>{setModalInvitarArq(false);setLinkEmpresaGenerado("");}}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Invitar profesional</p>
           <p style={{margin:"0 0 16px",fontSize:13,color:"#55555A"}}>Generá un link para sumarlo a "{empresaPropia?.nombre}"</p>
           {!linkEmpresaGenerado?(
@@ -4356,7 +4377,7 @@ export default function App({ session }) {
         </div></div>}
         {modalProObraJSX}
         {menuObra&&(()=>{const obraM=obras.find(o=>o.id===menuObra);const esDuenoM=usuarioReal&&obraM?.propietario_id===usuarioReal.id;const miRolM=(obraM?.equipo||[]).find(m=>m.uid===miId)?.rolEnObra;const esGestorM=esDuenoM||miRolM==="co_profesional";return(
-        <div style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p>
+        <div data-capa="" style={s.overlay} onClick={()=>setMenuObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones de obra</p>
           {esGestorM&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setEditarObraForm({nombre:obraM?.nombre||"",direccion:obraM?.direccion||""});setModalEditarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={15}/>Editar datos de la obra</span></button>}
           {esGestorM&&misEmpresasComoMiembro.length>0&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setModalCompartirObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}>Compartir con equipo</span></button>}
           {esDuenoM&&<button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminarObra(menuObra);setMenuObra(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar obra</span></button>}
@@ -4364,7 +4385,7 @@ export default function App({ session }) {
         </div></div>
         );})()}
         {modalCompartirObra&&(()=>{const obraSel=obras.find(o=>o.id===modalCompartirObra);return(
-          <div style={s.overlay} onClick={()=>setModalCompartirObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+          <div data-capa="" style={s.overlay} onClick={()=>setModalCompartirObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
             <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>Compartir "{obraSel?.nombre}"</p>
             <p style={{margin:"0 0 16px",fontSize:12.5,color:"#55555A"}}>Elegí con qué empresa la ve el director. Por defecto, tus obras son privadas.</p>
             {misEmpresasComoMiembro.map(em=>{
@@ -4382,7 +4403,7 @@ export default function App({ session }) {
             <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",marginTop:8}} onClick={()=>setModalCompartirObra(null)}>Listo</button>
           </div></div>
         );})()}
-        {confirmarEliminarObra&&<div style={s.overlay} onClick={()=>setConfirmarEliminarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta obra?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Se borrarán todas sus tareas. No se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarObra(confirmarEliminarObra)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarObra(null)}>Cancelar</button></div></div>}
+        {confirmarEliminarObra&&<div data-capa="" style={s.overlay} onClick={()=>setConfirmarEliminarObra(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta obra?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Se borrarán todas sus tareas. No se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarObra(confirmarEliminarObra)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarObra(null)}>Cancelar</button></div></div>}
         {modalEditarObraJSX}
       </div>
     );
@@ -4438,6 +4459,9 @@ export default function App({ session }) {
               <button style={{flex:1,background:"#1C1C1E",color:"#fff",border:"none",borderRadius:14,padding:"14px 10px",fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}} onClick={()=>setAsignarTareaMiembro(u)}><User size={16}/>Asignar tarea</button>
             </div>
           )}
+          {puedeGestionar&&!esProfesional&&mensajePendientesMiembro(u,pend).cantidad>0&&(
+            <button style={{width:"100%",background:"#25D366",color:"#fff",border:"none",borderRadius:14,padding:"14px 10px",fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit"}} onClick={()=>enviarPendientesWhatsapp(u,pend)}><IconoWhatsapp size={18}/>Mandarle sus pendientes por WhatsApp</button>
+          )}
           {[[Clock,"Pendientes",pend],[CheckCircle,"Resueltas",res]].map(([Ic,titulo,lista]:any)=>lista.length>0&&(
             <div key={titulo}><p style={{margin:"4px 0 8px",fontSize:13,color:"#55555A",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,display:"flex",alignItems:"center",gap:6}}><Ic size={13}/>{titulo}</p>
               {lista.map(nov=>{const pri=PRIORIDADES[nov.prioridad];const badge=estadoBadge(nov);return(
@@ -4473,7 +4497,7 @@ export default function App({ session }) {
         {asignarTareaMiembro&&(()=>{
           const sinAsignar=novedades.filter(n=>!n.resuelta&&!n.responsable_usuario_id);
           return(
-            <div style={s.overlay} onClick={()=>setAsignarTareaMiembro(null)}>
+            <div data-capa="" style={s.overlay} onClick={()=>setAsignarTareaMiembro(null)}>
               <div style={{...s.modal,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
                 <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>Asignar tarea a {asignarTareaMiembro.nombre}</p>
                 <p style={{margin:"0 0 14px",fontSize:13,color:"#55555A"}}>Tareas pendientes sin responsable asignado</p>
@@ -4589,7 +4613,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {confirmarEliminarMiembro&&<div style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Dejará de ver esta obra y sus tareas. Las tareas que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
+        {confirmarEliminarMiembro&&<div data-capa="" style={s.overlay} onClick={()=>setConfirmarEliminarMiembro(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar a {confirmarEliminarMiembro.nombre} del equipo?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Dejará de ver esta obra y sus tareas. Las tareas que tenía asignadas quedarán sin responsable.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>eliminarMiembro(confirmarEliminarMiembro)}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarMiembro(null)}>Cancelar</button></div></div>}
         {modalInvitarJSX}{promptInvitarJSX}
         {asignacionRapidaJSX}
         {editorDibujo&&<ModalEditorDibujo src={editorDibujo.src} onGuardar={guardarDesdeEditorDibujo} onCerrar={()=>{const cont=editorDibujo.onListo;const original=editorDibujo.src;setEditorDibujo(null);cont?.(original);}}/>}
@@ -4652,7 +4676,7 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <div style={{background:"#fff",padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #F0F0F0",flexShrink:0}}>
-          <button onClick={()=>setVistaStats(false)} style={{width:34,height:34,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}><ChevronLeft size={20} color="#1C1C1E"/></button>
+          <button data-volver="" onClick={()=>setVistaStats(false)} style={{width:34,height:34,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}><ChevronLeft size={20} color="#1C1C1E"/></button>
           <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E",flex:1}}>Estadísticas</p>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
@@ -4783,7 +4807,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {modalPro&&<div style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div><button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
+        {modalPro&&<div data-capa="" style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div><button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
         <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
         {modalPeriodoJSX}
       </div>
@@ -4837,7 +4861,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
+        {fotoAmpliada&&<div data-capa="" onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
       </div>
     );
   }
@@ -4852,7 +4876,7 @@ export default function App({ session }) {
     return(
       <div style={s.root}>
         <div style={{background:"#fff",padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #F0F0F0",flexShrink:0}}>
-          <button onClick={()=>{if(origenBitacora){setOrigenBitacora(false);setVistaBitacora(true);}else if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);setTabActiva("obras");}else{setVista("lista");}}} style={{width:34,height:34,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}><ChevronLeft size={20} color="#1C1C1E"/></button>
+          <button data-volver="" onClick={()=>{if(origenBitacora){setOrigenBitacora(false);setVistaBitacora(true);}else if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);setTabActiva("obras");}else{setVista("lista");}}} style={{width:34,height:34,borderRadius:"50%",background:"#F2F2F7",display:"flex",alignItems:"center",justifyContent:"center",border:"none",cursor:"pointer",flexShrink:0}}><ChevronLeft size={20} color="#1C1C1E"/></button>
           <p style={{margin:0,fontSize:16,fontWeight:700,color:"#1C1C1E",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{detalle.descripcion}</p>
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
@@ -5062,10 +5086,10 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {confirmarEliminar&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta tarea?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
-        {fotoAmpliada&&<div onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
+        {confirmarEliminar&&<div data-capa="" style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta tarea?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
+        {fotoAmpliada&&<div data-capa="" onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
         {modalFotoResolucionJSX}
-        {modalRechazo&&<div style={s.overlay} onClick={()=>setModalRechazo(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
+        {modalRechazo&&<div data-capa="" style={s.overlay} onClick={()=>setModalRechazo(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Rechazar el cierre</p>
           <p style={{margin:"0 0 14px",fontSize:13,color:"#55555A"}}>La tarea sigue abierta y el responsable recibe un aviso. Contale qué falta para que lo corrija.</p>
           <label htmlFor="fixgo-motivo-rechazo" style={{display:"block",fontSize:13,fontWeight:600,color:"#3A3A3C",marginBottom:6}}>¿Qué falta? <span style={{fontWeight:400,color:"#55555A"}}>(opcional)</span></label>
@@ -5151,7 +5175,7 @@ export default function App({ session }) {
   return(
     <div style={{...s.root,position:"relative"}}>
       <div style={{padding:"14px 12px 4px",flexShrink:0}}>
-        <button onClick={()=>{if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{irInicio();}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>{origenDirectorCategoria?"Estudio":"Inicio"}</button>
+        <button data-volver="" onClick={()=>{if(origenDirectorCategoria){setVistaDirectorCategoria(origenDirectorCategoria);setOrigenDirectorCategoria(null);}else{irInicio();}}} style={{background:"none",border:"none",display:"flex",alignItems:"center",gap:2,color:"#007AFF",cursor:"pointer",padding:"0 4px 8px",fontSize:14,fontWeight:600}}><ChevronLeft size={19}/>{origenDirectorCategoria?"Estudio":"Inicio"}</button>
         <div style={{background:"linear-gradient(135deg,#2E3A4B,#3C4A5E)",borderRadius:20,padding:"18px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
           <div style={{flex:1,minWidth:0}}>
             <p style={{margin:0,fontSize:20,fontWeight:800,color:"#fff",lineHeight:1.2}}>{obraActual?.nombre}</p>
@@ -5244,13 +5268,13 @@ export default function App({ session }) {
       {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
 
-      {menuContextual&&<div style={s.overlay} onClick={()=>setMenuContextual(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones</p>{(()=>{const nov=novedades.find(n=>n.id===menuContextual.novId);const puedeReabrirOResolver=nov&&(!nov.resuelta||nov.autorId===miId||puedeGestionar);const puedeEliminar=nov&&(nov.autorId===miId||puedeGestionar);const puedeAsignar=nov&&(nov.autorId===miId||puedeGestionar);return(<>
+      {menuContextual&&<div data-capa="" style={s.overlay} onClick={()=>setMenuContextual(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:17,fontWeight:700}}>Opciones</p>{(()=>{const nov=novedades.find(n=>n.id===menuContextual.novId);const puedeReabrirOResolver=nov&&(!nov.resuelta||nov.autorId===miId||puedeGestionar);const puedeEliminar=nov&&(nov.autorId===miId||puedeGestionar);const puedeAsignar=nov&&(nov.autorId===miId||puedeGestionar);return(<>
         {puedeReabrirOResolver&&!obraEstaPausada(obraActual)&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{resolver(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{nov?.resuelta?<><RotateCcw size={15}/>Reabrir</>:<><CheckCircle size={15}/>Marcar como resuelto</>}</span></button>}
         {puedeAsignar&&<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E",marginBottom:10}} onClick={()=>{setAsignacionRapida(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={15}/>Elegir responsable</span></button>}
         {puedeEliminar&&<button style={{...s.btnPrincipal,background:"#FF3B3010",color:"#FF3B30",marginBottom:10}} onClick={()=>{setConfirmarEliminar(menuContextual.novId);setMenuContextual(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Eliminar</span></button>}
       </>);})()}<button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setMenuContextual(null)}>Cancelar</button></div></div>}
       {null}
-      {confirmarEliminar&&!detalle&&<div style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta tarea?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
+      {confirmarEliminar&&!detalle&&<div data-capa="" style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta tarea?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
       <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
       {modalInvitarJSX}{promptInvitarJSX}
         {asignacionRapidaJSX}

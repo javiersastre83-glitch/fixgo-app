@@ -9,6 +9,7 @@ import { supabase } from './supabase'
 import { Capacitor } from '@capacitor/core'
 import { App as CapacitorApp } from '@capacitor/app'
 import { leerReferrerInstalacion, procesarLinkEntrante, procesarLinkObra } from './crecimiento'
+import { iniciarBotonAtras } from './botonAtras'
 
 function Splash() {
   return (
@@ -122,6 +123,8 @@ function Root() {
   if (recuperando) return <NuevaPassword onListo={() => setRecuperando(false)} />
   return <><App session={session} /><AvisoActualizacion /><AvisoPushEnApp /></>
 }
+
+iniciarBotonAtras()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

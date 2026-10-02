@@ -165,7 +165,7 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
         <style>{`@keyframes fixgoSpin { to { transform: rotate(360deg); } }`}</style>
         <div style={{ width:'100%', maxWidth:320 }}>
           <button
-            onClick={() => { setVista('email'); setModoEmail('login'); setError(null); setAviso(null) }}
+            data-volver="" onClick={() => { setVista('email'); setModoEmail('login'); setError(null); setAviso(null) }}
             style={{
               border:'none', background:'none', padding:0, marginBottom:24,
               display:'flex', alignItems:'center', gap:6, color:'#8E8E93', fontSize:15, cursor:'pointer'
@@ -264,7 +264,7 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
         `}</style>
         <div style={{ width:'100%', maxWidth:360, display:'flex', flexDirection:'column', gap:24 }}>
           <button
-            onClick={() => { setVista('inicio'); setError(null); setErrorCredenciales(false); setAviso(null) }}
+            data-volver="" onClick={() => { setVista('inicio'); setError(null); setErrorCredenciales(false); setAviso(null) }}
             style={{
               border:'none', background:'none', padding:0, height:44, alignSelf:'flex-start',
               display:'flex', alignItems:'center', gap:6, color:'#6C6C70', fontSize:15, cursor:'pointer', fontFamily:'inherit'
