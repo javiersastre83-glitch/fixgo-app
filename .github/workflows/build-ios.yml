@@ -84,6 +84,18 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
 
+      # El archive sin firmar no lleva los permisos especiales de la app ("Continuar con Apple").
+      # Acá se los pegamos con una firma provisoria; la firma real de Apple (paso siguiente)
+      # los lee de ahí y los conserva.
+      - name: Pegar los permisos de la app al archive
+        if: ${{ inputs.subir_a_testflight }}
+        run: |
+          APP="$RUNNER_TEMP/Fixgo.xcarchive/Products/Applications/App.app"
+          codesign --force --deep --sign - --timestamp=none \
+            --entitlements ios/App/App/App.entitlements "$APP"
+          echo "Permisos pegados al archive:"
+          codesign -d --entitlements - "$APP" 2>/dev/null || true
+
       - name: Exportar el .ipa para App Store Connect
         if: ${{ inputs.subir_a_testflight }}
         run: |
@@ -108,6 +120,23 @@ jobs:
             -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
             -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }}
           ls -la "$RUNNER_TEMP/export"
+
+      # Si el .ipa final no trae el permiso, se frena ACÁ (antes de subir) para no mandar
+      # a TestFlight una versión donde "Continuar con Apple" no funcione.
+      - name: Verificar que el .ipa conserva "Continuar con Apple"
+        if: ${{ inputs.subir_a_testflight }}
+        run: |
+          rm -rf "$RUNNER_TEMP/ipa" && mkdir -p "$RUNNER_TEMP/ipa"
+          unzip -q "$RUNNER_TEMP/export/App.ipa" -d "$RUNNER_TEMP/ipa"
+          codesign -d --entitlements - "$RUNNER_TEMP/ipa/Payload/App.app" > "$RUNNER_TEMP/permisos.txt" 2>/dev/null || true
+          echo "Permisos del .ipa final:"
+          cat "$RUNNER_TEMP/permisos.txt"
+          if grep -q "com.apple.developer.applesignin" "$RUNNER_TEMP/permisos.txt"; then
+            echo "✅ El .ipa incluye el permiso de Continuar con Apple."
+          else
+            echo "❌ El .ipa NO incluye el permiso de Continuar con Apple. No se sube a TestFlight."
+            exit 1
+          fi
 
       - name: Subir a TestFlight
         if: ${{ inputs.subir_a_testflight }}
