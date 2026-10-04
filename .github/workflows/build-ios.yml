@@ -122,8 +122,8 @@ jobs:
           ls -la "$RUNNER_TEMP/export"
 
       # Si el .ipa final no trae el permiso, se frena ACÁ (antes de subir) para no mandar
-      # a TestFlight una versión donde "Continuar con Apple" no funcione.
-      - name: Verificar que el .ipa conserva "Continuar con Apple"
+      # a TestFlight una versión donde "Continuar con Apple" o las notificaciones no funcionen.
+      - name: Verificar que el .ipa conserva los permisos (Apple y notificaciones)
         if: ${{ inputs.subir_a_testflight }}
         run: |
           rm -rf "$RUNNER_TEMP/ipa" && mkdir -p "$RUNNER_TEMP/ipa"
@@ -135,6 +135,12 @@ jobs:
             echo "✅ El .ipa incluye el permiso de Continuar con Apple."
           else
             echo "❌ El .ipa NO incluye el permiso de Continuar con Apple. No se sube a TestFlight."
+            exit 1
+          fi
+          if grep -q "aps-environment" "$RUNNER_TEMP/permisos.txt"; then
+            echo "✅ El .ipa incluye el permiso de notificaciones."
+          else
+            echo "❌ El .ipa NO incluye el permiso de notificaciones (aps-environment). No se sube a TestFlight."
             exit 1
           fi
 
