@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer, Flame, AlarmClock, UserX, Gem, Award, HelpCircle, Bug, Lock, Star, Compass, WifiOff, PartyPopper, Sparkles, Rocket, Lightbulb, Mail, ExternalLink, Book, Check, Settings, Image as ImageIcon, Contact } from "lucide-react";
 import { supabase } from './supabase';
 import { Capacitor } from '@capacitor/core';
+import { abrirLegal } from './legal';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Contacts } from '@capacitor-community/contacts';
 import { Network } from '@capacitor/network';
@@ -1334,6 +1335,8 @@ export default function App({ session }) {
     });
   },[usuarioReal?.id]);
   const [comprandoPro, setComprandoPro] = useState(false);
+  // Precio de Fixgo Pro tal como lo cobra la tienda (en la moneda del usuario). Hasta que carga, el precio base.
+  const [precioPro, setPrecioPro] = useState("USD 14,99");
   useEffect(()=>{
     if(!usuarioReal||!Capacitor.isNativePlatform())return;
     let listenerId;
@@ -1341,6 +1344,7 @@ export default function App({ session }) {
       try{
         await Purchases.setLogLevel({level:LOG_LEVEL.ERROR});
         await Purchases.configure({apiKey:REVENUECAT_ANDROID_API_KEY,appUserID:usuarioReal.id});
+        Purchases.getOfferings().then(of=>{const pr=of?.current?.availablePackages?.[0]?.product?.priceString;if(pr)setPrecioPro(pr);}).catch(()=>{});
         listenerId=await Purchases.addCustomerInfoUpdateListener(async(customerInfo)=>{
           const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
           setEsProReal(prev=>{
@@ -3037,18 +3041,25 @@ export default function App({ session }) {
       ))}
     </div>
     <p style={{margin:"0 0 14px",fontSize:12,color:"#55555A",textAlign:"center"}}>No perdés nada de lo que estabas cargando: al terminar volvés acá.</p>
-    <button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button>
+    {precioProJSX}<button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button>
     <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setProDesdeInvitar(false)}>Ahora no</button>
   </div></div>}
   </div>;
 
+  // Lo que las tiendas exigen mostrar ANTES de comprar: precio, período, renovación automática y links legales.
+  const esIPhoneApp=Capacitor.getPlatform()==="ios";
+  const precioProJSX=<div style={{textAlign:"center",margin:"0 0 12px"}}>
+    <p style={{margin:0,fontSize:17,fontWeight:800,color:"#1C1C1E"}}>{precioPro} por mes</p>
+    <p style={{margin:"4px 0 0",fontSize:12.5,lineHeight:1.4,color:"#55555A"}}>Suscripción mensual a Fixgo Pro. Se renueva sola cada mes hasta que la canceles. Podés cancelarla cuando quieras desde {esIPhoneApp?"tu cuenta de Apple":"Google Play"}.</p>
+    <p style={{margin:"6px 0 0",fontSize:12.5,color:"#55555A"}}><button type="button" onClick={()=>abrirLegal("terminos")} style={{border:"none",background:"none",padding:0,font:"inherit",color:"#55555A",fontWeight:700,textDecoration:"underline",cursor:"pointer"}}>Términos y condiciones</button>{" · "}<button type="button" onClick={()=>abrirLegal("privacidad")} style={{border:"none",background:"none",padding:0,font:"inherit",color:"#55555A",fontWeight:700,textDecoration:"underline",cursor:"pointer"}}>Política de privacidad</button></p>
+  </div>;
   const modalProObraJSX = modalProObra&&<div data-capa="" style={s.overlay} onClick={()=>setModalProObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Pasá a Fixgo Pro</p><p style={{margin:"0 0 14px",fontSize:14,color:"#636366"}}>Con el plan gratuito podés tener 1 obra. Con Pro desbloqueás todo:</p></div>
         <div style={{textAlign:"left",marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
           {["Obras ilimitadas","Modo offline","Marcar y dibujar sobre fotos","Informe de tareas registradas","Gestión en equipo para una misma obra","Estudio para estar al tanto de las obras que dirige tu equipo"].map(t=>(
             <div key={t} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"#1C1C1E",fontWeight:600}}><CheckCircle size={16} color="#34C759"/>{t}</div>
           ))}
         </div>
-        <button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>;
+        {precioProJSX}<button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalProObra(false)}>Ahora no</button></div></div>;
 
   // ─────────────────────────────
   // INFO APP
@@ -3440,7 +3451,7 @@ export default function App({ session }) {
             {esVersionPro?(
               <div style={{width:"100%",padding:"12px",borderRadius:12,background:"#34C75915",color:"#1C7A3E",fontSize:14,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><CheckCircle size={16}/>Ya sos Fixgo Pro</div>
             ):(
-              <button disabled={comprandoPro} onClick={comprarPro} style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar Plan Pro"}</button>
+              <>{precioProJSX}<button disabled={comprandoPro} onClick={comprarPro} style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFB800",color:"#1C1C1E",border:"none",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar Plan Pro"}</button></>
             )}
           </div>
         </div>
@@ -3800,7 +3811,7 @@ export default function App({ session }) {
               {!esVersionPro&&<button type="button" onClick={()=>setModalProObra(true)} style={{background:"#FFB800",border:"none",borderRadius:12,padding:"11px 14px",fontSize:14,fontWeight:800,color:"#1C1C1E",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,flexShrink:0}}><Sparkles size={14}/>Pasar a Pro</button>}
             </div>
             <p style={{margin:"8px 0 0",fontSize:12.5,color:"#55555A",lineHeight:1.4}}>{esVersionPro?"Obras ilimitadas, modo sin conexión, Informe Ejecutivo, dibujo sobre fotos y Estudio.":"Incluye 1 obra propia y tareas ilimitadas. Con Pro: obras ilimitadas, modo sin conexión, Informe Ejecutivo y más."}</p>
-            {esVersionPro&&<button type="button" onClick={()=>{try{window.open("https://play.google.com/store/account/subscriptions?package=ar.fixgo.app","_blank");}catch(e){}}} style={{marginTop:10,background:"none",border:"none",padding:0,fontSize:13,fontWeight:700,color:"#9a6b00",cursor:"pointer",fontFamily:"inherit"}}>Gestionar suscripción en Google Play →</button>}
+            {esVersionPro&&<button type="button" onClick={()=>{try{window.open(esIPhoneApp?"https://apps.apple.com/account/subscriptions":"https://play.google.com/store/account/subscriptions?package=ar.fixgo.app","_blank");}catch(e){}}} style={{marginTop:10,background:"none",border:"none",padding:0,fontSize:13,fontWeight:700,color:"#9a6b00",cursor:"pointer",fontFamily:"inherit"}}>{esIPhoneApp?"Gestionar suscripción en el App Store →":"Gestionar suscripción en Google Play →"}</button>}
           </div>
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:18,padding:"18px 16px",flexShrink:0}}>
             {[["Nombre","nombre","Tu nombre"],["Especialidad","especialidad","Tu especialidad"]].map(([lbl,key,ph])=>(
@@ -3871,6 +3882,12 @@ export default function App({ session }) {
           </div>
           )}
           <div style={{background:modoOscuro?"#2C2C2E":"#fff",borderRadius:16,overflow:"hidden",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={()=>abrirLegal("terminos")}>
+              <FileText size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Términos y condiciones</p><ExternalLink size={15} color="#C7C7CC"/>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={()=>abrirLegal("privacidad")}>
+              <Lock size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Política de privacidad</p><ExternalLink size={15} color="#C7C7CC"/>
+            </div>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={restaurarCompras}>
               <RotateCcw size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Restaurar compras</p><ChevronRight size={16} color="#C7C7CC"/>
             </div>
@@ -3878,7 +3895,7 @@ export default function App({ session }) {
               <LogOut size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Cerrar sesión</p><ChevronRight size={16} color="#C7C7CC"/>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",cursor:"pointer"}} onClick={async()=>{
-              if(!window.confirm("¿Eliminar tu cuenta?\n\nEsto borrará para siempre todas tus obras, tareas, comentarios y tu cuenta. Esta acción NO se puede deshacer."))return;
+              if(!window.confirm("¿Eliminar tu cuenta?\n\nEsto borrará para siempre todas tus obras, tareas, comentarios y tu cuenta. Esta acción NO se puede deshacer."+(esVersionPro?"\n\nIMPORTANTE: tu suscripción Fixgo Pro NO se cancela al eliminar la cuenta. Cancelala antes desde "+(esIPhoneApp?"tu cuenta de Apple":"Google Play")+" para que no se siga cobrando.":"")))return;
               if(!window.confirm("Última confirmación.\n\n¿Seguro que querés eliminar tu cuenta y todos tus datos de forma permanente?"))return;
               try{
                 if(usuarioReal){
@@ -4807,7 +4824,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {modalPro&&<div data-capa="" style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div><button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
+        {modalPro&&<div data-capa="" style={s.overlay} onClick={()=>setModalPro(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:16}}><Lock size={36} color="#FFB800"/><p style={{margin:"8px 0 4px",fontSize:20,fontWeight:800}}>Función Pro</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Los informes de obra son parte de la versión Pro.</p></div>{precioProJSX}<button disabled={comprandoPro} onClick={comprarPro} style={{...s.btnPrincipal,background:"#FFB800",color:"#1C1C1E",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:comprandoPro?0.6:1}}><Rocket size={16}/>{comprandoPro?"Procesando...":"Activar versión Pro"}</button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setModalPro(false)}>Ahora no</button></div></div>}
         <ModalTelefono modalTelefono={modalTelefono} setModalTelefono={setModalTelefono} telInput={telInput} setTelInput={setTelInput} guardarTelefono={guardarTelefono}/>
         {modalPeriodoJSX}
       </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
+import { abrirLegal } from './legal'
 import { Capacitor, registerPlugin } from '@capacitor/core'
 
 // "Continuar con Apple": solo existe en iPhone (plugin propio, ios/App/App/FixgoAppleSignInPlugin.swift).
@@ -31,6 +32,12 @@ function traducirError(mensaje: string): string {
 // de una pantalla vacía.
 const destinoLink = (ruta: string) =>
   Capacitor.isNativePlatform() ? `https://www.fixgo.ar/abrir.html?destino=${ruta}` : window.location.origin
+
+// Links legales del pie del ingreso: se ven como texto subrayado, pero son botones (se pueden tocar).
+const linkLegal: React.CSSProperties = {
+  border:'none', background:'none', padding:0, margin:0, font:'inherit',
+  color:'#55555A', fontWeight:600, textDecoration:'underline', cursor:'pointer'
+}
 
 export default function Login({ avisoInicial = null }: { avisoInicial?: string | null }) {
   const [conectando, setConectando] = useState(false)
@@ -543,7 +550,10 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
         <p role="alert" style={{ margin:'16px 0 0', maxWidth:320, fontSize:13, lineHeight:1.4, color:'#D0342C', textAlign:'center' }}>{error}</p>
       )}
       <p style={{ margin:'32px 0 0', fontSize:12, color:'#8E8E93', textAlign:'center' }}>
-        Al continuar aceptás los Términos de uso{'\n'}y la Política de privacidad
+        Al continuar aceptás los{' '}
+        <button type="button" onClick={() => abrirLegal('terminos')} style={linkLegal}>Términos y condiciones</button>
+        {' '}y la{' '}
+        <button type="button" onClick={() => abrirLegal('privacidad')} style={linkLegal}>Política de privacidad</button>
       </p>
     </div>
   )
