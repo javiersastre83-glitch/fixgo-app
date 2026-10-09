@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircle, ChevronRight, Users, BarChart2, Bell, User, Home, Plus, Search, Zap, Trash2, Edit2, Share2, ChevronLeft, X, Calendar, Send, RotateCcw, LogOut, EyeOff, ClipboardList, Phone, ArrowUpDown, Play, Pause, Mic, Building2, ThumbsUp, Eye, Smartphone, FileText, Circle, TrendingUp, TrendingDown, Ruler, Handshake, HardHat, Hammer, Flame, AlarmClock, UserX, Gem, Award, HelpCircle, Bug, Lock, Star, Compass, WifiOff, PartyPopper, Sparkles, Rocket, Lightbulb, Mail, ExternalLink, Book, Check, Settings, Image as ImageIcon, Contact } from "lucide-react";
 import { supabase } from './supabase';
@@ -10,6 +10,11 @@ import { Network } from '@capacitor/network';
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
 import { linkInvitacion, guardarInvitacion, extraerCodigoInvitacion, pedirResenaSiCorresponde, linkAbrirObra, leerPedidoAbrirObra, guardarPedidoAbrirObra, pedirAbrirDesdeAviso, esAvisoVencidas } from './crecimiento';
 
+// La tienda manda el precio con centavos aunque sea redondo ("$ 19.900,00"). Si los centavos son cero, se sacan ("$ 19.900").
+// Si tiene centavos de verdad ("USD 14,99"), queda igual.
+function precioSinCentavosCero(precio: string): string {
+  return precio.trim().replace(/[.,]00(?=\s*[^\d\s]*$)/, '')
+}
 // Clave pública de Android de RevenueCat (segura para incluir en el cliente: no es secreta).
 const REVENUECAT_ANDROID_API_KEY = "goog_IPRWOZhrHFPwmgURhTRhxCRdteU";
 // Identificador del entitlement "Pro" configurado en RevenueCat (Product Catalog → Entitlements).
@@ -850,6 +855,36 @@ const Header = ({ migas=[], accionDerecha=null, dark=false }) => {
   );
 };
 
+// Círculo de avance de las tarjetas de Inicio.
+// Va FUERA de App a propósito: antes estaba definido dentro del render, React lo volvía a crear en cada
+// actualización de pantalla y la animación arrancaba de cero una y otra vez al abrir la app
+// ("la barra carga y vuelve"). Ahora se anima una sola vez al aparecer y, si el porcentaje cambia,
+// se desliza desde el valor que tenía.
+const colorPorPct=(p:number)=>{let r=0,g=0,b=0;if(p<=50){const t=p/50;r=255;g=Math.round(59+(184-59)*t);b=Math.round(48+(0-48)*t);}else{const t=(p-50)/50;r=Math.round(255+(52-255)*t);g=Math.round(184+(199-184)*t);b=Math.round(0+(89-0)*t);}return`rgb(${r},${g},${b})`;};
+const CirculoProgreso=memo(function CirculoProgreso({radius,pct,size,etiqueta}:{radius:number,pct:number,size:number,etiqueta?:string}){
+  const circ=2*Math.PI*radius;
+  const objetivo=circ-(pct/100)*circ;
+  const [offset,setOffset]=useState(circ); // arranca vacío y se llena una sola vez
+  useEffect(()=>{const t=setTimeout(()=>setOffset(objetivo),40);return()=>clearTimeout(t);},[objetivo]);
+  const color=colorPorPct(pct);
+  const sw=size>100?14:8;
+  return(
+    <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
+      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:size*0.88,height:size*0.88,borderRadius:"50%",boxShadow:`0 0 16px 6px ${color}40`,transition:"box-shadow 0.6s"}}/>
+      <svg style={{position:"absolute",top:0,left:0}} width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <g transform={`rotate(-90,${size/2},${size/2})`}>
+          <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#F0F0F0" strokeWidth={sw}/>
+          <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{transition:"stroke-dashoffset 1.4s cubic-bezier(0.34,1.05,0.64,1), stroke 0.6s"}}/>
+        </g>
+      </svg>
+      <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
+        <p style={{margin:0,fontSize:size>100?42:18,fontWeight:900,color:"#1C1C1E",lineHeight:1,letterSpacing:-1}}>{pct}%</p>
+        {etiqueta&&<p style={{margin:"2px 0 0",fontSize:size>100?9:7,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.6}}>{etiqueta}</p>}
+      </div>
+    </div>
+  );
+});
+
 export default function App({ session }) {
   const usuarioReal = session?.user||null;
   const [guardando,        setGuardando]        = useState(false);
@@ -1344,7 +1379,7 @@ export default function App({ session }) {
       try{
         await Purchases.setLogLevel({level:LOG_LEVEL.ERROR});
         await Purchases.configure({apiKey:REVENUECAT_ANDROID_API_KEY,appUserID:usuarioReal.id});
-        Purchases.getOfferings().then(of=>{const pr=of?.current?.availablePackages?.[0]?.product?.priceString;if(pr)setPrecioPro(pr);}).catch(()=>{});
+        Purchases.getOfferings().then(of=>{const pr=of?.current?.availablePackages?.[0]?.product?.priceString;if(pr)setPrecioPro(precioSinCentavosCero(pr));}).catch(()=>{});
         listenerId=await Purchases.addCustomerInfoUpdateListener(async(customerInfo)=>{
           const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
           setEsProReal(prev=>{
@@ -4253,33 +4288,6 @@ export default function App({ session }) {
             const tieneCoProfesional=(obra.equipo||[]).some(m=>m.rolEnObra==="co_profesional");
             const enModoDirector=!!obra.empresa_id;
             const miEspecialidad=(obra.equipo||[]).find(m=>m.uid===miId)?.especialidad||"";
-            const colorPorPct=(p:number)=>{let r=0,g=0,b=0;if(p<=50){const t=p/50;r=255;g=Math.round(59+(184-59)*t);b=Math.round(48+(0-48)*t);}else{const t=(p-50)/50;r=Math.round(255+(52-255)*t);g=Math.round(184+(199-184)*t);b=Math.round(0+(89-0)*t);}return`rgb(${r},${g},${b})`;};
-            const animId=`anim${obra.id}`.replace(/[^a-zA-Z0-9]/g,'');
-
-            // Círculo reutilizable con color sólido dinámico
-            const CirculoProg=({radius,pct,size,labelOutside,label}:{radius:number,pct:number,size:number,labelOutside?:boolean,label?:string})=>{
-              const circ=2*Math.PI*radius;
-              const offset=circ-(pct/100)*circ;
-              const color=colorPorPct(pct);
-              const sw=size>100?14:8;
-              return(
-                <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
-                  <style>{`@keyframes ${animId}r{from{stroke-dashoffset:${circ}}to{stroke-dashoffset:${offset}}}`}</style>
-                  <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:size*0.88,height:size*0.88,borderRadius:"50%",boxShadow:`0 0 16px 6px ${color}40`}}/>
-                  <svg style={{position:"absolute",top:0,left:0}} width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-                    <g transform={`rotate(-90,${size/2},${size/2})`}>
-                      <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#F0F0F0" strokeWidth={sw}/>
-                      <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset} style={{animation:`${animId}r 1.4s cubic-bezier(0.34,1.05,0.64,1) forwards`}}/>
-                    </g>
-                  </svg>
-                  <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
-                    <p style={{margin:0,fontSize:size>100?42:18,fontWeight:900,color:"#1C1C1E",lineHeight:1,letterSpacing:-1}}>{pct}%</p>
-                    {!labelOutside&&<p style={{margin:"2px 0 0",fontSize:size>100?9:7,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.6}}>{esDueno?"resuelto":"mis tareas"}</p>}
-                  </div>
-                </div>
-              );
-            };
-
             const pausada=obraEstaPausada(obra);
             return(
               <button key={obra.id} style={{...s.cardObra,padding:"16px 18px",textAlign:"left",opacity:pausada?0.55:1}} onClick={()=>{if(obra._menuAbierto){obra._menuAbierto=false;return;}irObra(obra);}}
@@ -4298,7 +4306,7 @@ export default function App({ session }) {
                       {pausada&&<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#8E8E9312",color:"#636366",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99,textTransform:"uppercase",letterSpacing:0.3}}><Lock size={10}/>Pausada</span>}
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
-                      <CirculoProg radius={38} pct={prog} size={90}/>
+                      <CirculoProgreso radius={38} pct={prog} size={90} etiqueta={esDueno?"resuelto":"mis tareas"}/>
                       <div style={{flex:1,minWidth:0}}>
                         <p style={{margin:"0 0 2px",fontSize:16,fontWeight:800,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}>{obra.nombre}{obraTieneNovedadNueva(obra.id)&&<span title="Hay tareas sin ver" style={{width:8,height:8,borderRadius:"50%",background:"#0057FF",flexShrink:0}}/>}</p>
                         <p style={{margin:"0 0 10px",fontSize:11,color:"#55555A",display:"flex",alignItems:"center",gap:3}}><MapPin size={11} color="#55555A"/>{obra.direccion||"Sin dirección"}</p>
@@ -4319,7 +4327,7 @@ export default function App({ session }) {
                   // ── TARJETA MIEMBRO ──
                   <div style={{display:"flex",alignItems:"center",gap:14}}>
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0}}>
-                    <CirculoProg radius={28} pct={prog} size={72} labelOutside/>
+                    <CirculoProgreso radius={28} pct={prog} size={72}/>
                     <p style={{margin:0,fontSize:9,fontWeight:700,color:"#55555A",textTransform:"uppercase",letterSpacing:0.4,whiteSpace:"nowrap"}}>Mis tareas</p>
                   </div>
                     <div style={{flex:1,minWidth:0}}>
