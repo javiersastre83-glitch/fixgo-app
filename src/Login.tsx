@@ -204,7 +204,7 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
       <div style={{
         minHeight:'100vh', background:'#fff',
         display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-        fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'20px'
+        fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'max(20px, env(safe-area-inset-top, 0px)) 20px max(20px, env(safe-area-inset-bottom, 0px))', boxSizing:'border-box'
       }}>
         <style>{`@keyframes fixgoSpin { to { transform: rotate(360deg); } }`}</style>
         <div style={{ width:'100%', maxWidth:320 }}>
@@ -300,7 +300,7 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
       <div style={{
         minHeight:'100vh', background:'#fff',
         display:'flex', flexDirection:'column', alignItems:'center',
-        fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'56px 24px 32px', boxSizing:'border-box'
+        fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'max(56px, calc(env(safe-area-inset-top, 0px) + 16px)) 24px max(32px, env(safe-area-inset-bottom, 0px))', boxSizing:'border-box'
       }}>
         <style>{`
           @keyframes fixgoSpin { to { transform: rotate(360deg); } }
@@ -457,7 +457,7 @@ export default function Login({ avisoInicial = null }: { avisoInicial?: string |
     <div style={{
       minHeight:'100vh', background:'#fff',
       display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-      fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'20px'
+      fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'max(20px, env(safe-area-inset-top, 0px)) 20px max(20px, env(safe-area-inset-bottom, 0px))', boxSizing:'border-box'
     }}>
       <style>{`
         @keyframes fixgoSpin { to { transform: rotate(360deg); } }
@@ -590,7 +590,7 @@ export function NuevaPassword({ onListo }: { onListo: () => void }) {
     <div style={{
       minHeight:'100vh', background:'#fff',
       display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-      fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'20px'
+      fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif', padding:'max(20px, env(safe-area-inset-top, 0px)) 20px max(20px, env(safe-area-inset-bottom, 0px))', boxSizing:'border-box'
     }}>
       <style>{`@keyframes fixgoSpin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ width:'100%', maxWidth:320 }}>

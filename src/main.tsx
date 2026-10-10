@@ -11,6 +11,17 @@ import { App as CapacitorApp } from '@capacitor/app'
 import { leerReferrerInstalacion, procesarLinkEntrante, procesarLinkObra } from './crecimiento'
 import { iniciarBotonAtras } from './botonAtras'
 
+// iPhone: la app ocupa toda la pantalla (detrás del reloj y de la barrita de abajo).
+// Con "viewport-fit=cover" el navegador informa esos márgenes (env(safe-area-inset-*))
+// y las pantallas se corren lo justo para no quedar tapadas por el reloj.
+// En Android no se toca nada: ahí esos márgenes siguen valiendo 0.
+if (Capacitor.getPlatform() === 'ios') {
+  const vp = document.querySelector('meta[name="viewport"]')
+  if (vp && !/viewport-fit/.test(vp.getAttribute('content') || '')) {
+    vp.setAttribute('content', (vp.getAttribute('content') || '') + ', viewport-fit=cover')
+  }
+}
+
 function Splash() {
   return (
     <div style={{

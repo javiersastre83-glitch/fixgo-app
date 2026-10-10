@@ -189,7 +189,7 @@ const ModalEditorDibujo = ({ src, onGuardar, onCerrar }) => {
 
   return (
     <div data-capa="" style={{ position: "fixed", inset: 0, background: "#000", zIndex: 200, display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "calc(14px + env(safe-area-inset-top, 0px)) 16px 14px" }}>
         <button data-cerrar="" onClick={onCerrar} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={22} color="#fff" /></button>
         <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>Marcar en la foto</span>
         <button onClick={deshacer} style={{ background: "none", border: "none", cursor: "pointer" }}><RotateCcw size={20} color="#fff" /></button>
@@ -208,7 +208,7 @@ const ModalEditorDibujo = ({ src, onGuardar, onCerrar }) => {
           <button key={p.color} onClick={() => setColorActivo(p.color)} style={{ width: 34, height: 34, borderRadius: "50%", background: p.color, border: colorActivo === p.color ? "3px solid #fff" : "3px solid rgba(255,255,255,0.25)", cursor: "pointer" }} />
         ))}
       </div>
-      <div style={{ padding: "0 16px 24px", display: "flex", gap: 10 }}>
+      <div style={{ padding: "0 16px calc(24px + env(safe-area-inset-bottom, 0px))", display: "flex", gap: 10 }}>
         <button onClick={borrarTodo} style={{ flex: 1, padding: "13px", borderRadius: 14, border: "1.5px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Borrar todo</button>
         <button onClick={guardar} style={{ flex: 2, padding: "13px", borderRadius: 14, border: "none", background: "#34C759", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><CheckCircle size={16} />Usar foto</button>
       </div>
@@ -3136,7 +3136,7 @@ export default function App({ session }) {
     );
 
     return(
-      <div className="fondo-informe-pantalla" style={{background:"#8A8D93",height:"100dvh",overflowY:"auto",padding:"20px 0"}}>
+      <div className="fondo-informe-pantalla" style={{background:"#8A8D93",height:"100dvh",overflowY:"auto",padding:"calc(20px + env(safe-area-inset-top, 0px)) 0 calc(20px + env(safe-area-inset-bottom, 0px))",boxSizing:"border-box"}}>
         <style>{`
           .hoja-informe, .hoja-informe *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}
           @media print{
@@ -4886,7 +4886,7 @@ export default function App({ session }) {
         </div>
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
-        {fotoAmpliada&&<div data-capa="" onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
+        {fotoAmpliada&&<div data-capa="" onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:"calc(16px + env(safe-area-inset-top, 0px))",right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
       </div>
     );
   }
@@ -5112,7 +5112,7 @@ export default function App({ session }) {
         {offlineBannerJSX}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);irInicio();}} onPerfil={()=>setVistaPerfil(true)} />
         {confirmarEliminar&&<div data-capa="" style={s.overlay} onClick={()=>setConfirmarEliminar(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><Trash2 size={38} color="#FF3B30" style={{marginBottom:4}}/><p style={{margin:"12px 0 8px",fontSize:19,fontWeight:800}}>¿Eliminar esta tarea?</p><p style={{margin:0,fontSize:14,color:"#55555A"}}>Esta acción no se puede deshacer.</p></div><button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={()=>{eliminar(confirmarEliminar);setConfirmarEliminar(null);}}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button><button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminar(null)}>Cancelar</button></div></div>}
-        {fotoAmpliada&&<div data-capa="" onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
+        {fotoAmpliada&&<div data-capa="" onClick={()=>setFotoAmpliada(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><button onClick={()=>setFotoAmpliada(null)} style={{position:"absolute",top:"calc(16px + env(safe-area-inset-top, 0px))",right:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:99,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><X size={22} color="#fff"/></button><img src={fotoAmpliada} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",borderRadius:8}}/></div>}
         {modalFotoResolucionJSX}
         {modalRechazo&&<div data-capa="" style={s.overlay} onClick={()=>setModalRechazo(null)}><div style={s.modal} onClick={e=>e.stopPropagation()}>
           <p style={{margin:"0 0 4px",fontSize:18,fontWeight:700}}>Rechazar el cierre</p>
@@ -5312,7 +5312,7 @@ export default function App({ session }) {
 }
 
 const s = {
-  root:        { display:"flex", flexDirection:"column", height:"100dvh", width:"100%", background:"#F2F2F7", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflow:"hidden" },
+  root:        { display:"flex", flexDirection:"column", height:"100dvh", width:"100%", paddingTop:"env(safe-area-inset-top, 0px)", boxSizing:"border-box", background:"#F2F2F7", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflow:"hidden" },
   chip:        { display:"inline-flex", alignItems:"center", padding:"4px 10px", borderRadius:99, fontSize:12, fontWeight:600, whiteSpace:"nowrap" },
   label:       { fontSize:14, fontWeight:700, color:"#1C1C1E", margin:"0 0 10px" },
   input:       { width:"100%", padding:"13px 14px", borderRadius:14, border:"1.5px solid #E5E5EA", fontSize:16, outline:"none", boxSizing:"border-box", fontFamily:"inherit" },
@@ -5328,5 +5328,5 @@ const s = {
   quitarFoto:  { position:"absolute", top:4, right:4, background:"#000000AA", color:"#fff", border:"none", borderRadius:20, width:24, height:24, fontSize:12, cursor:"pointer" },
   cardObra:    { background:"#fff", borderRadius:18, padding:"16px", border:"2px solid #1C1C1E", cursor:"pointer", textAlign:"left", boxShadow:"0 2px 8px #0000000A", width:"100%" },
   overlay:     { position:"fixed", top:0, left:0, right:0, height:"100dvh", background:"#00000060", display:"flex", alignItems:"flex-end", zIndex:100 },
-  modal:       { background:"#fff", borderRadius:"20px 20px 0 0", padding:"24px 20px 32px", width:"100%", boxSizing:"border-box", maxHeight:"92dvh", overflowY:"auto" },
+  modal:       { background:"#fff", borderRadius:"20px 20px 0 0", padding:"24px 20px calc(32px + env(safe-area-inset-bottom, 0px))", width:"100%", boxSizing:"border-box", maxHeight:"92dvh", overflowY:"auto" },
 };
