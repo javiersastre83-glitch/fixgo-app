@@ -17,6 +17,10 @@ function precioSinCentavosCero(precio: string): string {
 }
 // Clave pública de Android de RevenueCat (segura para incluir en el cliente: no es secreta).
 const REVENUECAT_ANDROID_API_KEY = "goog_IPRWOZhrHFPwmgURhTRhxCRdteU";
+// Clave pública de iOS de RevenueCat (app "Fixgo iOS", App Store). Tampoco es secreta.
+const REVENUECAT_IOS_API_KEY = "appl_XTzwhHuMlYZMXcrMGBTSQtzHqQQ";
+// Cada tienda usa su clave: en iPhone las compras van por el App Store; en Android, por Google Play.
+const claveRevenueCat = () => Capacitor.getPlatform() === "ios" ? REVENUECAT_IOS_API_KEY : REVENUECAT_ANDROID_API_KEY;
 // Identificador del entitlement "Pro" configurado en RevenueCat (Product Catalog → Entitlements).
 const ENTITLEMENT_ID_PRO = "fixgo_pro";
 
@@ -1378,7 +1382,7 @@ export default function App({ session }) {
     (async()=>{
       try{
         await Purchases.setLogLevel({level:LOG_LEVEL.ERROR});
-        await Purchases.configure({apiKey:REVENUECAT_ANDROID_API_KEY,appUserID:usuarioReal.id});
+        await Purchases.configure({apiKey:claveRevenueCat(),appUserID:usuarioReal.id});
         Purchases.getOfferings().then(of=>{const pr=of?.current?.availablePackages?.[0]?.product?.priceString;if(pr)setPrecioPro(precioSinCentavosCero(pr));}).catch(()=>{});
         listenerId=await Purchases.addCustomerInfoUpdateListener(async(customerInfo)=>{
           const activo=!!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID_PRO];
