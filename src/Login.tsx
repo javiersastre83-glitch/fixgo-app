@@ -1,14 +1,12 @@
 import { useState } from 'react'
 import { supabase } from './supabase'
 import { abrirLegal } from './legal'
-import { Capacitor, registerPlugin } from '@capacitor/core'
+import { Capacitor } from '@capacitor/core'
+import { FixgoAppleSignIn } from './appleSignIn'
 
 // "Continuar con Apple": solo existe en iPhone (plugin propio, ios/App/App/FixgoAppleSignInPlugin.swift).
 // Apple lo exige en la App Store cuando la app ofrece ingresar con Google.
 const esIPhone = Capacitor.getPlatform() === 'ios'
-const FixgoAppleSignIn = registerPlugin<{
-  authorize(opciones: { nonce: string }): Promise<{ identityToken: string; givenName?: string; familyName?: string; email?: string }>
-}>('FixgoAppleSignIn')
 const aHex = (bytes: Uint8Array) => Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
 
 function traducirError(mensaje: string): string {

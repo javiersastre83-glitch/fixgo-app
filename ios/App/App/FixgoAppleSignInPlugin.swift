@@ -5,7 +5,8 @@ import AuthenticationServices
 
 // "Continuar con Apple" — plugin propio de Fixgo (solo iPhone).
 // La pantalla de ingreso (src/Login.tsx) lo llama como FixgoAppleSignIn.authorize({ nonce }).
-// Devuelve el identityToken de Apple, que la app le pasa a Supabase para abrir la sesión.
+// Devuelve el identityToken de Apple, que la app le pasa a Supabase para abrir la sesión,
+// y el authorizationCode, que se usa al eliminar la cuenta para cortar el acceso de Apple.
 @objc(FixgoAppleSignInPlugin)
 public class FixgoAppleSignInPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "FixgoAppleSignInPlugin"
@@ -52,6 +53,8 @@ extension FixgoAppleSignInPlugin: ASAuthorizationControllerDelegate {
             "identityToken": token,
             "user": credencial.user
         ]
+        if let codigoData = credencial.authorizationCode,
+           let codigo = String(data: codigoData, encoding: .utf8) { datos["authorizationCode"] = codigo }
         if let email = credencial.email { datos["email"] = email }
         if let nombre = credencial.fullName?.givenName { datos["givenName"] = nombre }
         if let apellido = credencial.fullName?.familyName { datos["familyName"] = apellido }

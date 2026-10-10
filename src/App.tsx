@@ -4,6 +4,7 @@ import { Wrench, AlertTriangle, CheckCircle, Clock, MapPin, Camera, MessageCircl
 import { supabase } from './supabase';
 import { Capacitor } from '@capacitor/core';
 import { abrirLegal } from './legal';
+import { FixgoAppleSignIn } from './appleSignIn';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Contacts } from '@capacitor-community/contacts';
 import { Network } from '@capacitor/network';
@@ -3938,10 +3939,19 @@ export default function App({ session }) {
               if(!window.confirm("Última confirmación.\n\n¿Seguro que querés eliminar tu cuenta y todos tus datos de forma permanente?"))return;
               try{
                 if(usuarioReal){
-                  await supabase.from("obras").delete().eq("propietario_id",usuarioReal.id);
                   const{data:{session:ses}}=await supabase.auth.getSession();
-                  const resp=await fetch(`https://kvemmluxgdlhandjpbfn.supabase.co/functions/v1/eliminar-cuenta`,{method:"POST",headers:{"Authorization":`Bearer ${ses?.access_token}`,"Content-Type":"application/json"}});
-                  if(!resp.ok)console.warn("La función de borrado de cuenta aún no está disponible");
+                  // Cuenta abierta con "Continuar con Apple" en iPhone: Apple exige cortar también su acceso.
+                  // Se le pide a la persona que confirme con Apple (Face ID) y se manda ese código de un solo uso.
+                  const proveedores=[...(ses?.user?.app_metadata?.providers||[]),ses?.user?.app_metadata?.provider].filter(Boolean);
+                  let codigoApple=null;
+                  if(esIPhoneApp&&proveedores.includes("apple")){
+                    alert("Para terminar, confirmá con Apple. Así también se desconecta Fixgo de tu cuenta de Apple.");
+                    try{codigoApple=(await FixgoAppleSignIn.authorize({}))?.authorizationCode||null;}
+                    catch(e){alert("No se eliminó la cuenta: hace falta confirmar con Apple. Probá de nuevo cuando quieras.");return;}
+                  }
+                  await supabase.from("obras").delete().eq("propietario_id",usuarioReal.id);
+                  const resp=await fetch(`https://kvemmluxgdlhandjpbfn.supabase.co/functions/v1/eliminar-cuenta`,{method:"POST",headers:{"Authorization":`Bearer ${ses?.access_token}`,"Content-Type":"application/json"},body:JSON.stringify({codigoApple})});
+                  if(!resp.ok){alert("Hubo un problema al eliminar la cuenta. Probá de nuevo o escribinos a soporte@fixgo.ar");return;}
                 }
                 await supabase.auth.signOut();
                 alert("Tu cuenta y tus datos fueron eliminados.");
