@@ -353,6 +353,52 @@ const NOVEDADES_DEMO = [
     descripcion:"Pintura terminada en comedor", responsable:"Pintor", sector:"Comedor", prioridad:2, fechaLimite:"", resuelta:true, fecha:"2026-05-15",
     comentarios:[{texto:"Listo, dos manos aplicadas",autorId:"u2",ts:Date.now()-86400000*3},{texto:"Confirmado, quedó excelente 👍",autorId:"u1",ts:Date.now()-86400000*2}]},
 ];
+// Consentimiento expreso para la transferencia de datos a Estados Unidos (Supabase y Vercel).
+// La AAIP lo exige porque EE.UU. no está en la lista de países con nivel adecuado de la
+// Disposición 60-E/2016. Se muestra UNA sola vez, después de crear la cuenta, y vale para
+// las tres formas de entrar (email, Google y Apple). Queda la fecha guardada como prueba.
+const PantallaConsentimiento = memo(function PantallaConsentimiento({onAceptar}:{onAceptar:()=>void}){
+  const [tildado,setTildado]=useState(false);
+  const [guardando,setGuardando]=useState(false);
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:9999,background:"#fff",display:"flex",flexDirection:"column",
+      padding:"calc(24px + env(safe-area-inset-top, 0px)) 22px calc(24px + env(safe-area-inset-bottom, 0px))",
+      boxSizing:"border-box",overflowY:"auto",fontFamily:"inherit"}}>
+      <div style={{maxWidth:460,margin:"auto",width:"100%"}}>
+        <Lock size={34} color="#FFB800"/>
+        <p style={{margin:"14px 0 8px",fontSize:22,fontWeight:800,color:"#1C1C1E"}}>Antes de empezar</p>
+        <p style={{margin:"0 0 14px",fontSize:15,lineHeight:1.6,color:"#3A3A3C"}}>
+          Fixgo guarda tus obras, fotos y comentarios en servidores de <strong>Supabase</strong> y <strong>Vercel</strong>,
+          que están en <strong>Estados Unidos</strong>.
+        </p>
+        <p style={{margin:"0 0 18px",fontSize:15,lineHeight:1.6,color:"#3A3A3C"}}>
+          Para la ley argentina eso es una transferencia internacional de datos, y necesitamos que nos des permiso
+          de forma expresa. Podés retirarlo cuando quieras eliminando tu cuenta desde Perfil.
+        </p>
+        <label style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 14px",borderRadius:14,
+          border:"1.5px solid "+(tildado?"#FFB800":"#E5E5EA"),background:tildado?"#FFB80010":"#FAFAFA",cursor:"pointer"}}>
+          <input type="checkbox" checked={tildado} onChange={e=>setTildado(e.target.checked)}
+            style={{width:22,height:22,flexShrink:0,accentColor:"#FFB800",cursor:"pointer",marginTop:1}}/>
+          <span style={{fontSize:14.5,lineHeight:1.5,color:"#1C1C1E"}}>
+            Acepto los Términos y la Política de privacidad, incluido que mis datos se guarden en servidores de Estados Unidos.
+          </span>
+        </label>
+        <p style={{margin:"12px 0 0",fontSize:13,color:"#55555A"}}>
+          <button type="button" onClick={()=>abrirLegal("terminos")} style={{border:"none",background:"none",padding:0,font:"inherit",color:"#55555A",fontWeight:700,textDecoration:"underline",cursor:"pointer"}}>Términos y condiciones</button>
+          {" · "}
+          <button type="button" onClick={()=>abrirLegal("privacidad")} style={{border:"none",background:"none",padding:0,font:"inherit",color:"#55555A",fontWeight:700,textDecoration:"underline",cursor:"pointer"}}>Política de privacidad</button>
+        </p>
+        <button type="button" disabled={!tildado||guardando} onClick={()=>{setGuardando(true);onAceptar();}}
+          style={{width:"100%",height:54,marginTop:22,borderRadius:14,border:"none",fontSize:16,fontWeight:700,
+            fontFamily:"inherit",color:"#fff",background:tildado?"#1C1C1E":"#C7C7CC",
+            cursor:tildado&&!guardando?"pointer":"default"}}>
+          {guardando?"Guardando...":"Acepto y continúo"}
+        </button>
+      </div>
+    </div>
+  );
+});
+
 const FORM_INICIAL = { fotos:[], descripcion:"", responsable:RESPONSABLES[0], responsableCustom:"", responsableUsuarioId:null, sector:SECTORES[0], sectorCustom:"", prioridad:1, fechaLimite:"", comentario:"", ocultoCapataz:false, tokenAsignacionPendiente:null };
 
 const formatFecha = (iso) => { if(!iso) return ""; const d=new Date(iso+"T00:00:00"); return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric"}); };
@@ -1363,15 +1409,17 @@ export default function App({ session }) {
     return ultimaActividad>new Date(vistoAt).getTime();
   };
   const [vioOnboarding,    setVioOnboarding]    = useState<boolean|null>(null); // null = todavía no sabemos
+  const [consintio,        setConsintio]        = useState<boolean|null>(null); // null = todavía no sabemos
   useEffect(()=>{
-    if(!usuarioReal){setEsProReal(false);return;}
-    supabase.from("usuarios").select("es_pro,nombre_estudio,logo_estudio_url,nombre_personalizado,vio_onboarding").eq("id",usuarioReal.id).single().then(({data})=>{
+    if(!usuarioReal){setEsProReal(false);setConsintio(null);return;}
+    supabase.from("usuarios").select("es_pro,nombre_estudio,logo_estudio_url,nombre_personalizado,vio_onboarding,consentimiento_at").eq("id",usuarioReal.id).single().then(({data})=>{
       setEsProReal(!!data?.es_pro);
       setNombreEstudio(data?.nombre_estudio||"");
       setNombreEstudioInput(data?.nombre_estudio||"");
       setLogoEstudioUrl(data?.logo_estudio_url||"");
       setNombrePersonalizado(data?.nombre_personalizado||"");
       setVioOnboarding(!!data?.vio_onboarding);
+      setConsintio(!!data?.consentimiento_at);
     });
   },[usuarioReal?.id]);
   const [comprandoPro, setComprandoPro] = useState(false);
@@ -1558,6 +1606,15 @@ export default function App({ session }) {
   const terminarOnboarding=async()=>{
     setVioOnboarding(true); // primero en pantalla, para que se sienta instantáneo
     if(usuarioReal)await supabase.from("usuarios").update({vio_onboarding:true}).eq("id",usuarioReal.id);
+  };
+  // Guarda la fecha del consentimiento. A diferencia del onboarding, acá esperamos a que
+  // la base confirme antes de dejar pasar: la fecha es la prueba de que el usuario aceptó,
+  // y no sirve de nada si no quedó guardada.
+  const aceptarConsentimiento=async()=>{
+    if(!usuarioReal)return;
+    const{error}=await supabase.from("usuarios").update({consentimiento_at:new Date().toISOString()}).eq("id",usuarioReal.id);
+    if(error){mostrarToast("No pudimos guardar tu respuesta. Revisá la conexión y probá de nuevo.");return;}
+    setConsintio(true);
   };
   const simularPro=async(valor)=>{
     if(!usuarioReal)return;
@@ -3928,6 +3985,9 @@ export default function App({ session }) {
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={()=>abrirLegal("privacidad")}>
               <Lock size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Política de privacidad</p><ExternalLink size={15} color="#C7C7CC"/>
             </div>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={()=>abrirLegal("baja")}>
+              <UserX size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Dar de baja la suscripción</p><ExternalLink size={15} color="#C7C7CC"/>
+            </div>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"15px 16px",borderBottom:"1px solid #F2F2F7",cursor:"pointer"}} onClick={restaurarCompras}>
               <RotateCcw size={20} color="#55555A"/><p style={{margin:0,flex:1,fontSize:15,fontWeight:600,color:"#3A3A3C"}}>Restaurar compras</p><ChevronRight size={16} color="#C7C7CC"/>
             </div>
@@ -4381,7 +4441,8 @@ export default function App({ session }) {
           <button style={{...s.btnPrincipal,background:"#FF3B30",marginBottom:10}} onClick={eliminarEstudioCompleto}><span style={{display:"flex",alignItems:"center",gap:6}}><Trash2 size={15}/>Sí, eliminar</span></button>
           <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#1C1C1E"}} onClick={()=>setConfirmarEliminarEstudio(false)}>Cancelar</button>
         </div></div>}
-        {usuarioReal&&vioOnboarding===false&&<OnboardingOverlay onFinish={terminarOnboarding}/>}
+        {usuarioReal&&consintio===false&&<PantallaConsentimiento onAceptar={aceptarConsentimiento}/>}
+        {usuarioReal&&consintio===true&&vioOnboarding===false&&<OnboardingOverlay onFinish={terminarOnboarding}/>}
         <NavBar tabActiva={tabActiva} onTab={k=>{setTabActiva(k);}} onPerfil={()=>setVistaPerfil(true)} />
 
         {modalNuevaObra&&<div data-capa="" style={s.overlay} onClick={()=>setModalNuevaObra(false)}><div style={s.modal} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 16px",fontSize:18,fontWeight:700}}>Nueva obra</p><input style={s.input} placeholder="Nombre de la obra *" value={nuevaObraForm.nombre} onChange={e=>setNuevaObraForm(f=>({...f,nombre:e.target.value}))}/><input style={{...s.input,marginTop:10}} placeholder="Dirección (opcional)" value={nuevaObraForm.direccion} onChange={e=>setNuevaObraForm(f=>({...f,direccion:e.target.value}))}/><div style={{display:"flex",gap:10,marginTop:20}}><button style={{...s.btnPrincipal,background:"#E5E5EA",color:"#1C1C1E",flex:1}} onClick={()=>setModalNuevaObra(false)}>Cancelar</button><button style={{...s.btnPrincipal,flex:1,opacity:(nuevaObraForm.nombre.trim()&&!guardando)?1:0.4}} disabled={guardando} onClick={crearObra}><span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{guardando?<><span style={{width:15,height:15,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.7s linear infinite"}}/>Creando...</>:<><CheckCircle size={15}/>Crear</>}</span></button></div></div></div>}
