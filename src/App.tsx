@@ -9,6 +9,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Contacts } from '@capacitor-community/contacts';
 import { Network } from '@capacitor/network';
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
+import { Printer } from '@capgo/capacitor-printer';
 import { linkInvitacion, guardarInvitacion, extraerCodigoInvitacion, pedirResenaSiCorresponde, linkAbrirObra, leerPedidoAbrirObra, guardarPedidoAbrirObra, pedirAbrirDesdeAviso, esAvisoVencidas } from './crecimiento';
 
 // La tienda manda el precio con centavos aunque sea redondo ("$ 19.900,00"). Si los centavos son cero, se sacan ("$ 19.900").
@@ -51,6 +52,13 @@ async function elegirContacto(){
   }
   return null;
 }
+// Imprimir / guardar como PDF. Dentro de la app (Android y iPhone) window.print() no hace nada,
+// así que usamos la ventana nativa de impresión, que trae "Guardar como PDF". En la web sigue window.print().
+const imprimirPantalla=async(nombre:string)=>{
+  if(!Capacitor.isNativePlatform()){window.print();return true;}
+  try{await Printer.printWebView({name:nombre});return true;}
+  catch(e){console.error("printWebView",e);return false;}
+};
 const hayContactosDisponible=()=>Capacitor.isNativePlatform()||(typeof navigator!=="undefined"&&!!(navigator as any).contacts);
 
 const IconoWhatsapp=({size=18,color="#fff"}:{size?:number,color?:string})=><svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>;
@@ -1731,7 +1739,7 @@ export default function App({ session }) {
   useEffect(()=>{
     if(!vistaReporte||!reporteData)return;
     let cancelado=false,impreso=false;
-    const imprimirUnaVez=()=>{if(impreso||cancelado)return;impreso=true;window.print();};
+    const imprimirUnaVez=()=>{if(impreso||cancelado)return;impreso=true;imprimirPantalla(nombreInforme());};
     const esperarImagenesYImprimir=()=>{
       const imgs=Array.from(document.querySelectorAll(".hoja-informe img")) as HTMLImageElement[];
       const pendientes=imgs.filter(img=>!img.complete);
@@ -2679,6 +2687,7 @@ export default function App({ session }) {
   };
 
   const eliminarObra=async(id)=>{if(usuarioReal&&typeof id==="string"){const{error:e1}=await supabase.from("novedades").delete().eq("obra_id",id);if(e1){alert("No se pudo eliminar: "+e1.message);return;}const{error:e2}=await supabase.from("obras").delete().eq("id",id);if(e2){alert("No se pudo eliminar la obra: "+e2.message);return;}}setObras(o=>o.filter(x=>x.id!==id));setNovedadesPorObra(p=>{const n={...p};delete n[id];return n;});setConfirmarEliminarObra(null);};
+  const nombreInforme=()=>"Informe Fixgo"+(obraActual?.nombre?" - "+obraActual.nombre:"");
   const mostrarToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),Math.min(4500,Math.max(2200,String(msg||"").length*55)));};
   const [modalEditarObra, setModalEditarObra] = useState<any>(null);
   const [editarObraForm,  setEditarObraForm]  = useState({nombre:"",direccion:""});
@@ -3210,7 +3219,7 @@ export default function App({ session }) {
         }`}</style>
         <div className="no-print" style={{maxWidth:"210mm",margin:"0 auto 14px",display:"flex",gap:10,padding:"0 20px"}}>
           <button onClick={()=>{setVistaReporte(false);setReporteData(null);}} style={{background:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><ChevronLeft size={16}/>Volver</button>
-          <button onClick={()=>window.print()} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer"}}>Guardar / Imprimir PDF</button>
+          <button onClick={async()=>{const ok=await imprimirPantalla(nombreInforme());if(!ok)mostrarToast("Tocá de nuevo «Guardar / Imprimir PDF» para abrir la impresión.");}} style={{background:"#1C1C1E",color:"#fff",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:700,cursor:"pointer"}}>Guardar / Imprimir PDF</button>
         </div>
 
         {/* ══════════ PÁGINA 1 — PORTADA ══════════ */}
