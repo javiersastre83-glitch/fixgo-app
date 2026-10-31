@@ -574,14 +574,28 @@ const ImgCacheada=({src,...props})=>{
   return <img src={url} {...props}/>;
 };
 
-const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#007AFF" }) => {
+// Invitados que todavía no aceptaron: se les puede asignar tareas igual. La tarea queda atada
+// a la invitación por un token y, cuando la persona acepta, pasa a su nombre sola.
+const nombreInvitado=(inv)=>inv.nombre||inv.especialidad||(inv.rol==="capataz"?"Capataz":inv.rol==="co_profesional"?"Colega":"Invitado");
+const invitadosAsignables=(pendientes)=>(pendientes||[]).filter(i=>!i.motivo_rechazo);
+const asegurarTokenInvitacion=async(inv)=>{
+  if(inv.token_novedad)return inv.token_novedad;
+  const tk=`tk-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
+  const{error}=await supabase.from("invitaciones").update({token_novedad:tk}).eq("codigo",inv.codigo);
+  if(error){alert("No se pudo asignar a "+nombreInvitado(inv)+". Volvé a invitarlo desde Equipo y probá de nuevo.");return null;}
+  inv.token_novedad=tk;
+  return tk;
+};
+
+const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#007AFF", pendientes=[], tokenSel=null }) => {
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const miembros = (equipo||[]).filter(m=>m.nombre);
   const miembrosFiltrados = miembros.filter(m=>(m.nombre||"").toLowerCase().includes(busqueda.toLowerCase()));
   const oficiosFiltrados = buscarOficio(busqueda, RESPONSABLES);
   const personaSel = usuarioId ? miembros.find(m=>m.uid===usuarioId) : null;
-  const etiqueta = personaSel ? `${personaSel.nombre}${personaSel.especialidad?" — "+personaSel.especialidad:""}` : (value||"Seleccioná...");
+  const invitados = invitadosAsignables(pendientes).filter(i=>nombreInvitado(i).toLowerCase().includes(busqueda.toLowerCase()));
+  const etiqueta = personaSel ? `${personaSel.nombre}${personaSel.especialidad?" — "+personaSel.especialidad:""}` : (value?(value+(tokenSel?" — invitado":"")):"Seleccioná...");
   return (
     <div>
       <button type="button" onClick={()=>setAbierto(true)}
@@ -600,19 +614,25 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
             <div style={{overflowY:"auto",flex:1,margin:"0 -20px",padding:"0 20px"}}>
               {miembrosFiltrados.length>0 && <p style={{padding:"8px 0 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A",display:"flex",alignItems:"center",gap:5}}><Users size={13}/>Mi equipo</p>}
               {miembrosFiltrados.map(m => (
-                <button type="button" key={m.uid} onClick={()=>{onChange({responsable:m.especialidad||"",usuarioId:m.uid});setAbierto(false);setBusqueda("");}}
+                <button type="button" key={m.uid} onClick={()=>{onChange({responsable:m.especialidad||"",usuarioId:m.uid,token:null});setAbierto(false);setBusqueda("");}}
                   style={{width:"100%",padding:"12px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:usuarioId===m.uid?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:usuarioId===m.uid?color:"#1C1C1E",fontWeight:usuarioId===m.uid?700:400,fontFamily:"inherit"}}>
                   {m.nombre}{m.especialidad?<span style={{color:"#55555A",fontWeight:400}}> — {m.especialidad}</span>:null}
                 </button>
               ))}
+              {invitados.length>0 && <p style={{padding:"8px 0 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A",display:"flex",alignItems:"center",gap:5}}><Clock size={13}/>Invitados (todavía no aceptaron)</p>}
+              {invitados.map(inv => {const sel=!usuarioId&&!!tokenSel&&inv.token_novedad===tokenSel;return(
+                <button type="button" key={inv.codigo} onClick={async()=>{const tk=await asegurarTokenInvitacion(inv);if(!tk)return;onChange({responsable:nombreInvitado(inv),usuarioId:null,token:tk});setAbierto(false);setBusqueda("");}}
+                  style={{width:"100%",padding:"12px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:sel?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:sel?color:"#1C1C1E",fontWeight:sel?700:400,fontFamily:"inherit"}}>
+                  {nombreInvitado(inv)}<span style={{color:"#B8860B",fontWeight:400}}> — invitado</span>
+                </button>);})}
               {oficiosFiltrados.length>0 && <p style={{padding:"8px 0 4px",margin:0,fontSize:12,fontWeight:700,color:"#55555A",display:"flex",alignItems:"center",gap:5}}><Wrench size={13}/>Oficio genérico</p>}
               {oficiosFiltrados.map(r => (
-                <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setAbierto(false);setBusqueda("");}}
-                  style={{width:"100%",padding:"12px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:(!usuarioId&&value===r)?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(!usuarioId&&value===r)?color:"#1C1C1E",fontWeight:(!usuarioId&&value===r)?700:400,fontFamily:"inherit"}}>
+                <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null,token:null});setAbierto(false);setBusqueda("");}}
+                  style={{width:"100%",padding:"12px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:(!usuarioId&&!tokenSel&&value===r)?color+"12":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(!usuarioId&&!tokenSel&&value===r)?color:"#1C1C1E",fontWeight:(!usuarioId&&!tokenSel&&value===r)?700:400,fontFamily:"inherit"}}>
                   {r}
                 </button>
               ))}
-              {miembrosFiltrados.length===0 && oficiosFiltrados.length===0 && <p style={{padding:"14px 0",margin:0,fontSize:14,color:"#55555A",textAlign:"center"}}>Sin resultados</p>}
+              {miembrosFiltrados.length===0 && invitados.length===0 && oficiosFiltrados.length===0 && <p style={{padding:"14px 0",margin:0,fontSize:14,color:"#55555A",textAlign:"center"}}>Sin resultados</p>}
             </div>
             <button type="button" onClick={()=>{setAbierto(false);setBusqueda("");}} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",marginTop:12}}>Cancelar</button>
           </div>
@@ -622,11 +642,16 @@ const SelectorResponsable = ({ value, usuarioId, onChange, equipo=[], color="#00
   );
 };
 
-const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057FF", onInvitarNuevo=null }) => {
+const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057FF", onInvitarNuevo=null, pendientes=[], tokenSel=null }) => {
   const [modalOficio, setModalOficio] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [verOficio, setVerOficio] = useState(false);
   const miembros = (equipo||[]).filter(m=>m.nombre);
-  const oficioSel = (!usuarioId && value) ? value : null;
+  const invitados = invitadosAsignables(pendientes);
+  const oficioSel = (!usuarioId && !tokenSel && value) ? value : null;
+  // Si ya elegiste a una persona (que tiene su rol), no hace falta pedir oficio.
+  const personaElegida = !!usuarioId || !!tokenSel;
+  const mostrarOficio = !personaElegida || verOficio;
   const oficiosFiltrados = buscarOficio(busqueda, RESPONSABLES);
   return (
     <div>
@@ -635,10 +660,20 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
         {miembros.map(m=>{
           const sel = usuarioId===m.uid;
           return (
-            <button type="button" key={m.uid} onClick={()=>onChange({responsable:m.especialidad||"",usuarioId:m.uid})}
+            <button type="button" key={m.uid} onClick={()=>{setVerOficio(false);onChange({responsable:m.especialidad||"",usuarioId:m.uid,token:null});}}
               style={{flexShrink:0,minWidth:90,background:sel?"#F5F5F5":"#fff",border:`2px solid ${sel?"#1C1C1E":"#E5E5EA"}`,borderRadius:14,padding:"10px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
               <div style={{fontSize:14,fontWeight:800,color:"#1C1C1E",whiteSpace:"nowrap"}}>{m.nombre}</div>
               {m.especialidad&&<div style={{fontSize:11,color:"#55555A",marginTop:2,whiteSpace:"nowrap"}}>{m.especialidad}</div>}
+            </button>
+          );
+        })}
+        {invitados.map(inv=>{
+          const sel = !usuarioId && !!tokenSel && inv.token_novedad===tokenSel;
+          return (
+            <button type="button" key={inv.codigo} onClick={async()=>{const tk=await asegurarTokenInvitacion(inv);if(!tk)return;setVerOficio(false);onChange({responsable:nombreInvitado(inv),usuarioId:null,token:tk});}}
+              style={{flexShrink:0,minWidth:90,background:sel?"#F5F5F5":"#fff",border:`2px ${sel?"solid":"dashed"} ${sel?"#1C1C1E":"#E5C97A"}`,borderRadius:14,padding:"10px 14px",textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
+              <div style={{fontSize:14,fontWeight:800,color:"#1C1C1E",whiteSpace:"nowrap"}}>{nombreInvitado(inv)}</div>
+              <div style={{fontSize:11,color:"#B8860B",marginTop:2,whiteSpace:"nowrap"}}>⏳ Invitado</div>
             </button>
           );
         })}
@@ -649,6 +684,8 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
         </button>}
       </div>
 
+      {!mostrarOficio&&<button type="button" onClick={()=>setVerOficio(true)} style={{marginTop:10,background:"none",border:"none",padding:0,fontSize:12.5,fontWeight:600,color:"#55555A",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline"}}>Asignar a un oficio genérico</button>}
+      {mostrarOficio&&<>
       {/* SEPARADOR */}
       <div style={{display:"flex",alignItems:"center",gap:10,margin:"12px 0"}}>
         <div style={{flex:1,height:1,background:"#F0F0F0"}}/>
@@ -670,6 +707,7 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
         </div>
         <span style={{fontSize:11,fontWeight:600,color:oficioSel?"#fff":"#55555A",background:oficioSel?"#1C1C1E":"#EBEBF0",padding:"3px 10px",borderRadius:99}}>{oficioSel?"Cambiar":"Elegir"}</span>
       </button>
+      </>}
 
       {/* MODAL OFICIO */}
       {modalOficio && (
@@ -685,7 +723,7 @@ const TiraResponsables = ({ value, usuarioId, onChange, equipo=[], color="#0057F
             />
             <div style={{overflowY:"auto",flex:1,margin:"0 -20px",padding:"0 20px"}}>
               {oficiosFiltrados.map(r=>(
-                <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null});setModalOficio(false);setBusqueda("");}}
+                <button type="button" key={r} onClick={()=>{onChange({responsable:r,usuarioId:null,token:null});setModalOficio(false);setBusqueda("");}}
                   style={{width:"100%",padding:"13px 4px",border:"none",borderBottom:"1px solid #F2F2F7",background:(oficioSel===r)?"#F5F5F5":"#fff",textAlign:"left",cursor:"pointer",fontSize:15,color:(oficioSel===r)?"#1C1C1E":"#1C1C1E",fontWeight:(oficioSel===r)?700:400,fontFamily:"inherit"}}>{r}</button>
               ))}
               {oficiosFiltrados.length===0&&<p style={{textAlign:"center",color:"#55555A",padding:"20px 0",fontSize:14}}>Sin resultados</p>}
@@ -1334,10 +1372,10 @@ export default function App({ session }) {
     // (incluye las rechazadas por "ya es miembro" y las que nadie tocó nunca)
     const limite=new Date(Date.now()-5*24*60*60*1000).toISOString();
     await supabase.from("invitaciones").delete().eq("obra_id",obraActual.id).eq("usada",false).lt("created_at",limite);
-    const{data}=await supabase.from("invitaciones").select("codigo,rol,especialidad,nombre,telefono,created_at,motivo_rechazo").eq("obra_id",obraActual.id).eq("usada",false).order("created_at",{ascending:false});
+    const{data}=await supabase.from("invitaciones").select("codigo,rol,especialidad,nombre,telefono,created_at,motivo_rechazo,token_novedad").eq("obra_id",obraActual.id).eq("usada",false).order("created_at",{ascending:false});
     setInvitacionesPendientes(data||[]);
   };
-  useEffect(()=>{if(vistaEquipo&&obraActual?.id)cargarInvitacionesPendientes();},[vistaEquipo,obraActual?.id]);
+  useEffect(()=>{if(obraActual?.id&&typeof obraActual.id==="string")cargarInvitacionesPendientes();},[vistaEquipo,obraActual?.id]);
   const cancelarInvitacion=async(codigo)=>{
     const{error}=await supabase.from("invitaciones").delete().eq("codigo",codigo);
     if(error){alert("No se pudo cancelar la invitación: "+error.message);return;}
@@ -1994,6 +2032,11 @@ export default function App({ session }) {
         // Se aceptó la invitación (usada pasó a true): sacarla de la lista de pendientes en vivo
         if(payload.new.usada){
           setInvitacionesPendientes(p=>p.filter(i=>i.codigo!==payload.new.codigo));
+          const tk=payload.new.token_novedad,uid=payload.new.usuario_asignado;
+          if(tk&&uid){
+            supabase.from("novedades").update({responsable_usuario_id:uid,token_asignacion_pendiente:null}).eq("token_asignacion_pendiente",tk).is("responsable_usuario_id",null).then(()=>{});
+            setNovedades(n=>n.map(x=>(x.token_asignacion_pendiente===tk&&!x.responsable_usuario_id)?{...x,responsable_usuario_id:uid,token_asignacion_pendiente:null}:x));
+          }
         }else if(payload.new.motivo_rechazo){
           // Alguien intentó aceptarla pero ya era miembro: reflejar el nuevo estado sin refrescar
           setInvitacionesPendientes(p=>p.map(i=>i.codigo===payload.new.codigo?{...i,motivo_rechazo:payload.new.motivo_rechazo}:i));
@@ -2735,7 +2778,8 @@ export default function App({ session }) {
     const codigo=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
     // Token único: garantiza la conexión con la novedad que originó la invitación,
     // sin depender de que el nombre escrito coincida exactamente (memoria pendiente 04/08 — crítico).
-    const tokenNov=invitarCallback?(`tk-${Date.now()}-${Math.random().toString(36).slice(2,10)}`):null;
+    // Siempre con token: así a esta persona se le pueden asignar tareas antes de que acepte.
+    const tokenNov=`tk-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
     const esp=invitarRol==="operario"?(invitarEsp==="Otro"?(invitarEspOtro.trim()||"Otro"):invitarEsp):null;
     const nombreLimpio=invitarNombre.trim();
     if(nombreLimpio){
@@ -2760,7 +2804,7 @@ export default function App({ session }) {
     const link=linkInvitacion(codigo);
     setLinkGenerado(link);
     setGenerandoLink(false);
-    setInvitacionesPendientes(p=>[{codigo,rol:invitarRol,especialidad:esp,nombre:nombreLimpio||null,telefono:telGuardar,created_at:new Date().toISOString()},...(nombreLimpio?p.filter(i=>(i.nombre||"").toLowerCase()!==nombreLimpio.toLowerCase()):p)]);
+    setInvitacionesPendientes(p=>[{codigo,rol:invitarRol,especialidad:esp,nombre:nombreLimpio||null,telefono:telGuardar,created_at:new Date().toISOString(),token_novedad:tokenNov},...(nombreLimpio?p.filter(i=>(i.nombre||"").toLowerCase()!==nombreLimpio.toLowerCase()):p)]);
     if(invitarCallback){
       const etiqueta=invitarNombre.trim()||esp||(invitarRol==="capataz"?"Capataz":invitarRol==="co_profesional"?"Colega":"Nuevo integrante");
       invitarCallback({responsable:etiqueta,usuarioId:null,token:tokenNov});
@@ -2885,9 +2929,9 @@ export default function App({ session }) {
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,"_blank");
   };
   const generarResumenGremio=(gremio:string)=>{const novs=novedades.filter(n=>!n.resuelta&&n.responsable===gremio);const urgentes=novs.filter(n=>n.prioridad===0);const otras=novs.filter(n=>n.prioridad!==0);let msg=`Hola! Te mando el estado de tus tareas en "${obraActual?.nombre}":\n\n`;if(urgentes.length>0){msg+=`🔴 URGENTES (${urgentes.length}):\n`;urgentes.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}${n.fechaLimite?` — límite ${formatFecha(n.fechaLimite)}`:""}\n`;});msg+="\n";}if(otras.length>0){msg+=`🟡 PENDIENTES (${otras.length}):\n`;otras.forEach(n=>{msg+=`• ${n.descripcion}${n.sector?` (${n.sector})`:""}\n`;});}msg+=`\nTotal pendiente: ${novs.length} tarea${novs.length!==1?"s":""}`;if(obraActual&&typeof obraActual.id==="string")msg+=`\n\n👉 Ver en Fixgo: ${linkAbrirObra(obraActual.id)}`;return msg;};
-  const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",responsableUsuarioId:nov.responsable_usuario_id||null,sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
-  const asignarRapido=async(id,{responsable,usuarioId})=>{if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({responsable,responsable_usuario_id:usuarioId||null}).eq("id",id);if(error){alert("No se pudo asignar: "+error.message);return false;}}setNovedades(n=>n.map(x=>x.id===id?{...x,responsable,responsable_usuario_id:usuarioId||null}:x));setAsignacionRapida(null);return true;};
-  const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;if(guardando)return;setGuardando(true);try{const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos,oculto_capataz:formEdit.ocultoCapataz,responsable_usuario_id:formEdit.responsableUsuarioId||null}).eq("id",id);if(error){alert("No se pudo guardar la edición: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,responsable_usuario_id:formEdit.responsableUsuarioId||null,sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite,ocultoCapataz:formEdit.ocultoCapataz}:x));setEditando(false);setFormEdit(null);}finally{setGuardando(false);}};
+  const abrirEdicion=(nov)=>{setFormEdit({fotos:nov.fotos,descripcion:nov.descripcion,responsable:nov.responsable,responsableCustom:"",responsableUsuarioId:nov.responsable_usuario_id||null,tokenAsignacionPendiente:nov.token_asignacion_pendiente||null,sector:nov.sector,sectorCustom:"",prioridad:nov.prioridad,fechaLimite:nov.fechaLimite,ocultoCapataz:nov.ocultoCapataz||false});setEditando(true);};
+  const asignarRapido=async(id,{responsable,usuarioId,token=null})=>{const tk=usuarioId?null:(token||null);if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({responsable,responsable_usuario_id:usuarioId||null,token_asignacion_pendiente:tk}).eq("id",id);if(error){alert("No se pudo asignar: "+error.message);return false;}}setNovedades(n=>n.map(x=>x.id===id?{...x,responsable,responsable_usuario_id:usuarioId||null,token_asignacion_pendiente:tk}:x));setAsignacionRapida(null);return true;};
+  const guardarEdicion=async(id)=>{if(!formEdit.descripcion.trim())return;if(guardando)return;setGuardando(true);try{const resp=formEdit.responsable==="Otro"&&formEdit.responsableCustom.trim()?formEdit.responsableCustom.trim():formEdit.responsable;const sect=formEdit.sector==="Otro"&&formEdit.sectorCustom.trim()?formEdit.sectorCustom.trim():formEdit.sector;if(usuarioReal&&typeof id==="string"){const{error}=await supabase.from("novedades").update({descripcion:formEdit.descripcion,responsable:resp,sector:sect,prioridad:formEdit.prioridad,fecha_limite:formEdit.fechaLimite||null,fotos:formEdit.fotos,oculto_capataz:formEdit.ocultoCapataz,responsable_usuario_id:formEdit.responsableUsuarioId||null,token_asignacion_pendiente:formEdit.responsableUsuarioId?null:(formEdit.tokenAsignacionPendiente||null)}).eq("id",id);if(error){alert("No se pudo guardar la edición: "+error.message);return;}}setNovedades(n=>n.map(x=>x.id===id?{...x,fotos:formEdit.fotos,descripcion:formEdit.descripcion,responsable:resp,responsable_usuario_id:formEdit.responsableUsuarioId||null,token_asignacion_pendiente:formEdit.responsableUsuarioId?null:(formEdit.tokenAsignacionPendiente||null),sector:sect,prioridad:formEdit.prioridad,fechaLimite:formEdit.fechaLimite,ocultoCapataz:formEdit.ocultoCapataz}:x));setEditando(false);setFormEdit(null);}finally{setGuardando(false);}};
   const compartir=(nov)=>{const t=generarResumen(nov,obraActual?.nombre||"Obra");if(navigator.share)navigator.share({title:"Tarea",text:t}).catch(()=>{});else{navigator.clipboard?.writeText(t);setCompartidoId(nov.id);setTimeout(()=>setCompartidoId(null),2000);}};
 
   const statsResponsable=RESPONSABLES.map(r=>({nombre:r,pendientes:novedades.filter(n=>n.responsable===r&&!n.resuelta).length,resueltas:novedades.filter(n=>n.responsable===r&&n.resuelta).length,urgentes:novedades.filter(n=>n.responsable===r&&!n.resuelta&&n.prioridad===0).length})).filter(r=>r.pendientes+r.resueltas>0);
@@ -3046,7 +3090,7 @@ export default function App({ session }) {
       <p style={{margin:"0 0 4px",fontSize:17,fontWeight:700}}>¿Quién lo resuelve?</p>
       <p style={{margin:"0 0 14px",fontSize:13,color:"#55555A"}}>{nov.descripcion}</p>
       <div style={{overflowY:"auto"}}>
-        <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} onChange={({responsable,usuarioId})=>asignarRapido(nov.id,{responsable,usuarioId})} onInvitarNuevo={()=>{setAsignacionRapida(null);abrirModalInvitar(async({responsable,usuarioId,token})=>{await asignarRapido(nov.id,{responsable,usuarioId});if(token)await supabase.from("novedades").update({token_asignacion_pendiente:token}).eq("id",nov.id);});}} />
+        <TiraResponsables value={nov.responsable} usuarioId={nov.responsable_usuario_id} equipo={equipoObra} pendientes={puedeGestionar?invitacionesPendientes:[]} tokenSel={nov.token_asignacion_pendiente||null} onChange={({responsable,usuarioId,token})=>asignarRapido(nov.id,{responsable,usuarioId,token})} onInvitarNuevo={()=>{setAsignacionRapida(null);abrirModalInvitar(async({responsable,usuarioId,token})=>{await asignarRapido(nov.id,{responsable,usuarioId,token});});}} />
       </div>
       <button type="button" onClick={()=>setAsignacionRapida(null)} style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A",marginTop:16}}>Cancelar</button>
     </div></div>
@@ -3098,7 +3142,7 @@ export default function App({ session }) {
         <p style={{margin:"0 0 6px",fontSize:19,fontWeight:800,color:"#1C1C1E"}}>¿Quién resuelve esta tarea?</p>
         <p style={{margin:0,fontSize:14,color:"#55555A",lineHeight:1.45}}>Sumá a {aQuien} a la obra: recibe la tarea al instante, con foto y plazo, y te avisa cuando la termina.</p>
       </div>
-      <button style={{...s.btnPrincipal,marginBottom:10}} onClick={()=>{const novId=promptInvitarNov.id;setPromptInvitarNov(null);abrirModalInvitar(async({responsable,usuarioId,token})=>{await asignarRapido(novId,{responsable,usuarioId});if(token)await supabase.from("novedades").update({token_asignacion_pendiente:token}).eq("id",novId);});if(RESPONSABLES.includes(r))setInvitarEsp(r);}}>Invitar a {aQuien}</button>
+      <button style={{...s.btnPrincipal,marginBottom:10}} onClick={()=>{const novId=promptInvitarNov.id;setPromptInvitarNov(null);abrirModalInvitar(async({responsable,usuarioId,token})=>{await asignarRapido(novId,{responsable,usuarioId,token});});if(RESPONSABLES.includes(r))setInvitarEsp(r);}}>Invitar a {aQuien}</button>
       <button style={{...s.btnPrincipal,background:"#F2F2F7",color:"#55555A"}} onClick={()=>setPromptInvitarNov(null)}>Más tarde</button>
     </div></div>);
   })();
@@ -4964,7 +5008,7 @@ export default function App({ session }) {
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={14}/>Descripción</span></p><textarea style={s.textarea} rows={3} value={formEdit.descripcion} onChange={e=>setFormEdit(f=>({...f,descripcion:e.target.value}))}/></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Zap size={14}/>Prioridad</span></p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${formEdit.prioridad===i?p.color:"#E5E5EA"}`,background:formEdit.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setFormEdit(f=>({...f,prioridad:i}))}><p.Icon size={22} color={p.color} strokeWidth={2.3}/><span style={{fontSize:11,fontWeight:700,color:formEdit.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><MapPin size={14}/>Sector</span></p><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{SECTORES.map(sec=><button key={sec} style={{padding:"9px 14px",borderRadius:20,border:`2px solid ${formEdit.sector===sec?"#007AFF":"#E5E5EA"}`,background:formEdit.sector===sec?"#007AFF15":"#fff",color:formEdit.sector===sec?"#007AFF":"#3A3A3C",fontWeight:formEdit.sector===sec?700:400,fontSize:14,cursor:"pointer"}} onClick={()=>setFormEdit(f=>({...f,sector:sec,sectorCustom:""}))}>{sec}</button>)}</div>{formEdit.sector==="Otro"&&<input style={{...s.input,marginTop:10}} placeholder="Escribí el sector..." value={formEdit.sectorCustom} onChange={e=>setFormEdit(f=>({...f,sectorCustom:e.target.value}))}/>}</div>
-          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={14}/>Responsable</span></p><p style={{margin:"-4px 0 8px",fontSize:12.5,color:"#55555A"}}>Elegí a alguien de tu equipo o un oficio genérico</p><SelectorResponsable value={formEdit.responsable} usuarioId={formEdit.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setFormEdit(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} /></div>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={14}/>Responsable</span></p><p style={{margin:"-4px 0 8px",fontSize:12.5,color:"#55555A"}}>Elegí a alguien de tu equipo o un oficio genérico</p><SelectorResponsable value={formEdit.responsable} usuarioId={formEdit.responsableUsuarioId} equipo={equipoObra} pendientes={puedeGestionar?invitacionesPendientes:[]} tokenSel={formEdit.responsableUsuarioId?null:(formEdit.tokenAsignacionPendiente||null)} onChange={({responsable,usuarioId,token})=>setFormEdit(f=>({...f,responsable,responsableUsuarioId:usuarioId,tokenAsignacionPendiente:token||null}))} /></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Calendar size={14}/>Fecha límite</span> <span style={{color:"#55555A",fontWeight:400}}>(opcional)</span></p><p style={{margin:"0 0 6px",fontSize:13,color:"#55555A"}}>Seleccioná una fecha:</p><input type="date" style={s.inputDate} value={formEdit.fechaLimite} onChange={e=>setFormEdit(f=>({...f,fechaLimite:e.target.value}))}/></div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:"#F2F2F7",borderRadius:14,padding:"14px 16px"}}>
             <div style={{flex:1}}>
@@ -5248,7 +5292,7 @@ export default function App({ session }) {
           </div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Edit2 size={13}/>¿Qué hay que resolver?</span></p><textarea style={s.textarea} placeholder="Ej: Fisura en la pared del baño..." value={form.descripcion} onChange={e=>setForm(f=>({...f,descripcion:e.target.value}))} rows={3}/></div>
           <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><Zap size={14}/>Prioridad</span></p><div style={{display:"flex",gap:10}}>{PRIORIDADES.map((p,i)=><button key={i} style={{flex:1,padding:"12px 4px",borderRadius:14,border:`2px solid ${form.prioridad===i?p.color:"#E5E5EA"}`,background:form.prioridad===i?p.bg:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}} onClick={()=>setForm(f=>({...f,prioridad:i}))}><p.Icon size={22} color={p.color} strokeWidth={2.3}/><span style={{fontSize:11,fontWeight:700,color:form.prioridad===i?p.color:"#55555A"}}>{p.label}</span></button>)}</div></div>
-          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={14}/>¿Quién lo resuelve?</span></p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} onChange={({responsable,usuarioId})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId}))} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId,token})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId,tokenAsignacionPendiente:token||null})))} /></div>
+          <div><p style={s.label}><span style={{display:"flex",alignItems:"center",gap:6}}><User size={14}/>¿Quién lo resuelve?</span></p><TiraResponsables value={form.responsable} usuarioId={form.responsableUsuarioId} equipo={equipoObra} pendientes={puedeGestionar?invitacionesPendientes:[]} tokenSel={form.responsableUsuarioId?null:(form.tokenAsignacionPendiente||null)} onChange={({responsable,usuarioId,token})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId,tokenAsignacionPendiente:token||null}))} onInvitarNuevo={()=>abrirModalInvitar(({responsable,usuarioId,token})=>setForm(f=>({...f,responsable,responsableUsuarioId:usuarioId,tokenAsignacionPendiente:token||null})))} /></div>
           <button type="button" onClick={()=>setMasOpciones(o=>!o)} style={{width:"100%",background:"#fff",border:"1.5px solid #E5E5EA",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",fontFamily:"inherit"}}>
             <span style={{fontSize:15,fontWeight:600,color:"#1C1C1E",display:"flex",alignItems:"center",gap:6}}><Settings size={15}/>Más opciones</span>
             <span style={{fontSize:13,color:"#55555A"}}>{masOpciones?"▲":"▼ sector, fecha, nota…"}</span>
